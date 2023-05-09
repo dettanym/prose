@@ -1,4 +1,12 @@
-FROM alpine:3.14
+FROM golang:1.20 as builder
 
-COPY bin/main /app/main
+WORKDIR /app
+# Copy the Go Modules manifests
+COPY go.mod ./
+
+# Copy the go source
+COPY main.go ./
+
+RUN go build -o bin/ .
+RUN cp ./bin/main /app/main
 CMD ["/app/main"]

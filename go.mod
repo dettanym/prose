@@ -1,3 +1,3 @@
-module github.com/dettanym/prose
+module main
 
 go 1.20
