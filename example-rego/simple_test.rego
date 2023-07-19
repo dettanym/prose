@@ -115,7 +115,7 @@
     }
 
     test_valid_multiple_data_items_same_purpose if {
-        not allow with input as
+        allow with input as
         {
           "parsed_body": {
             "purpose_of_use": "advertising",
