@@ -48,8 +48,8 @@
         ],
         "authentication": [
             {"data_item": "email", "third_parties": []},
-            {"data_item": "credentials.password", "third_parties": []},
-            {"data_item": "credentials.username", "third_parties": []},
+            {"data_item": "password", "third_parties": []},
+            {"data_item": "username", "third_parties": []},
             {"data_item": "ip_address", "third_parties": []}
         ],
         "shipping": [
