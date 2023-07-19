@@ -1,29 +1,31 @@
-   package istio.authz
+package istio.authz
 
-    import input.attributes.request.http as http_request
-    import input.parsed_path
+import future.keywords
 
-    default allow = false
+import input.attributes.request.http as http_request
+import input.parsed_path
 
-    allow {
-        parsed_path[0] == "health"
-        http_request.method == "GET"
-    }
+default allow := false
 
-    allow {
-        roles_for_user[r]
-        required_roles[r]
-    }
+allow if {
+	parsed_path[0] == "health"
+	http_request.method == "GET"
+}
 
-    roles_for_user[r] {
-        r := user_roles[user_name][_]
-    }
+allow if {
+	some r in roles_for_user
+	r in required_roles
+}
 
-    required_roles[r] {
-        perm := role_perms[r][_]
-        perm.method = http_request.method
-        perm.path = http_request.path
-    }
+roles_for_user contains r if {
+	some r in user_roles[user_name]
+}
+
+required_roles contains r if {
+	some perm in role_perms[r]
+	perm.method == http_request.method
+	perm.path == http_request.path
+}
 
     user_name := http_request.headers.authorization
 
