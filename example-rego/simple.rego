@@ -5,13 +5,13 @@
     default allow := false
 
     allow if {
-        valid_purpose
-        valid_processing
+        purpose_is_allowed
+        processing_is_allowed
     }
 
     given_purpose_of_use := input.parsed_body.purpose_of_use
 
-    valid_purpose if allowed_purposes[given_purpose_of_use]
+    purpose_is_allowed if allowed_purposes[given_purpose_of_use]
 
     allowed_purposes contains purpose if {
         some index, _ in target_policy
@@ -20,12 +20,12 @@
 
     #Get the list of allowed processing for that purpose of use.
     allowed_processing contains processing if {
-        valid_purpose
+        purpose_is_allowed
         print(given_purpose_of_use)
         processing := target_policy[given_purpose_of_use]
     }
 
-    valid_processing if {
+    processing_is_allowed if {
         allowed_processing := target_policy[given_purpose_of_use]
         #For each item in that list,
         every processing in input.parsed_body.processing {
