@@ -44,7 +44,7 @@
         #For each item in that list,
         every processing in input.parsed_body.processing {
             some allowed in allowed_processing
-            #some processing in allowed_processing
+            processing.data_item in data_items_set
             processing.data_item == allowed.data_item
             every third_party in processing.third_parties {
                 third_party in allowed.third_parties
@@ -53,6 +53,18 @@
             #msg := sprintf("Allowed processing for your purpose of use: %v", [allowed_processing])
             #msg := sprintf("Allowed processing: %v. This processing item is not allowed: %v", [allowed_processing, processing])
         }
+    }
+
+    data_items_set := {
+        "device_id",
+        "location",
+        "email",
+        "username",
+        "password",
+        "ip_address",
+        "name",
+        "address",
+        "phone_number"
     }
 
     target_policy = {
