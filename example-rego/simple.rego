@@ -5,11 +5,25 @@
     default allow := false
 
     allow if {
+        purpose_is_valid
         purpose_is_allowed
         processing_is_allowed
     }
 
     given_purpose_of_use := input.parsed_body.purpose_of_use
+
+    purpose_is_valid if valid_purposes[given_purpose_of_use]
+
+    valid_purposes contains given_purpose_of_use if {
+        given_purpose_of_use in purposes_of_use_set
+    }
+
+    purposes_of_use_set := {
+         "advertising",
+         "authentication",
+         "shipping",
+         "payment"
+    }
 
     purpose_is_allowed if allowed_purposes[given_purpose_of_use]
 
