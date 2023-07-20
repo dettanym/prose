@@ -5,6 +5,7 @@
     default allow := false
 
     allow if {
+        #print(purpose_is_valid, purpose_is_allowed, processing_is_allowed)
         purpose_is_valid
         purpose_is_allowed
         processing_is_allowed
