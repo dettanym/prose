@@ -5,6 +5,11 @@
     default allow := false
 
     allow if {
+        parsed_path[0] == "health"
+        http_request.method == "GET"
+    }
+
+    allow if {
         #print(purpose_is_valid, purpose_is_allowed, processing_is_allowed)
         purpose_is_valid
         purpose_is_allowed
