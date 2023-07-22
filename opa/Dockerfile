@@ -9,5 +9,4 @@ COPY policy-and-logic/ ./
 COPY main.go ./
 
 RUN go build -o bin/ .
-RUN cp ./bin/main /app/main
-CMD ["/app/main"]
+CMD ["/app/bin/opa-module"]
