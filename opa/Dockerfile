@@ -4,7 +4,7 @@ WORKDIR /app
 # Copy the Go Modules manifests
 COPY go.mod ./
 COPY go.sum ./
-COPY policy.rego ./
+COPY policy-and-logic/ ./
 # Copy the go source
 COPY main.go ./
 
