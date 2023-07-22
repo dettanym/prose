@@ -1,13 +1,13 @@
-name: Publish Docker image
+name: Push OPA Bundle service image to Docker Hub
 
 on:
   push:
     tags:
-      - v**
+      - opa/v**
 
 jobs:
-  push_to_registry:
-    name: Push Docker image to Docker Hub
+  push_opa_to_registry:
+    name: Push OPA Bundle service image to Docker Hub
     runs-on: ubuntu-latest
     permissions:
       packages: write
@@ -26,12 +26,14 @@ jobs:
         id: meta
         uses: docker/metadata-action@v4
         with:
-          images: ghcr.io/dettanym/prose
+          images: ghcr.io/dettanym/prose-opa
+          tags: |
+            type=match,pattern=opa/(v\d.\d.\d),group=1
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v4
         with:
-          context: .
+          context: opa
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
