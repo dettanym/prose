@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "charts.fullname" . }}
+  name: {{ .Values.opa.name }}
   labels:
     {{- include "charts.labels" . | nindent 4 }}
 spec:

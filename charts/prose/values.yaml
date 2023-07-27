@@ -5,6 +5,7 @@
 replicaCount: 1
 
 opa:
+  name: opa
   image:
     repository: ghcr.io/dettanym/prose-opa
     pullPolicy: IfNotPresent
@@ -15,6 +16,7 @@ opa:
     port: 8080
 
 presidio:
+  name: presidio
   image:
     repository: ghcr.io/dettanym/prose-presidio
     pullPolicy: IfNotPresent
