@@ -3,6 +3,16 @@ entries:
   prose:
   - apiVersion: v2
     appVersion: v0.0.2
+    created: "2023-07-27T21:17:32.195711614Z"
+    description: A Helm chart for Kubernetes
+    digest: cf07e465cd622bf83f69d4cca0bdb95a80eda64ffa7bba329f9edfb80d502a94
+    name: prose
+    type: application
+    urls:
+    - https://github.com/dettanym/prose/releases/download/prose-0.0.11/prose-0.0.11.tgz
+    version: 0.0.11
+  - apiVersion: v2
+    appVersion: v0.0.2
     created: "2023-07-27T19:05:02.253575647Z"
     description: A Helm chart for Kubernetes
     digest: 956f789985aee61ad21af62a274b1d4ce27106cc08cdbaf23f3038223e080d40
@@ -111,4 +121,4 @@ entries:
     urls:
     - https://github.com/dettanym/prose/releases/download/prose-0.0.0/prose-0.0.0.tgz
     version: 0.0.0
-generated: "2023-07-27T19:05:02.253618549Z"
+generated: "2023-07-27T21:17:32.195864616Z"
