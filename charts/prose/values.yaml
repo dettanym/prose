@@ -10,7 +10,7 @@ opa:
     repository: ghcr.io/dettanym/prose-opa
     pullPolicy: IfNotPresent
     # Overrides the image tag whose default is the chart appVersion.
-    tag: ""
+    tag: "latest"
   service:
     type: ClusterIP
     port: 8080
@@ -21,7 +21,7 @@ presidio:
     repository: ghcr.io/dettanym/prose-presidio
     pullPolicy: IfNotPresent
     # Overrides the image tag whose default is the chart appVersion.
-    tag: ""
+    tag: "latest"
   service:
     type: ClusterIP
     port: 3000
