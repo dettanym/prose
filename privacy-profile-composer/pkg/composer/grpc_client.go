@@ -21,12 +21,10 @@ package composer
 import (
 	"context"
 	"flag"
-	"google.golang.org/protobuf/types/known/emptypb"
-	"log"
-	"time"
-
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/protobuf/types/known/emptypb"
+	"log"
 	pb "privacy-profile-composer/pkg/proto"
 )
 
@@ -45,24 +43,35 @@ func Run_client() {
 	c := pb.NewPrivacyProfileComposerClient(conn)
 
 	// Contact the server and print out its response.
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-	defer cancel()
+	ctx := context.Background()
 
 	_, err = c.PostObservedProfile(
 		ctx,
 		&pb.SvcObservedProfile{
 			SvcInternalFQDN: "advertising.svc.internal",
 			ObservedProcessingEntries: &pb.PurposeBasedProcessing{
-				ProcessingEntries: nil},
+				ProcessingEntries: map[string]*pb.DataItemAndThirdParties{
+					"advertising": {
+						Entry: map[string]*pb.ThirdParties{
+							"<EMAIL_ADDRESS>": {
+								ThirdParty: []string{
+									"google.com",
+									"facebook.com",
+								},
+							},
+						},
+					},
+				},
+			},
 		},
 	)
 	if err != nil {
-		log.Fatalf("could not post observed profile: %v", err)
+		log.Fatalf("got this error when posting observed profile: %v", err)
 	}
 
 	profile, err := c.GetSystemWideProfile(ctx, &emptypb.Empty{})
 	if err != nil {
-		log.Fatalf("could not fetch system wide profile: %v", err)
+		log.Fatalf("got this error when fetching system wide profile: %v", err)
 	}
 	log.Println(profile)
 }
