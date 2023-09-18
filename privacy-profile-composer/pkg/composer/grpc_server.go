@@ -18,7 +18,7 @@ func (s server) PostObservedProfile(
 	if profile != nil {
 		s.systemWideProfile = Composer(s.systemWideProfile, *profile)
 	}
-	return nil, nil
+	return &emptypb.Empty{}, nil
 }
 
 func (s server) GetSystemWideProfile(
