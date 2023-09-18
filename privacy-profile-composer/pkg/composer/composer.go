@@ -1,6 +1,6 @@
 package composer
 
-import "privacy-profile-composer/proto"
+import "privacy-profile-composer/pkg/proto"
 
 // Adapted from fp-ts
 // https://github.com/gcanti/fp-ts/blob/01b8661f2fa594d6f2010573f010d358e6808d13/src/ReadonlyRecord.ts#L1232

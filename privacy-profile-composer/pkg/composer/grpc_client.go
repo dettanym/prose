@@ -27,7 +27,7 @@ import (
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-	pb "privacy-profile-composer/proto"
+	pb "privacy-profile-composer/pkg/proto"
 )
 
 var (

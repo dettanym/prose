@@ -8,7 +8,7 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 	"log"
 	"net"
-	pb "privacy-profile-composer/proto"
+	pb "privacy-profile-composer/pkg/proto"
 )
 
 func (s server) PostObservedProfile(

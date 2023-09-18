@@ -2,7 +2,7 @@ syntax = "proto3";
 import "google/protobuf/empty.proto";
 package privacy_profiles;
 
-option go_package = "privacy-profile-composer/proto";
+option go_package = "privacy-profile-composer/pkg/proto";
 
 message SystemwideObservedProfile {
   purposeBasedProcessing systemwideProcessingEntries = 1;

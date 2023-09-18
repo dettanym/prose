@@ -1,7 +1,7 @@
 package main
 
 import (
-	"privacy-profile-composer/composer"
+	"privacy-profile-composer/pkg/composer"
 	"time"
 )
 
