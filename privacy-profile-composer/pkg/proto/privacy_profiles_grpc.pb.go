@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.2.0
 // - protoc             v4.24.2
-// source: privacy_profiles.proto
+// source: pkg/proto/privacy_profiles.proto
 
 package proto
 
@@ -143,5 +143,5 @@ var PrivacyProfileComposer_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "privacy_profiles.proto",
+	Metadata: "pkg/proto/privacy_profiles.proto",
 }
