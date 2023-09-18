@@ -1,4 +1,4 @@
-package main
+package composer
 
 import (
 	"context"
@@ -41,7 +41,7 @@ var (
 	port = flag.Int("port", 50051, "The server port")
 )
 
-func main() {
+func Run_server() {
 	flag.Parse()
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", *port))
 	if err != nil {

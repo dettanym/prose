@@ -1,4 +1,4 @@
-package main
+package composer
 
 import "privacy-profile-composer/proto"
 
