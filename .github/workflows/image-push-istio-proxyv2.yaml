@@ -1,0 +1,44 @@
+name: Push Istio Proxy v2 with custom Golang filter
+
+on:
+  push:
+    branches:
+      - 'main'
+    paths:
+      - 'privacy-profile-composer/**'
+      - 'istio-proxyv2/**'
+  schedule:
+    # Runs every Thursday midnight
+    - cron: '0 0 * * 4'
+
+jobs:
+  push_istio_proxyv2_to_registry:
+    name: Push custom Istio Proxy V2 image to GHCR
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v4
+        with:
+          images: ghcr.io/dettanym/prose-istio-proxyv2
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: istio-proxyv2/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
