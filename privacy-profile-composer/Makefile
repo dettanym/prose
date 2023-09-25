@@ -8,3 +8,6 @@ all:
 
 run:
 	go run ./cmd/grpc_test
+
+run-server:
+	go run ./cmd/opa-composer-server --policy_file ./pkg/opa/policy-and-logic/policy.rego
