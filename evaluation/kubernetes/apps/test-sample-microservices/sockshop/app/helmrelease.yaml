@@ -1,0 +1,29 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: sockshop
+spec:
+  interval: 15m
+  chart:
+    spec:
+      chart: ./deploy/kubernetes/helm-chart
+      sourceRef:
+        kind: GitRepository
+        name: sockshop
+        namespace: flux-system
+  maxHistory: 3
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      retries: 3
+  uninstall:
+    keepHistory: false
+  values:
+    loadtest:
+      enabled: true
+    ingress:
+      host: "sockshop.${SECRET_DOMAIN}"

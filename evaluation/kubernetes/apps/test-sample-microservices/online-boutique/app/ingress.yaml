@@ -1,0 +1,23 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  labels:
+    app.kubernetes.io/instance: online-boutique
+    app.kubernetes.io/name: online-boutique
+  name: online-boutique
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: &host "online-boutique.${SECRET_DOMAIN}"
+    http:
+      paths:
+      - backend:
+          service:
+            name: frontend
+            port:
+              number: 80
+        path: /
+        pathType: Prefix
+  tls:
+  - hosts:
+    - *host

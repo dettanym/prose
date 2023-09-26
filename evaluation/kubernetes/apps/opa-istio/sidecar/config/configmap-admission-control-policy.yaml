@@ -1,0 +1,60 @@
+############################################################
+# OPA admission control policy for injecting OPA-Istio.
+############################################################
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  namespace: opa-istio
+  name: inject-policy
+data:
+  inject.rego: |
+    package istio
+
+    uid := input.request.uid
+
+    inject = {
+      "apiVersion": "admission.k8s.io/v1",
+      "kind": "AdmissionReview",
+      "response": {
+        "allowed": true,
+        "uid": uid,
+        "patchType": "JSONPatch",
+        "patch": base64.encode(json.marshal(patch)),
+      },
+    }
+
+    patch = [{
+      "op": "add",
+      "path": "/spec/containers/-",
+      "value": opa_container,
+    }]
+
+    opa_container = {
+      "image": "openpolicyagent/opa:latest-istio@sha256:7b86610f2bc2723ea61b5c1c6354ec34f70fa35269e49c14174675d59e406105",
+      "name": "opa-istio",
+      "args": [
+        "run",
+        "--server",
+        "--addr=localhost:8181",
+        "--diagnostic-addr=0.0.0.0:8282",
+        "--set=plugins.envoy_ext_authz_grpc.addr=:9191",
+        "--set=plugins.envoy_ext_authz_grpc.path=envoy/authz/allow",
+        "--set=services.bundles.url=http://prose.prose-system.svc.cluster.local:8080",
+        "--set=bundles.default.resource=bundle.tar.gz",
+        "--set=decision_logs.console=true",
+      ],
+    #The HTTP Health request doesn't work as the OPA container returns a result of 'null' instead of true or false.    
+    #Potentially some hidden code in the policy.rego file could impact this. 
+    #Relevant issue: https://github.com/open-policy-agent/opa/issues/4918
+      "readinessProbe": {
+        "tcpSocket": {
+          "port": 8282,
+        },
+      },
+      "livenessProbe": {
+        "tcpSocket": {
+          "port": 8282,
+        },
+      }
+    }
+---

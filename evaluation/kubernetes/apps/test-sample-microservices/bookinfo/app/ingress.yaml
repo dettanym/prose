@@ -1,0 +1,23 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  labels:
+    app.kubernetes.io/instance: bookinfo
+    app.kubernetes.io/name: bookinfo
+  name: bookinfo
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: &host "bookinfo.${SECRET_DOMAIN}"
+      http:
+        paths:
+          - backend:
+              service:
+                name: productpage
+                port:
+                  number: 9080
+            path: /
+            pathType: Prefix
+  tls:
+    - hosts:
+        - *host

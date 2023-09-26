@@ -1,0 +1,180 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: EnvoyFilter
+metadata:
+  name: reviews-lua
+  namespace: istio-system
+spec:
+  workloadSelector:
+    labels:
+      app: reviews
+  configPatches:
+    # The first patch adds the lua filter to the listener/http connection manager
+    - applyTo: HTTP_FILTER
+      match:
+        context: SIDECAR_INBOUND
+        listener:
+          portNumber: 9080
+          filterChain:
+            filter:
+              name: "envoy.filters.network.http_connection_manager"
+              subFilter:
+                name: "envoy.filters.http.router"
+      patch:
+        operation: INSERT_BEFORE
+        value: # lua filter specification
+          name: envoy-inbound.lua
+          typed_config:
+            "@type": "type.googleapis.com/envoy.extensions.filters.http.lua.v3.Lua"
+            inlineCode: |
+              function envoy_on_request(request_handle)
+                  request_handle:logWarn("hello world >> on request")
+                  -- Log information about the request
+                  request_handle:logWarn("  Authority: "..request_handle:headers():get(":authority"))
+                  request_handle:logWarn("  Method: "..request_handle:headers():get(":method"))
+                  request_handle:logWarn("  Path: "..request_handle:headers():get(":path"))
+                  local streamInfo = request_handle:streamInfo()
+                  request_handle:logWarn("Request handle downstream local address: "..streamInfo:downstreamLocalAddress()..", remote addr:"..streamInfo:downstreamDirectRemoteAddress())
+              end
+
+              function envoy_on_response(response_handle)
+                  response_handle:logWarn("hello world >> on response")
+                  -- Log response status code
+                  response_handle:logWarn("  Response handle status: "..response_handle:headers():get(":status"))
+                  local streamInfo = response_handle:streamInfo()
+                  response_handle:logWarn("Response handle downstream local address: "..streamInfo:downstreamLocalAddress()..", remote addr:"..streamInfo:downstreamDirectRemoteAddress())
+                  local body_len = response_handle:body():length()
+                  response_handle:logWarn("  Body: "..response_handle:body():getBytes(0, body_len))
+                  -- Make a call to the presidio service at presidio.prose-system.svc.cluster.local
+                  helper_presidio_call(response_handle)
+              end
+              function helper_presidio_call(handle)
+                  local request_options = {["timeout_ms"] = 1000, ["asynchronous"] = false}
+                  local body_len = handle:body():length()
+                  local body = handle:body():getBytes(0, body_len)
+                  local presidio_headers, presidio_body = response_handle:httpCall(
+                          "prose_cluster",
+                          {
+                              [":method"] = "POST",
+                              -- Create an HTTP body with a json_to_analyze field
+                              [":path"] = "/batchanalyze",
+                              [":authority"] = "presidio.prose-system.svc.cluster.local:3000",
+                              ["Content-Type"] = "application/json"
+                          }
+                  ,
+                          "{\"json_to_analyze\": "..body.."}"
+                  ,        request_options
+                  )
+                  handle:logWarn("  Presidio Body: "..presidio_body)
+                  for key, value in pairs(presidio_headers) do
+                      handle:logWarn("Presidio response header key: "..key..", Value: "..value)
+                  end
+              end
+    # The second patch adds the cluster that is referenced by the lua code
+    # cds match is omitted as a new cluster is being added
+    - applyTo: CLUSTER
+      match:
+        context: SIDECAR_OUTBOUND
+      patch:
+        operation: ADD
+        value: # cluster specification
+          name: "prose_cluster"
+          type: STRICT_DNS
+          connect_timeout: 0.5s
+          lb_policy: ROUND_ROBIN
+          load_assignment:
+            cluster_name: prose_cluster
+            endpoints:
+              - lb_endpoints:
+                  - endpoint:
+                      address:
+                        socket_address:
+                          address: "presidio.prose-system.svc.cluster.local"
+                          port_value: 3000
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: EnvoyFilter
+metadata:
+  name: productpage-lua
+  namespace: istio-system
+spec:
+  workloadSelector:
+    labels:
+      app: productpage
+  configPatches:
+    # The first patch adds the lua filter to the listener/http connection manager
+    - applyTo: HTTP_FILTER
+      match:
+        context: SIDECAR_OUTBOUND
+        listener:
+          filterChain:
+            filter:
+              name: "envoy.filters.network.http_connection_manager"
+              subFilter:
+                name: "envoy.filters.http.router"
+      patch:
+        operation: INSERT_BEFORE
+        value: # lua filter specification
+          name: envoy-outbound.lua
+          typed_config:
+            "@type": "type.googleapis.com/envoy.extensions.filters.http.lua.v3.Lua"
+            inlineCode: |
+              function envoy_on_request(request_handle)
+                  request_handle:logWarn("hello world >> on request")
+                  -- Log information about the request
+                  request_handle:logWarn("  Authority: "..request_handle:headers():get(":authority"))
+                  local method = request_handle:headers():get(":method")
+                  request_handle:logWarn("  Method: "..method)
+                  local path = request_handle:headers():get(":path")
+                  request_handle:logWarn("  Path: "..path)
+                  local streamInfo = request_handle:streamInfo()
+                  request_handle:logWarn("Request handle downstream local address: "..streamInfo:downstreamLocalAddress()..",remote addr:"..streamInfo:downstreamDirectRemoteAddress()..", sni:"..streamInfo:requestedServerName())
+                  -- TODO: And request is external: given by sni? path? 
+                  if method == "POST" then 
+                    helper_presidio_call(request_handle)
+                  end
+              end
+              function helper_presidio_call(handle)
+                  local request_options = {["timeout_ms"] = 1000, ["asynchronous"] = false}
+                  local body_len = handle:body():length()
+                  local body = handle:body():getBytes(0, body_len)
+                  local presidio_headers, presidio_body = response_handle:httpCall(
+                          "prose_cluster",
+                          {
+                              [":method"] = "POST",
+                              -- Create an HTTP body with a json_to_analyze field
+                              [":path"] = "/batchanalyze",
+                              [":authority"] = "presidio.prose-system.svc.cluster.local:3000",
+                              ["Content-Type"] = "application/json"
+                          }
+                  ,
+                          "{\"json_to_analyze\": "..body.."}"
+                  ,        request_options
+                  )
+                  handle:logWarn("  Presidio Body: "..presidio_body)
+                  for key, value in pairs(presidio_headers) do
+                      handle:logWarn("Presidio response header key: "..key..", Value: "..value)
+                  end
+                  handle:headers():add("PII_IDENTIFIED_BY_PRESIDIO", presidio_body)
+              end
+
+    # The second patch adds the cluster that is referenced by the lua code
+    # cds match is omitted as a new cluster is being added
+    - applyTo: CLUSTER
+      match:
+        context: SIDECAR_OUTBOUND
+      patch:
+        operation: ADD
+        value: # cluster specification
+          name: "prose_cluster"
+          type: STRICT_DNS
+          connect_timeout: 0.5s
+          lb_policy: ROUND_ROBIN
+          load_assignment:
+            cluster_name: prose_cluster
+            endpoints:
+              - lb_endpoints:
+                  - endpoint:
+                      address:
+                        socket_address:
+                          address: "presidio.prose-system.svc.cluster.local"
+                          port_value: 3000

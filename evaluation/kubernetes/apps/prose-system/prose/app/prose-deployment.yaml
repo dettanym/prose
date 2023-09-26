@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prose-server
+spec:
+  selector:
+    matchLabels:
+      app: prose-server
+  template:
+    metadata:
+      labels:
+        app: prose-server
+    spec:
+      containers:
+      - name: prose-server
+        image: ghcr.io/dettanym/prose-opa-composer-server:main@sha256:14cbb2a864438d27acfb0b84f3d4227041ab488b206bb7c36e7f57d9c57aeeea
+        ports:
+        - name: http
+          containerPort: 8080
+          protocol: TCP
+        - name: grpc
+          containerPort: 50051
+          protocol: TCP
+        volumeMounts:
+          - mountPath: /app/tmp
+            name: compiled-bundle
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: http
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: http
+        resources:
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+      volumes:
+        - name: compiled-bundle
+          emptyDir:
+            sizeLimit: 1Gi

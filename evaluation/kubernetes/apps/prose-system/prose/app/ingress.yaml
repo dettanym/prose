@@ -1,0 +1,22 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: prose
+  labels:
+    name: prose
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: &host prose.my-example.com
+    http:
+      paths:
+      - pathType: Prefix
+        path: "/"
+        backend:
+          service:
+            name: opa
+            port: 
+              number: 8080
+  tls:
+    - hosts:
+        - *host

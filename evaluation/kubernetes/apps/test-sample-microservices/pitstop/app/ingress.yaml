@@ -1,0 +1,23 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  labels:
+    app.kubernetes.io/instance: pitstop
+    app.kubernetes.io/name: pitstop
+  name: pitstop
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: &host "pitstop.${SECRET_DOMAIN}"
+    http:
+      paths:
+      - backend:
+          service:
+            name: webapp
+            port:
+              number: 7005
+        path: /
+        pathType: Prefix
+  tls:
+  - hosts:
+    - *host

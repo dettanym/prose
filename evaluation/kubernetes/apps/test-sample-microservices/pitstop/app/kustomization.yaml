@@ -1,0 +1,30 @@
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: pitstop
+resources:
+    #Taken from start-all.sh file under src/k8s/
+  - https://raw.githubusercontent.com/EdwinVW/pitstop/8ee8be24575d19fc63b869e14cad61753ef21f73/src/k8s/pitstop-namespace.yaml
+  - https://raw.githubusercontent.com/EdwinVW/pitstop/8ee8be24575d19fc63b869e14cad61753ef21f73/src/k8s/rabbitmq.yaml
+  - https://raw.githubusercontent.com/EdwinVW/pitstop/8ee8be24575d19fc63b869e14cad61753ef21f73/src/k8s/logserver.yaml
+  - https://raw.githubusercontent.com/EdwinVW/pitstop/8ee8be24575d19fc63b869e14cad61753ef21f73/src/k8s/sqlserver.yaml
+  - https://raw.githubusercontent.com/EdwinVW/pitstop/8ee8be24575d19fc63b869e14cad61753ef21f73/src/k8s/mailserver.yaml
+  - https://raw.githubusercontent.com/EdwinVW/pitstop/8ee8be24575d19fc63b869e14cad61753ef21f73/src/k8s/invoiceservice.yaml
+  - https://raw.githubusercontent.com/EdwinVW/pitstop/8ee8be24575d19fc63b869e14cad61753ef21f73/src/k8s/timeservice.yaml
+  - https://raw.githubusercontent.com/EdwinVW/pitstop/8ee8be24575d19fc63b869e14cad61753ef21f73/src/k8s/notificationservice.yaml
+  - https://raw.githubusercontent.com/EdwinVW/pitstop/8ee8be24575d19fc63b869e14cad61753ef21f73/src/k8s/workshopmanagementeventhandler.yaml
+  - https://raw.githubusercontent.com/EdwinVW/pitstop/8ee8be24575d19fc63b869e14cad61753ef21f73/src/k8s/auditlogservice.yaml
+  - https://raw.githubusercontent.com/EdwinVW/pitstop/8ee8be24575d19fc63b869e14cad61753ef21f73/src/k8s/customermanagementapi-v1.yaml
+  - https://raw.githubusercontent.com/EdwinVW/pitstop/8ee8be24575d19fc63b869e14cad61753ef21f73/src/k8s/customermanagementapi-svc.yaml
+  - https://raw.githubusercontent.com/EdwinVW/pitstop/8ee8be24575d19fc63b869e14cad61753ef21f73/src/k8s/vehiclemanagementapi.yaml
+  - https://raw.githubusercontent.com/EdwinVW/pitstop/8ee8be24575d19fc63b869e14cad61753ef21f73/src/k8s/workshopmanagementapi.yaml
+  - https://raw.githubusercontent.com/EdwinVW/pitstop/8ee8be24575d19fc63b869e14cad61753ef21f73/src/k8s/webapp.yaml
+patches:
+  - patch: |-
+      apiVersion: v1
+      kind: Service
+      metadata:
+        name: webapp
+        namespace: pitstop
+      spec:
+        type: NodePort

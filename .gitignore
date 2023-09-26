@@ -1,4 +1,8 @@
-.idea
+.idea/
+.vscode/
+
+/minikube/
+
 envoy
 example
 presidio-full

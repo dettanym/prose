@@ -1,0 +1,59 @@
+apiVersion: opentelemetry.io/v1alpha1
+kind: OpenTelemetryCollector
+metadata:
+  name: demo
+spec:
+  mode: "deployment"
+  #TODO: By default, this sets 'mode: Deployment', creating a Deployment (and a Service?).
+  # For other modes, see here:
+  # https://github.com/open-telemetry/opentelemetry-helm-charts/tree/main/charts/opentelemetry-operator#install-opentelemetry-collector
+  config: |
+    #Configures the OpenTelemetry Operator.
+    # Check the main docs here: https://opentelemetry.io/docs/collector/configuration/
+    # They link to configuration for each of the receivers, processors, exporters keys.
+    # Also check subfolders under the Opentelemetry-collector-contrib repo: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/
+    # for real-life configurations for each of them.
+    # These 3 keys only configure these components; the 'service' key enables them.
+    receivers:
+    # Receivers: Future work - receiving traces from rabbitmq, mysql etc.
+      otlp:
+        protocols:
+          grpc:
+          http:
+    processors:
+    #TODO: k8sattributesprocessor, attributesprocessor, tailsamplingprocessor.
+      memory_limiter:
+        check_interval: 1s
+        limit_percentage: 75
+        spike_limit_percentage: 15
+      batch:
+        send_batch_size: 10000
+        timeout: 10s
+    exporters:
+    #TODO: Configure the tracing exporter correctly.
+      logging:
+      otlp:
+        endpoint: otelcol:4317
+        tls:
+          insecure: true
+    service:
+      pipelines:
+        traces:
+          receivers: [otlp]
+          processors: [memory_limiter, batch]
+          exporters: [logging, otlp]
+        metrics:
+          receivers: [otlp]
+          processors: [memory_limiter, batch]
+          exporters: [logging]
+        logs:
+          receivers: [otlp]
+          processors: [memory_limiter, batch]
+          exporters: [logging]
+  ingress:
+    type: ingress
+    ingressClassName: nginx
+    hostname: "opentelemetry-operator.${SECRET_DOMAIN}"
+    tls:
+    - hosts:
+      - "opentelemetry-operator.${SECRET_DOMAIN}"

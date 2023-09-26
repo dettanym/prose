@@ -1,0 +1,8 @@
+---
+version: "3"
+
+vars:
+  KUBERNETES_DIR: "{{.ROOT_DIR}}/evaluation/kubernetes"
+
+includes:
+  cluster: .taskfiles/cluster/tasks.yml

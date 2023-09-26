@@ -1,0 +1,62 @@
+############################################################
+# OPA admission controller deployment for injecting OPA-Istio.
+############################################################
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: admission-controller
+  namespace: opa-istio
+  name: admission-controller
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: admission-controller
+  template:
+    metadata:
+      labels:
+        app: admission-controller
+      name: admission-controller
+    spec:
+      containers:
+        - image: openpolicyagent/opa:latest@sha256:adb11b6b3f4863b6d5655ec10177338684967561538caedd78d8805590abc3a6
+          name: opa
+          ports:
+            - containerPort: 8443
+          args:
+            - "run"
+            - "--server"
+            - "--tls-cert-file=/certs/tls.crt"
+            - "--tls-private-key-file=/certs/tls.key"
+            - "--addr=0.0.0.0:8443"
+            - "/policies/inject.rego"
+          livenessProbe:
+            httpGet:
+              path: /health?plugins
+              scheme: HTTPS
+              port: 8443
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /health?plugins
+              scheme: HTTPS
+              port: 8443
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          volumeMounts:
+            - readOnly: true
+              mountPath: /certs
+              name: server-cert
+            - readOnly: true
+              mountPath: /policies
+              name: inject-policy
+      volumes:
+        - name: inject-policy
+          configMap:
+            name: inject-policy
+        - name: server-cert
+          secret:
+            secretName: server-cert
+---

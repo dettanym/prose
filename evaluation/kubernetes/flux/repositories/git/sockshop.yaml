@@ -1,0 +1,16 @@
+---
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: GitRepository
+metadata:
+  name: sockshop
+  namespace: flux-system
+spec:
+  interval: 30m
+  url: https://github.com/microservices-demo/microservices-demo
+  ref:
+    commit: 9bffa02d273568b8bddaeaa9e5a3ef6a045b4151
+  ignore: |
+    # exclude all
+    /*
+    # include kubernetes directory
+    !deploy/kubernetes/helm-chart

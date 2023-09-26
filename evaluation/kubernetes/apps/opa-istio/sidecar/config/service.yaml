@@ -1,0 +1,19 @@
+############################################################
+# Service to expose OPA admission controller (required by Kubernetes.)
+############################################################
+apiVersion: v1
+kind: Service
+metadata:
+  name: admission-controller
+  namespace: opa-istio
+  labels:
+    app: admission-controller
+spec:
+  ports:
+    - name: https
+      protocol: TCP
+      port: 443
+      targetPort: 8443
+  selector:
+    app: admission-controller
+---

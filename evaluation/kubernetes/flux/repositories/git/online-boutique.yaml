@@ -1,0 +1,16 @@
+---
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: GitRepository
+metadata:
+  name: online-boutique
+  namespace: flux-system
+spec:
+  interval: 10m
+  url: https://github.com/GoogleCloudPlatform/microservices-demo/
+  ref:
+    tag: v0.8.0
+  ignore: |
+    # exclude all
+    /*
+    # include helm-chart directory
+    !/helm-chart

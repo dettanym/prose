@@ -1,0 +1,9 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: bookinfo
+  labels:
+    kustomize.toolkit.fluxcd.io/prune: disabled
+    istio-injection: enabled
+    opa-istio-injection: enabled

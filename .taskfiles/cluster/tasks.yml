@@ -1,0 +1,21 @@
+---
+version: "3"
+
+tasks:
+  verify:
+    desc: Verify flux meets the prerequisites
+    cmds:
+      - flux check --pre
+
+  install:
+    desc: Install Flux into your cluster
+    cmds:
+      - kubectl apply --kustomize {{.KUBERNETES_DIR}}/bootstrap
+      - kubectl apply -f {{.KUBERNETES_DIR}}/flux/vars/cluster-settings.yaml
+      - kubectl apply --kustomize {{.KUBERNETES_DIR}}/flux/config
+
+  reconcile:
+    desc: Force update Flux to pull in changes from your Git repository
+    cmds:
+      - flux reconcile -n flux-system source git prose-k8s-home-ops
+      - flux reconcile -n flux-system kustomization cluster

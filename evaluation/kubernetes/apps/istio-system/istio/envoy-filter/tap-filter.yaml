@@ -1,0 +1,45 @@
+---
+############################################################
+# Envoy External Authorization filter that will query OPA.
+############################################################
+apiVersion: networking.istio.io/v1alpha3
+kind: EnvoyFilter
+metadata:
+  name: tap-pii-detection
+spec:
+  priority: -1000
+  configPatches:
+    - applyTo: HTTP_FILTER
+      match:
+        context: SIDECAR_INBOUND
+        listener:
+          portNumber: 9080
+          filterChain:
+            filter:
+              name: "envoy.filters.network.http_connection_manager"
+#              subFilter:
+#                name: "envoy.filters.http.router"
+      patch:
+        operation: INSERT_BEFORE
+        value:
+          name: envoy.filters.http.tap
+          typed_config:
+            "@type": type.googleapis.com/envoy.extensions.filters.http.tap.v3.Tap
+            common_config:
+              static_config:
+                match_config:
+                  any_match: true
+#                  http_request_generic_body_match:
+#                    patterns:
+#                      - string_match: email
+#                      - string_match: address
+#                  http_response_generic_body_match:
+#                    patterns:
+#                      - string_match: name
+#                      - string_match: address
+                output_config:
+#                  streaming: true
+                  sinks:
+                    - format: JSON_BODY_AS_STRING
+                      file_per_tap:
+                        path_prefix: /tmp/
