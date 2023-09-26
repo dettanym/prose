@@ -61,6 +61,10 @@ func registerOpaServer() *http.ServeMux {
 		http.ServeFile(w, r, *compiled_bundle)
 	})
 
+	s.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintf(w, "Hello, world!")
+	})
+
 	return s
 }
 
