@@ -8,7 +8,7 @@ RUN apt-get update \
 WORKDIR /app
 
 COPY ./privacy-profile-composer/ ./
-RUN make all
+RUN make build-envoy-filter
 
 FROM istio/proxyv2:1.18.3
 
