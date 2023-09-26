@@ -1,0 +1,34 @@
+---
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: GitRepository
+metadata:
+  name: prose-k8s-home-ops
+  namespace: flux-system
+spec:
+  interval: 30m
+  ref:
+    branch: main
+  url: "https://github.com/dettanym/prose"
+  ignore: |
+    # exclude all
+    /*
+    # include kubernetes directory
+    !/evaluation/kubernetes
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: cluster
+  namespace: flux-system
+spec:
+  interval: 30m
+  path: ./evaluation/kubernetes/flux
+  prune: true
+  wait: false
+  sourceRef:
+    kind: GitRepository
+    name: prose-k8s-home-ops
+  postBuild:
+    substituteFrom:
+      - kind: ConfigMap
+        name: cluster-settings

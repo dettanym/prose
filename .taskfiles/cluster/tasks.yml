@@ -10,11 +10,9 @@ tasks:
   install:
     desc: Install Flux into your cluster
     cmds:
-      - kubectl apply --kustomize {{.KUBERNETES_DIR}}/{{.cluster}}/bootstrap
-      - kubectl apply -f {{.KUBERNETES_DIR}}/{{.cluster}}/flux/vars/cluster-settings.yaml
-      - kubectl apply --kustomize {{.KUBERNETES_DIR}}/{{.cluster}}/flux/config
-    vars:
-      cluster: '{{ .cluster | default "cluster-1" }}'
+      - kubectl apply --kustomize {{.KUBERNETES_DIR}}/bootstrap
+      - kubectl apply -f {{.KUBERNETES_DIR}}/flux/vars/cluster-settings.yaml
+      - kubectl apply --kustomize {{.KUBERNETES_DIR}}/flux/config
 
   reconcile:
     desc: Force update Flux to pull in changes from your Git repository

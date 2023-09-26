@@ -35,33 +35,26 @@
 ## Repository structure
 
 ```
-/kubernetes/cluster-1/bootstrap/kustomization.yaml
+/evaluation/kubernetes/bootstrap/kustomization.yaml
 
-/kubernetes/cluster-1/config/kustomization.yaml
-/kubernetes/cluster-1/config/cluster.yaml
-/kubernetes/cluster-1/config/something.yaml
+/evaluation/kubernetes/config/kustomization.yaml
+/evaluation/kubernetes/config/cluster.yaml
+/evaluation/kubernetes/config/something.yaml
 
-/kubernetes/cluster-1/apps/default/kustomization.yaml
-/kubernetes/cluster-1/apps/default/namespace.yaml
-/kubernetes/cluster-1/apps/default/jellyfin/ks.yaml
-/kubernetes/cluster-1/apps/default/jellyfin/app/kustomization.yaml
-/kubernetes/cluster-1/apps/default/jellyfin/app/helmrelease.yaml
-/kubernetes/cluster-1/apps/default/jellyfin/app/secret.sops.yaml
+/evaluation/kubernetes/apps/default/kustomization.yaml
+/evaluation/kubernetes/apps/default/namespace.yaml
+/evaluation/kubernetes/apps/default/jellyfin/ks.yaml
+/evaluation/kubernetes/apps/default/jellyfin/app/kustomization.yaml
+/evaluation/kubernetes/apps/default/jellyfin/app/helmrelease.yaml
+/evaluation/kubernetes/apps/default/jellyfin/app/secret.sops.yaml
 
-/kubernetes/cluster-1/apps/sockshop/kustomization.yaml
-/kubernetes/cluster-1/apps/sockshop/deployment.yaml
-/kubernetes/cluster-1/apps/sockshop/ingress.yaml
-
-
-
-/kubernetes/cluster-2/bootstrap/kustomization.yaml
-/kubernetes/cluster-2/config/kustomization.yaml
-/kubernetes/cluster-2/config/cluster.yaml
-/kubernetes/cluster-2/config/something.yaml
+/evaluation/kubernetes/apps/sockshop/kustomization.yaml
+/evaluation/kubernetes/apps/sockshop/deployment.yaml
+/evaluation/kubernetes/apps/sockshop/ingress.yaml
 ```
 
 ## Work on the cluster
 1. Commit and push changes to the main branch of this repo.
-2. Flux will watch for changes to the main branch and automatically deploy them [every half an hour](./kubernetes/cluster-1/flux/config/cluster.yaml#L8).
+2. Flux will watch for changes to the main branch and automatically deploy them [every half an hour](./evaluation/kubernetes/flux/config/cluster.yaml#L8).
 3. To deploy them immediately, run `task cluster:reconcile`, which is defined [here](./.taskfiles/cluster/tasks.yml#L19)
 4. TODO: Describe using helm / flux suspend to debug. 
