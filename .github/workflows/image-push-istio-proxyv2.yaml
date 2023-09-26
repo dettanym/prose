@@ -6,7 +6,7 @@ on:
       - 'main'
     paths:
       - 'privacy-profile-composer/**'
-      - 'istio-proxyv2/**'
+      - 'docker/istio-proxyv2.Dockerfile'
   schedule:
     # Runs every Thursday midnight
     - cron: '0 0 * * 4'
@@ -38,7 +38,7 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           context: .
-          file: istio-proxyv2/Dockerfile
+          file: docker/istio-proxyv2.Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

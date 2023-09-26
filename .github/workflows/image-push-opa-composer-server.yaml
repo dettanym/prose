@@ -1,0 +1,53 @@
+name: Push Prose (OPA, composer) service image to container registry
+
+on:
+  push:
+    # Runs on any pushes to "(tags OR branches) AND paths" (which filters paths)
+    # During development, if we push to these paths under non-main branches
+    # no images will be released. If we push to these paths in the main branch,
+    # an image will be released with the 'main' tag. (These images will not be
+    # deployed anywhere as they do not affect the prose-k8s-home-ops repo.)
+    # For production, we must include the "opa-composer-server/vX.Y.Z" tag.
+    # (prose-k8s-home-ops repo or its renovatebot are configured to look for
+    # images with this tag).
+    tags:
+      - 'opa-composer-server/v**'
+    branches:
+      - 'main'
+    paths:
+      - 'privacy-profile-composer/**'
+      - 'docker/opa-composer-server.Dockerfile'
+
+jobs:
+  build_and_push:
+    name: Build and Push
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v4
+        with:
+          images: ghcr.io/dettanym/prose-opa-composer-server
+          tags: |
+            type=match,pattern=opa-composer-server/(v\d.\d.\d),group=1
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: docker/opa-composer-server.Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
