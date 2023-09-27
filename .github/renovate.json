@@ -9,7 +9,7 @@
     ":automergeDigest",
     ":automergeBranch",
     ":semanticCommits",
-    "github>dettanym/prose-k8s-home-ops//.github/renovate/groups.json"
+    "github>dettanym/prose//.github/renovate/groups.json"
   ],
   "dependencyDashboardTitle": "Renovate Dashboard 🤖",
   "schedule": ["every tuesday"],
