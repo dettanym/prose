@@ -61,10 +61,10 @@ func (f *filter) DecodeData(buffer api.BufferInstance, endStream bool) api.Statu
 	//	url.Values{"json_to_analyze": {string(jsonData)}})
 
 	if err != nil {
-		log.Printf(err.Error())
+		log.Printf("presidio post error: ", err.Error())
 		return api.Continue
 	}
-	log.Printf(resp.Status, resp.Body)
+	log.Printf("Presidio response status and body:", resp.Status, resp.Body)
 	return api.Continue
 }
 
