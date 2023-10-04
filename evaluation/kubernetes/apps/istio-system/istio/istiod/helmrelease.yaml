@@ -29,7 +29,8 @@ spec:
     keepHistory: false
   values:
     global:
+      imagePullPolicy: Always
       proxy_init:
-        image: ghcr.io/dettanym/prose-istio-proxyv2:main@sha256:d63de68f2d04f16bdf5bffe7d0b3c3b862b91a61acf4a9f8dd939a23c96a9423
+        image: ghcr.io/dettanym/prose-istio-proxyv2:main
       proxy:
-        image: ghcr.io/dettanym/prose-istio-proxyv2:main@sha256:d63de68f2d04f16bdf5bffe7d0b3c3b862b91a61acf4a9f8dd939a23c96a9423
+        image: ghcr.io/dettanym/prose-istio-proxyv2:main
