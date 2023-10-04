@@ -23,6 +23,7 @@ type config struct {
 }
 
 type parser struct {
+	api.StreamFilterConfigParser
 }
 
 func (p *parser) Parse(any *anypb.Any, callbacks api.ConfigCallbackHandler) (interface{}, error) {
