@@ -1,0 +1,66 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: EnvoyFilter
+metadata:
+  name: reviews-golang
+  namespace: istio-system
+spec:
+  workloadSelector:
+    labels:
+      app: reviews
+  configPatches:
+    - applyTo: HTTP_FILTER
+      match:
+        context: SIDECAR_INBOUND
+        listener:
+          portNumber: 9080
+          filterChain:
+            filter:
+              name: "envoy.filters.network.http_connection_manager"
+              subFilter:
+                name: "envoy.filters.http.router"
+      patch:
+        operation: INSERT_BEFORE
+        value:
+          name: golangfilter-inbound
+          typed_config:
+            "@type": type.googleapis.com/envoy.extensions.filters.http.golang.v3alpha.Config
+            library_id: simple
+            library_path: "/etc/envoy/simple.so"
+            plugin_name: simple
+            plugin_config:
+              "@type": type.googleapis.com/xds.type.v3.TypedStruct
+              value:
+                prefix_localreply_body: "Configured local reply from go"
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: EnvoyFilter
+metadata:
+  name: productpage-golang
+  namespace: istio-system
+spec:
+  workloadSelector:
+    labels:
+      app: productpage
+  configPatches:
+    - applyTo: HTTP_FILTER
+      match:
+        context: SIDECAR_OUTBOUND
+        listener:
+          filterChain:
+            filter:
+              name: "envoy.filters.network.http_connection_manager"
+              subFilter:
+                name: "envoy.filters.http.router"
+      patch:
+        operation: INSERT_BEFORE
+        value:
+          name: golangfilter-outbound
+          typed_config:
+            "@type": type.googleapis.com/envoy.extensions.filters.http.golang.v3alpha.Config
+            library_id: simple
+            library_path: "/etc/envoy/simple.so"
+            plugin_name: simple
+            plugin_config:
+              "@type": type.googleapis.com/xds.type.v3.TypedStruct
+              value:
+                prefix_localreply_body: "Configured local reply from go"
