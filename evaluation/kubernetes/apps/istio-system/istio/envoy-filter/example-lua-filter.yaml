@@ -1,12 +1,12 @@
 apiVersion: networking.istio.io/v1alpha3
 kind: EnvoyFilter
 metadata:
-  name: reviews-lua
+  name: productpage-lua-inbound
   namespace: istio-system
 spec:
   workloadSelector:
     labels:
-      app: reviews
+      app: productpage
   configPatches:
     # The first patch adds the lua filter to the listener/http connection manager
     - applyTo: HTTP_FILTER
@@ -94,7 +94,7 @@ spec:
 apiVersion: networking.istio.io/v1alpha3
 kind: EnvoyFilter
 metadata:
-  name: productpage-lua
+  name: productpage-lua-outbound
   namespace: istio-system
 spec:
   workloadSelector:

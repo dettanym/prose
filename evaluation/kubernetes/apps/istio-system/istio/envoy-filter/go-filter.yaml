@@ -1,12 +1,12 @@
 apiVersion: networking.istio.io/v1alpha3
 kind: EnvoyFilter
 metadata:
-  name: reviews-golang
+  name: productpage-golang-inbound
   namespace: istio-system
 spec:
   workloadSelector:
     labels:
-      app: reviews
+      app: productpage
   configPatches:
     - applyTo: HTTP_FILTER
       match:
@@ -35,7 +35,7 @@ spec:
 apiVersion: networking.istio.io/v1alpha3
 kind: EnvoyFilter
 metadata:
-  name: productpage-golang
+  name: productpage-golang-outbound
   namespace: istio-system
 spec:
   workloadSelector:
