@@ -35,16 +35,23 @@ func (f *filter) DecodeHeaders(header api.RequestHeaderMap, endStream bool) api.
 	f.path = header.Path() //Get(":path")
 	f.method = header.Method()
 	f.host = header.Host()
-	contentType, exists := header.Get("Content-Type")
-	log.Printf("contentType: %v, exists or error: %v", contentType, exists)
-	contentLength, exists := header.Get("Content-Length")
-	log.Printf("contentLength: %v, exists or error %v", contentLength, exists)
+
+	contentType, exists := header.Get("content-type")
+	if exists {
+		f.contentType = contentType
+	}
+
+	contentLength, exists := header.Get("content-length")
+	if exists {
+		f.contentLength = contentLength
+	}
 
 	//if f.path == "/localreply_by_config" {
 	//	return f.sendLocalReplyInternal()
 	//}
 
 	log.Println("Path ", f.path, "Method: ", f.method, "Host ", f.host)
+	log.Println("protocol", header.Protocol(), "scheme", header.Scheme())
 
 	header.Range(func(key, value string) bool {
 		log.Printf("  Header: `%v` `%v`\n", key, value)
