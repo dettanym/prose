@@ -67,8 +67,8 @@ func (f *filter) DecodeData(buffer api.BufferInstance, endStream bool) api.Statu
 	//}
 
 	//if f.contentType == "application/json" {
-		var jsonBody = []byte(`{
-			"json_to_analyze": {
+	var jsonBody = []byte(`{
+		"json_to_analyze": {
 			"key_F": {
 				"key_a1": "My phone number is 212-121-1424"
 			},
@@ -80,34 +80,34 @@ func (f *filter) DecodeData(buffer api.BufferInstance, endStream bool) api.Statu
 			"gender": "Female",
 			"race": "Asian",
 			"language": "English"
-			}
-		}`)
-		resp, err := http.Post("http://presidio.prose-system.svc.cluster.local:3000/batchanalyze", "application/json", bytes.NewBuffer(jsonBody))
-		// var jsonData = buffer.Bytes()
-		//resp2, err := http.PostForm("http://presidio.prose-system.svc.cluster.local:3000/batchanalyze",
-		//	url.Values{"json_to_analyze": {string(jsonData)}})
+		}
+	}`)
+	resp, err := http.Post("http://presidio.prose-system.svc.cluster.local:3000/batchanalyze", "application/json", bytes.NewBuffer(jsonBody))
+	// var jsonData = buffer.Bytes()
+	//resp2, err := http.PostForm("http://presidio.prose-system.svc.cluster.local:3000/batchanalyze",
+	//	url.Values{"json_to_analyze": {string(jsonData)}})
 
-		if err != nil {
-			log.Printf("presidio post error: ", err.Error())
-			return api.Continue
-		}
-		contentLen := resp.ContentLength
-		body := make([]byte, contentLen)
-		read, err := resp.Body.Read(body)
-		if err != nil {
-			log.Printf("Could not read Presidio response")
-			return api.Continue
-		}
-		err = resp.Body.Close()
-		if err != nil {
-			log.Printf("could not close presidio response body ", err.Error())
-			return api.Continue
-		}
-		log.Printf("Presidio response status", resp.Status)
-		for key, value := range resp.Header {
-			log.Printf("Presidio response. Key: ", key, " Value: ", value)
-		}
-		log.Printf("Presidio response body --- read ", read, "bytes. Body string: ", body)
+	if err != nil {
+		log.Printf("presidio post error: ", err.Error())
+		return api.Continue
+	}
+	contentLen := resp.ContentLength
+	body := make([]byte, contentLen)
+	read, err := resp.Body.Read(body)
+	if err != nil {
+		log.Printf("Could not read Presidio response")
+		return api.Continue
+	}
+	err = resp.Body.Close()
+	if err != nil {
+		log.Printf("could not close presidio response body ", err.Error())
+		return api.Continue
+	}
+	log.Printf("Presidio response status", resp.Status)
+	for key, value := range resp.Header {
+		log.Printf("Presidio response. Key: ", key, " Value: ", value)
+	}
+	log.Printf("Presidio response body --- read ", read, "bytes. Body string: ", body)
 
 	//}
 	return api.Continue
