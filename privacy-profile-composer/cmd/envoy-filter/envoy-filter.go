@@ -46,9 +46,9 @@ func (f *filter) DecodeHeaders(header api.RequestHeaderMap, endStream bool) api.
 		f.contentLength = contentLength
 	}
 
-	log.Printf("RECEIVED REQUEST\n  %v (proto:%v) %v://%v%v\n", header.Method(), header.Protocol(), header.Scheme(), header.Host(), header.Path())
+	log.Printf("%v (%v) %v://%v%v\n", header.Method(), header.Protocol(), header.Scheme(), header.Host(), header.Path())
 	header.Range(func(key, value string) bool {
-		log.Printf("    \"%v\": %v\n", key, value)
+		log.Printf("  \"%v\": %v\n", key, value)
 		return true
 	})
 
@@ -57,7 +57,7 @@ func (f *filter) DecodeHeaders(header api.RequestHeaderMap, endStream bool) api.
 
 func (f *filter) DecodeData(buffer api.BufferInstance, endStream bool) api.StatusType {
 	log.Println("+++ DECODE DATA")
-	log.Printf("%+v", buffer)
+	log.Println("  <<About to send", buffer.Len(), "bytes of data>>")
 
 	//if f.contentType == "application/x-www-form-urlencoded" {
 	//	dec := json.NewDecoder(bytes.NewReader(buffer.Bytes()))
