@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"github.com/envoyproxy/envoy/contrib/golang/common/go/api"
 	"log"
@@ -13,13 +14,13 @@ var UpdateUpstreamBody = "upstream response body updated by the simple plugin"
 type filter struct {
 	api.PassThroughStreamFilter
 
-	callbacks api.FilterCallbackHandler
-	path      string
-	method    string
-	protocol  string
-	scheme    string
-	host      string
-	config    *config
+	callbacks     api.FilterCallbackHandler
+	path          string
+	method        string
+	contentType   string
+	contentLength string
+	host          string
+	config        *config
 }
 
 func (f *filter) sendLocalReplyInternal() api.StatusType {
@@ -32,25 +33,33 @@ func (f *filter) sendLocalReplyInternal() api.StatusType {
 func (f *filter) DecodeHeaders(header api.RequestHeaderMap, endStream bool) api.StatusType {
 	f.path = header.Path() //Get(":path")
 	f.method = header.Method()
-	f.scheme = header.Scheme()
-	f.protocol = header.Protocol()
 	f.host = header.Host()
-
+	f.contentType, _ = header.Get("Content-Type")
+	f.contentLength, _ = header.Get("Content-Length")
 	//if f.path == "/localreply_by_config" {
 	//	return f.sendLocalReplyInternal()
 	//}
 
 	log.Println("+++ DECODE HEADERS")
-	log.Println("Path ", f.path, "Method: ", f.method, "Scheme ", f.scheme, "Protocol ", f.protocol, "Host ", f.host)
+	log.Println("Path ", f.path, "Method: ", f.method, "Host ", f.host, "Content Type ", f.contentType, "Content Length ", f.contentLength)
 	return api.Continue
 }
 
 func (f *filter) DecodeData(buffer api.BufferInstance, endStream bool) api.StatusType {
 	log.Println("+++ DECODE DATA")
 	log.Printf("%+v", buffer)
-	if f.scheme == "application/json" {
+
+	if f.contentType == "application/x-www-form-urlencoded" {
+		dec := json.NewDecoder(bytes.NewReader(buffer.Bytes()))
+		if dec == nil {
+			log.Printf("Failed to start decoding JSON data")
+			return api.Continue
+		}
+	}
+
+	if f.contentType == "application/json" {
 		var jsonBody = []byte(`{
-		"json_to_analyze": {
+			"json_to_analyze": {
 			"key_F": {
 				"key_a1": "My phone number is 212-121-1424"
 			},
@@ -62,8 +71,8 @@ func (f *filter) DecodeData(buffer api.BufferInstance, endStream bool) api.Statu
 			"gender": "Female",
 			"race": "Asian",
 			"language": "English"
-		}
-	}`)
+			}
+		}`)
 		resp, err := http.Post("http://presidio.prose-system.svc.cluster.local:3000/batchanalyze", "application/json", bytes.NewBuffer(jsonBody))
 		// var jsonData = buffer.Bytes()
 		//resp2, err := http.PostForm("http://presidio.prose-system.svc.cluster.local:3000/batchanalyze",
@@ -78,6 +87,11 @@ func (f *filter) DecodeData(buffer api.BufferInstance, endStream bool) api.Statu
 		read, err := resp.Body.Read(body)
 		if err != nil {
 			log.Printf("Could not read Presidio response")
+			return api.Continue
+		}
+		err = resp.Body.Close()
+		if err != nil {
+			log.Printf("could not close presidio response body ", err.Error())
 			return api.Continue
 		}
 		log.Printf("Presidio response status", resp.Status)
