@@ -130,10 +130,10 @@ func combineSvcInternalFQDNs(systemWideFQDNs []string, svcFQDN string) []string 
 }
 
 func Composer(
-	systemProfile proto.SystemwideObservedProfile,
-	svcProfile proto.SvcObservedProfile,
-) proto.SystemwideObservedProfile {
-	composedProfile := proto.SystemwideObservedProfile{
+	systemProfile *proto.SystemwideObservedProfile,
+	svcProfile *proto.SvcObservedProfile,
+) *proto.SystemwideObservedProfile {
+	composedProfile := &proto.SystemwideObservedProfile{
 		SystemwideProcessingEntries: combinerMiddle(
 			systemProfile.SystemwideProcessingEntries,
 			svcProfile.ObservedProcessingEntries,
