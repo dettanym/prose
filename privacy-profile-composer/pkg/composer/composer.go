@@ -1,6 +1,9 @@
 package composer
 
-import "privacy-profile-composer/pkg/proto"
+import (
+	"privacy-profile-composer/pkg/proto"
+	"slices"
+)
 
 // Adapted from fp-ts
 // https://github.com/gcanti/fp-ts/blob/01b8661f2fa594d6f2010573f010d358e6808d13/src/ReadonlyRecord.ts#L1232
@@ -116,6 +119,16 @@ func combinerMiddle(
 	return &processingOut
 }
 
+func combineSvcInternalFQDNs(systemWideFQDNs []string, svcFQDN string) []string {
+	indexOfSvcFQDN := slices.IndexFunc(systemWideFQDNs, func(givenSvcFQDN string) bool {
+		return givenSvcFQDN == svcFQDN
+	})
+	if indexOfSvcFQDN == -1 {
+		systemWideFQDNs = append(systemWideFQDNs, svcFQDN)
+	}
+	return systemWideFQDNs
+}
+
 func Composer(
 	systemProfile proto.SystemwideObservedProfile,
 	svcProfile proto.SvcObservedProfile,
@@ -125,7 +138,9 @@ func Composer(
 			systemProfile.SystemwideProcessingEntries,
 			svcProfile.ObservedProcessingEntries,
 		),
-		ComposedServicesInternalFQDNs: systemProfile.ComposedServicesInternalFQDNs,
+		ComposedServicesInternalFQDNs: combineSvcInternalFQDNs(
+			systemProfile.ComposedServicesInternalFQDNs,
+			svcProfile.SvcInternalFQDN),
 	}
 
 	return composedProfile
