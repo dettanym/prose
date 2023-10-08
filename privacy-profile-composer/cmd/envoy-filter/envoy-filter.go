@@ -57,7 +57,7 @@ func (f *filter) DecodeHeaders(header api.RequestHeaderMap, endStream bool) api.
 
 func (f *filter) DecodeData(buffer api.BufferInstance, endStream bool) api.StatusType {
 	log.Println("+++ DECODE DATA")
-	log.Println("  <<About to send", buffer.Len(), "bytes of data>>")
+	log.Println("  <<About to forward", buffer.Len(), "bytes of data to service>>")
 
 	//if f.contentType == "application/x-www-form-urlencoded" {
 	//	dec := json.NewDecoder(bytes.NewReader(buffer.Bytes()))
@@ -127,7 +127,14 @@ func (f *filter) EncodeHeaders(header api.ResponseHeaderMap, endStream bool) api
 	//header.Set("Rsp-Header-From-Go", "bar-test")
 
 	log.Println("+++ ENCODE HEADERS")
-	log.Printf("%+v", header)
+
+	status, statusWasSet := header.Status()
+	log.Printf("Status was set (%v) to %v with response headers:\n", statusWasSet, status)
+	header.Range(func(key, value string) bool {
+		log.Printf("  \"%v\": %v\n", key, value)
+		return true
+	})
+
 	return api.Continue
 }
 
@@ -142,7 +149,7 @@ func (f *filter) EncodeData(buffer api.BufferInstance, endStream bool) api.Statu
 	//	}
 	//}
 	log.Println("+++ ENCODE DATA")
-	log.Printf("%+v", buffer)
+	log.Println("  <<About to forward", buffer.Len(), "bytes of data to client>>")
 	return api.Continue
 }
 
