@@ -30,7 +30,7 @@ func (f *filter) sendLocalReplyInternal() api.StatusType {
 
 // Callbacks which are called in request path
 func (f *filter) DecodeHeaders(header api.RequestHeaderMap, endStream bool) api.StatusType {
-	log.Println("+++ DECODE HEADERS")
+	log.Println(">>> DECODE HEADERS")
 
 	f.path = header.Path() //Get(":path")
 	f.method = header.Method()
@@ -56,7 +56,7 @@ func (f *filter) DecodeHeaders(header api.RequestHeaderMap, endStream bool) api.
 }
 
 func (f *filter) DecodeData(buffer api.BufferInstance, endStream bool) api.StatusType {
-	log.Println("+++ DECODE DATA")
+	log.Println(">>> DECODE DATA")
 	log.Println("  <<About to forward", buffer.Len(), "bytes of data to service>>")
 
 	//if f.contentType == "application/x-www-form-urlencoded" {
@@ -115,7 +115,7 @@ func (f *filter) DecodeData(buffer api.BufferInstance, endStream bool) api.Statu
 }
 
 func (f *filter) DecodeTrailers(trailers api.RequestTrailerMap) api.StatusType {
-	log.Println("+++ DECODE TRAILERS")
+	log.Println(">>> DECODE TRAILERS")
 	log.Printf("%+v", trailers)
 	return api.Continue
 }
@@ -126,7 +126,7 @@ func (f *filter) EncodeHeaders(header api.ResponseHeaderMap, endStream bool) api
 	//}
 	//header.Set("Rsp-Header-From-Go", "bar-test")
 
-	log.Println("+++ ENCODE HEADERS")
+	log.Println("<<< ENCODE HEADERS")
 
 	status, statusWasSet := header.Status()
 	log.Printf("Status was set (%v) to %v with response headers:\n", statusWasSet, status)
@@ -148,13 +148,13 @@ func (f *filter) EncodeData(buffer api.BufferInstance, endStream bool) api.Statu
 	//		buffer.SetString("")
 	//	}
 	//}
-	log.Println("+++ ENCODE DATA")
+	log.Println("<<< ENCODE DATA")
 	log.Println("  <<About to forward", buffer.Len(), "bytes of data to client>>")
 	return api.Continue
 }
 
 func (f *filter) EncodeTrailers(trailers api.ResponseTrailerMap) api.StatusType {
-	log.Println("+++ ENCODE TRAILERS")
+	log.Println("<<< ENCODE TRAILERS")
 	log.Printf("%+v", trailers)
 	return api.Continue
 }
