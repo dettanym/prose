@@ -44,7 +44,13 @@ func (f *filter) DecodeHeaders(header api.RequestHeaderMap, endStream bool) api.
 	//	return f.sendLocalReplyInternal()
 	//}
 
-	log.Println("Path ", f.path, "Method: ", f.method, "Host ", f.host, "Content Type ", f.contentType, "Content Length ", f.contentLength)
+	log.Println("Path ", f.path, "Method: ", f.method, "Host ", f.host)
+
+	header.Range(func(key, value string) bool {
+		log.Printf("  Header: `%v` `%v`\n", key, value)
+		return true
+	})
+
 	return api.Continue
 }
 
