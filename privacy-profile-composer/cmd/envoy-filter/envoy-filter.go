@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"github.com/envoyproxy/envoy/contrib/golang/common/go/api"
 	"log"
@@ -31,16 +30,20 @@ func (f *filter) sendLocalReplyInternal() api.StatusType {
 
 // Callbacks which are called in request path
 func (f *filter) DecodeHeaders(header api.RequestHeaderMap, endStream bool) api.StatusType {
+	log.Println("+++ DECODE HEADERS")
+
 	f.path = header.Path() //Get(":path")
 	f.method = header.Method()
 	f.host = header.Host()
-	f.contentType, _ = header.Get("Content-Type")
-	f.contentLength, _ = header.Get("Content-Length")
+	contentType, exists := header.Get("Content-Type")
+	log.Printf("contentType: %v, exists or error: %v", contentType, exists)
+	contentLength, exists := header.Get("Content-Length")
+	log.Printf("contentLength: %v, exists or error %v", contentLength, exists)
+
 	//if f.path == "/localreply_by_config" {
 	//	return f.sendLocalReplyInternal()
 	//}
 
-	log.Println("+++ DECODE HEADERS")
 	log.Println("Path ", f.path, "Method: ", f.method, "Host ", f.host, "Content Type ", f.contentType, "Content Length ", f.contentLength)
 	return api.Continue
 }
@@ -49,15 +52,15 @@ func (f *filter) DecodeData(buffer api.BufferInstance, endStream bool) api.Statu
 	log.Println("+++ DECODE DATA")
 	log.Printf("%+v", buffer)
 
-	if f.contentType == "application/x-www-form-urlencoded" {
-		dec := json.NewDecoder(bytes.NewReader(buffer.Bytes()))
-		if dec == nil {
-			log.Printf("Failed to start decoding JSON data")
-			return api.Continue
-		}
-	}
+	//if f.contentType == "application/x-www-form-urlencoded" {
+	//	dec := json.NewDecoder(bytes.NewReader(buffer.Bytes()))
+	//	if dec == nil {
+	//		log.Printf("Failed to start decoding JSON data")
+	//		return api.Continue
+	//	}
+	//}
 
-	if f.contentType == "application/json" {
+	//if f.contentType == "application/json" {
 		var jsonBody = []byte(`{
 			"json_to_analyze": {
 			"key_F": {
@@ -100,7 +103,7 @@ func (f *filter) DecodeData(buffer api.BufferInstance, endStream bool) api.Statu
 		}
 		log.Printf("Presidio response body --- read ", read, "bytes. Body string: ", body)
 
-	}
+	//}
 	return api.Continue
 }
 
