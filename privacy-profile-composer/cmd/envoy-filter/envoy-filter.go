@@ -96,7 +96,7 @@ func (f *filter) DecodeData(buffer api.BufferInstance, endStream bool) api.Statu
 	body := make([]byte, contentLen)
 	read, err := resp.Body.Read(body)
 	if err != nil {
-		log.Printf("Could not read Presidio response")
+		log.Printf("Could not read Presidio response, %v", err.Error())
 		return api.Continue
 	}
 	err = resp.Body.Close()
