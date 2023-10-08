@@ -46,15 +46,9 @@ func (f *filter) DecodeHeaders(header api.RequestHeaderMap, endStream bool) api.
 		f.contentLength = contentLength
 	}
 
-	//if f.path == "/localreply_by_config" {
-	//	return f.sendLocalReplyInternal()
-	//}
-
-	log.Println("Path ", f.path, "Method: ", f.method, "Host ", f.host)
-	log.Println("protocol", header.Protocol(), "scheme", header.Scheme())
-
+	log.Printf("RECEIVED REQUEST\n  %v (proto:%v) %v://%v%v\n", header.Method(), header.Protocol(), header.Scheme(), header.Host(), header.Path())
 	header.Range(func(key, value string) bool {
-		log.Printf("  Header: `%v` `%v`\n", key, value)
+		log.Printf("    \"%v\": %v\n", key, value)
 		return true
 	})
 
