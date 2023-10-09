@@ -73,7 +73,12 @@ func sendComposedProfile(fqdn string, purpose string, piiTypes []string, thirdPa
 		log.Printf("can not connect to Composer SVC at addr %v. ERROR: %v", composerSvcAddr, err)
 		return api.Continue
 	}
-	defer conn.Close()
+	defer func(conn *grpc.ClientConn) {
+		err = conn.Close()
+		if err != nil {
+			log.Printf("could not close connection to Composer server %s", err)
+		}
+	}(conn)
 	c := pb.NewPrivacyProfileComposerClient(conn)
 
 	// Contact the server and print out its response.
