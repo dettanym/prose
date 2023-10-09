@@ -6,9 +6,9 @@ import (
 	"flag"
 	"fmt"
 	"github.com/envoyproxy/envoy/contrib/golang/common/go/api"
-	"io"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"io"
 	"log"
 	"net/http"
 	pb "privacy-profile-composer/pkg/proto"
@@ -61,7 +61,7 @@ func (f *filter) DecodeHeaders(header api.RequestHeaderMap, endStream bool) api.
 	return api.Continue
 }
 
-func (f *filter) sendComposedProfile(fqdn string, purpose string, piiTypes []string, thirdParties []string) api.StatusType {
+func sendComposedProfile(fqdn string, purpose string, piiTypes []string, thirdParties []string) api.StatusType {
 	var (
 		composerSvcAddr = flag.String("addr", "http://prose-server.prose-system.svc.cluster.local:50051", "the address to connect to")
 	)
@@ -166,7 +166,7 @@ func (f *filter) DecodeData(buffer api.BufferInstance, endStream bool) api.Statu
 
 	piiTypes := []string{"EMAIL", "LOCATION"}
 	thirdParties := make([]string, 0)
-	return f.sendComposedProfile("advertising.svc.internal", "advertising", piiTypes, thirdParties)
+	return sendComposedProfile("advertising.svc.internal", "advertising", piiTypes, thirdParties)
 }
 
 func (f *filter) DecodeTrailers(trailers api.RequestTrailerMap) api.StatusType {
