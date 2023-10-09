@@ -113,7 +113,7 @@ func (f *filter) DecodeData(buffer api.BufferInstance, endStream bool) api.Statu
 		log.Printf("  \"%v\": %v\n", key, value)
 	}
 	log.Println("presidio response body:")
-	log.Printf("%v\n", body)
+	log.Printf("%v\n", string(body))
 
 	//}
 	return api.Continue
