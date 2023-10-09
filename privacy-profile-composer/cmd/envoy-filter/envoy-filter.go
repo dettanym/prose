@@ -2,11 +2,16 @@ package main
 
 import (
 	"bytes"
+	"context"
+	"flag"
 	"fmt"
 	"github.com/envoyproxy/envoy/contrib/golang/common/go/api"
 	"io"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	"log"
 	"net/http"
+	pb "privacy-profile-composer/pkg/proto"
 )
 
 var UpdateUpstreamBody = "upstream response body updated by the simple plugin"
@@ -53,6 +58,48 @@ func (f *filter) DecodeHeaders(header api.RequestHeaderMap, endStream bool) api.
 		return true
 	})
 
+	return api.Continue
+}
+
+func (f *filter) sendComposedProfile(fqdn string, purpose string, piiTypes []string, thirdParties []string) api.StatusType {
+	var (
+		composerSvcAddr = flag.String("addr", "http://prose-server.prose-system.svc.cluster.local:50051", "the address to connect to")
+	)
+
+	flag.Parse()
+	// Set up a connection to the server.
+	conn, err := grpc.Dial(*composerSvcAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		log.Printf("can not connect to Composer SVC at addr %v. ERROR: %v", composerSvcAddr, err)
+		return api.Continue
+	}
+	defer conn.Close()
+	c := pb.NewPrivacyProfileComposerClient(conn)
+
+	// Contact the server and print out its response.
+	ctx := context.Background()
+
+	processingEntries := make(map[string]*pb.DataItemAndThirdParties, len(piiTypes))
+	for _, pii := range piiTypes {
+		dataItemThirdParties := map[string]*pb.ThirdParties{
+			pii: {
+				ThirdParty: thirdParties,
+			},
+		}
+		processingEntries[purpose] = &pb.DataItemAndThirdParties{Entry: dataItemThirdParties}
+	}
+	_, err = c.PostObservedProfile(
+		ctx,
+		&pb.SvcObservedProfile{
+			SvcInternalFQDN: fqdn,
+			ObservedProcessingEntries: &pb.PurposeBasedProcessing{
+				ProcessingEntries: processingEntries},
+		},
+	)
+
+	if err != nil {
+		log.Printf("got this error when posting observed profile: %v", err)
+	}
 	return api.Continue
 }
 
@@ -116,7 +163,10 @@ func (f *filter) DecodeData(buffer api.BufferInstance, endStream bool) api.Statu
 	log.Printf("%v\n", string(body))
 
 	//}
-	return api.Continue
+
+	piiTypes := []string{"EMAIL", "LOCATION"}
+	thirdParties := make([]string, 0)
+	return f.sendComposedProfile("advertising.svc.internal", "advertising", piiTypes, thirdParties)
 }
 
 func (f *filter) DecodeTrailers(trailers api.RequestTrailerMap) api.StatusType {
@@ -166,41 +216,3 @@ func (f *filter) EncodeTrailers(trailers api.ResponseTrailerMap) api.StatusType 
 
 func (f *filter) OnDestroy(reason api.DestroyReason) {
 }
-
-//var (
-//	// addr = flag.String("addr", "localhost:50051", "the address to connect to")
-//	addr = flag.String("addr", "prose-system.svc.cluster.local", "the address to connect to")
-//)
-//
-//func setup() {
-//	flag.Parse()
-//	// Set up a connection to the server.
-//	conn, err := grpc.Dial(*addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
-//	if err != nil {
-//		log.Fatalf("did not connect: %v", err)
-//	}
-//	defer conn.Close()
-//	c := pb.NewPrivacyProfileComposerClient(conn)
-//
-//	// Contact the server and print out its response.
-//	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-//	defer cancel()
-//
-//	_, err = c.PostObservedProfile(
-//		ctx,
-//		&pb.SvcObservedProfile{
-//			SvcInternalFQDN: "advertising.svc.internal",
-//			ObservedProcessingEntries: &pb.PurposeBasedProcessing{
-//				ProcessingEntries: nil},
-//		},
-//	)
-//	if err != nil {
-//		log.Fatalf("could not post observed profile: %v", err)
-//	}
-//
-//	profile, err := c.GetSystemWideProfile(ctx, &emptypb.Empty{})
-//	if err != nil {
-//		log.Fatalf("could not fetch system wide profile: %v", err)
-//	}
-//	log.Println(profile)
-//}
