@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"github.com/envoyproxy/envoy/contrib/golang/common/go/api"
@@ -112,13 +113,14 @@ func (f *filter) DecodeData(buffer api.BufferInstance, endStream bool) api.Statu
 	log.Println(">>> DECODE DATA")
 	log.Println("  <<About to forward", buffer.Len(), "bytes of data to service>>")
 
-	//if f.contentType == "application/x-www-form-urlencoded" {
-	//	dec := json.NewDecoder(bytes.NewReader(buffer.Bytes()))
-	//	if dec == nil {
-	//		log.Printf("Failed to start decoding JSON data")
-	//		return api.Continue
-	//	}
-	//}
+	if f.contentType == "application/x-www-form-urlencoded" {
+		jsonBody := json.NewDecoder(bytes.NewReader(buffer.Bytes()))
+		if jsonBody == nil {
+			log.Printf("Failed to start decoding JSON data")
+			return api.Continue
+		}
+		log.Printf("  <<decoded data: ", jsonBody)
+	}
 
 	//if f.contentType == "application/json" {
 	var jsonBody = []byte(`{
