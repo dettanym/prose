@@ -92,6 +92,9 @@ func (f *filter) DecodeData(buffer api.BufferInstance, endStream bool) api.Statu
 		log.Printf("presidio post error: ", err.Error())
 		return api.Continue
 	}
+
+	log.Printf("presidio responded %v\n", resp.Status)
+
 	contentLen := resp.ContentLength
 	body := make([]byte, contentLen)
 	read, err := resp.Body.Read(body)
