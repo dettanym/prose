@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/envoyproxy/envoy/contrib/golang/common/go/api"
+	"io"
 	"log"
 	"net/http"
 )
@@ -89,29 +90,30 @@ func (f *filter) DecodeData(buffer api.BufferInstance, endStream bool) api.Statu
 	//	url.Values{"json_to_analyze": {string(jsonData)}})
 
 	if err != nil {
-		log.Printf("presidio post error: ", err.Error())
+		log.Printf("presidio post error: %v\n", err.Error())
 		return api.Continue
 	}
 
-	log.Printf("presidio responded %v\n", resp.Status)
+	log.Printf("presidio responded '%v', content-length is %v bytes\n", resp.Status, resp.ContentLength)
 
-	contentLen := resp.ContentLength
-	body := make([]byte, contentLen)
-	read, err := resp.Body.Read(body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		log.Printf("Could not read Presidio response, %v", err.Error())
+		log.Printf("Could not read Presidio response, %v\n", err.Error())
 		return api.Continue
 	}
+
 	err = resp.Body.Close()
 	if err != nil {
-		log.Printf("could not close presidio response body ", err.Error())
+		log.Printf("could not close presidio response body, %v\n", err.Error())
 		return api.Continue
 	}
-	log.Printf("Presidio response status", resp.Status)
+
+	log.Println("presidio response headers:")
 	for key, value := range resp.Header {
-		log.Printf("Presidio response. Key: ", key, " Value: ", value)
+		log.Printf("  \"%v\": %v\n", key, value)
 	}
-	log.Printf("Presidio response body --- read ", read, "bytes. Body string: ", body)
+	log.Println("presidio response body:")
+	log.Printf("%v\n", body)
 
 	//}
 	return api.Continue
