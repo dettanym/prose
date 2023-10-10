@@ -13,7 +13,7 @@ spec:
     spec:
       containers:
       - name: prose-server
-        image: ghcr.io/dettanym/prose-opa-composer-server:main@sha256:14cbb2a864438d27acfb0b84f3d4227041ab488b206bb7c36e7f57d9c57aeeea
+        image: ghcr.io/dettanym/prose-opa-composer-server:main@sha256:cc2983ffb6866f1608bf991d72867273a825bb82c46c3cb3d7b3c7b9bf3ac437
         ports:
         - name: http
           containerPort: 8080
