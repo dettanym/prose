@@ -10,7 +10,7 @@ WORKDIR /app
 COPY ./privacy-profile-composer/ ./
 RUN make build-envoy-filter
 
-FROM istio/proxyv2:1.19.1@sha256:a521ab45c2a8f9356ee5b47790ad575968d663b705c194ad3053a4fca87dcce9
+FROM istio/proxyv2:1.19.1@sha256:62eba4096af83c286fc8898e77fda09efde37492bd91c16d06f3f99010539ada
 
 ENV GODEBUG="cgocheck=0"
 
