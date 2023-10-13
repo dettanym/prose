@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"flag"
 	"fmt"
 	"github.com/envoyproxy/envoy/contrib/golang/common/go/api"
@@ -12,10 +11,9 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/url"
 	pb "privacy-profile-composer/pkg/proto"
 )
-
-var UpdateUpstreamBody = "upstream response body updated by the simple plugin"
 
 type filter struct {
 	api.PassThroughStreamFilter
@@ -125,12 +123,12 @@ func (f *filter) DecodeData(buffer api.BufferInstance, endStream bool) api.Statu
 	log.Println("  <<About to forward", buffer.Len(), "bytes of data to service>>")
 
 	if f.contentType == "application/x-www-form-urlencoded" {
-		jsonBody := json.NewDecoder(bytes.NewReader(buffer.Bytes()))
-		if jsonBody == nil {
+		query, err := url.ParseQuery(buffer.String())
+		if err != nil {
 			log.Printf("Failed to start decoding JSON data")
 			return api.Continue
 		}
-		log.Printf("  <<decoded data: ", jsonBody)
+		log.Println("  <<decoded data: ", query)
 	}
 
 	//if f.contentType == "application/json" {
