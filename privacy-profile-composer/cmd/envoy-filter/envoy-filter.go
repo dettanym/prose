@@ -26,6 +26,7 @@ type filter struct {
 	contentType   string
 	contentLength string
 	host          string
+	istioHeader   XEnvoyPeerMetadataHeader
 	config        *config
 }
 
@@ -51,6 +52,16 @@ func (f *filter) DecodeHeaders(header api.RequestHeaderMap, endStream bool) api.
 	contentLength, exists := header.Get("content-length")
 	if exists {
 		f.contentLength = contentLength
+	}
+
+	xEnvoyPeerMetadata, exists := header.Get("x-envoy-peer-metadata")
+	if exists {
+		parsedHeader, err := DecodeXEnvoyPeerMetadataHeader(xEnvoyPeerMetadata)
+		if err != nil {
+			log.Printf("Error decoding x-envoy-peer-metadata header: %s", err)
+			return api.Continue
+		}
+		f.istioHeader = parsedHeader
 	}
 
 	log.Printf("%v (%v) %v://%v%v\n", header.Method(), header.Protocol(), header.Scheme(), header.Host(), header.Path())
