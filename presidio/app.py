@@ -191,22 +191,22 @@ def list_find_pattern_in_value(l: list, pattern, acc: list) -> list:
 
 
 data_items_set = [
-    "<CREDIT_CARD>",
-    "<NRP>",
-    "<US_ITIN>",
-    "<PERSON>",
-    "<US_BANK_NUMBER>",
-    "<US_PASSPORT>",
-    "<IP_ADDRESS>",
-    "<US_DRIVER_LICENSE>",
-    "<CRYPTO>",
-    "<URL>",
-    "<PHONE_NUMBER>",
-    "<IBAN_CODE>",
-    "<DATE_TIME>",
-    "<LOCATION>",
-    "<EMAIL_ADDRESS>",
-    "<US_SSN>"
+    "CREDIT_CARD",
+    "NRP",
+    "US_ITIN",
+    "PERSON",
+    "US_BANK_NUMBER",
+    "US_PASSPORT",
+    "IP_ADDRESS",
+    "US_DRIVER_LICENSE",
+    "CRYPTO",
+    "URL",
+    "PHONE_NUMBER",
+    "IBAN_CODE",
+    "DATE_TIME",
+    "LOCATION",
+    "EMAIL_ADDRESS",
+    "US_SSN",
 ]
 
 if __name__ == "__main__":
