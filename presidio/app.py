@@ -5,7 +5,7 @@ import pprint
 import re
 from logging.config import fileConfig
 from pathlib import Path
-from typing import Tuple
+from typing import Tuple, List, Dict, Any, AnyStr
 
 from flask import Flask, request, jsonify, Response
 from werkzeug.exceptions import HTTPException
@@ -144,7 +144,7 @@ class Server:
                 anonymizer_results = self.batch_anonymizer.anonymize_dict(recognizer_result_list)
                 pprint.pprint(anonymizer_results)
                 class_substring_pattern = re.compile(r"<([^>]*)>")
-                unique_pii_list = dict_find_pattern_in_value(anonymizer_results, class_substring_pattern, acc=[])
+                unique_pii_list = recursive_find_pattern(anonymizer_results, class_substring_pattern)
                 unique_valid_pii_list = [pii for pii in unique_pii_list if pii in data_items_set]
 
                 return jsonify(unique_valid_pii_list), 200
@@ -164,29 +164,34 @@ class Server:
                 return jsonify(error=e.args[0]), 500
 
 
-def dict_find_pattern_in_value(d: dict, pattern, acc: list) -> list:
-    for v in d.values():
+def recursive_find_pattern(d: Dict[AnyStr, Any], pattern: re.Pattern[AnyStr]) -> List[AnyStr]:
+    def match_string(input_string: str):
+        pattern_found = pattern.search(input_string)
+        if pattern_found is None:
+            return
+
+        first_match = pattern_found.group(1)  # group(1) gets matching data type within <>
+        if first_match is not None and first_match not in acc:
+            acc.append(first_match)
+
+    def recursive_switch_case(v):
         if isinstance(v, dict):
-            dict_find_pattern_in_value(v, pattern, acc)
+            dict_find_pattern_in_value(v)
         elif isinstance(v, list):
-            list_find_pattern_in_value(v, pattern, acc)
+            list_find_pattern_in_value(v)
         elif isinstance(v, str):
-            pattern_found = pattern.search(v)
-            if pattern_found is not None and pattern_found.group() not in acc:
-                acc.append(pattern_found.group())
-    return acc
+            match_string(v)
 
+    def list_find_pattern_in_value(input_list: list):
+        for v in input_list:
+            recursive_switch_case(v)
 
-def list_find_pattern_in_value(l: list, pattern, acc: list) -> list:
-    for e in l:
-        if isinstance(e, list):
-            list_find_pattern_in_value(e, pattern, acc)
-        elif isinstance(e, dict):
-            dict_find_pattern_in_value(e, pattern, acc)
-        elif isinstance(e, str):
-            pattern_found = pattern.search(e)
-            if pattern_found is not None and pattern_found.group() not in acc:
-                acc.append(pattern_found.group())
+    def dict_find_pattern_in_value(input_dict: dict):
+        for v in input_dict.values():
+            recursive_switch_case(v)
+
+    acc = []
+    dict_find_pattern_in_value(d)
     return acc
 
 
