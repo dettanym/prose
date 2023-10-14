@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"github.com/envoyproxy/envoy/contrib/golang/common/go/api"
@@ -26,6 +27,7 @@ type filter struct {
 	host          string
 	istioHeader   XEnvoyPeerMetadataHeader
 	config        *config
+	piiTypes      string
 }
 
 func (f *filter) sendLocalReplyInternal() api.StatusType {
@@ -137,6 +139,61 @@ func sendComposedProfile(fqdn string, purpose string, piiTypes []string, thirdPa
 	return api.Continue
 }
 
+func piiAnalysis(svcName string, buffer api.BufferInstance) (string, error) {
+	var jsonBody = `{
+			"key_F": {
+				"key_a1": "My phone number is 212-121-1424"
+			},
+			"URL": "www.abc.com",
+			"key_c": 3,
+			"names": ["James Bond", "Clark Kent", "Hakeem Olajuwon", "No name here!"],
+			"address": "123 Alpha Beta, Waterloo ON N2L3G1, Canada",
+			"DOB": "01-01-1989",
+			"gender": "Female",
+			"race": "Asian",
+			"language": "English"
+		}`
+
+	svcNameBuf, err := json.Marshal(svcName)
+	if err != nil {
+		return "", fmt.Errorf("could not marshal service name string into a valid JSON string: %w", err)
+	}
+
+	// TODO replace jsonBody with buffer.Bytes()
+	msgString := `{"json_to_analyze":` + jsonBody + `,"derive_purpose":` + string(svcNameBuf) + `}`
+
+	resp, err := http.Post("http://presidio.prose-system.svc.cluster.local:3000/batchanalyze", "application/json", bytes.NewBufferString(msgString))
+
+	//var jsonData = buffer.Bytes()
+	//resp2, err := http.PostForm("http://presidio.prose-system.svc.cluster.local:3000/batchanalyze",
+	//	url.Values{"json_to_analyze": {string(jsonData)}})
+
+	if err != nil {
+		return "", fmt.Errorf("presidio post error: %w", err)
+	}
+
+	log.Printf("presidio responded '%v', content-length is %v bytes\n", resp.Status, resp.ContentLength)
+
+	jsonResp, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", fmt.Errorf("could not read Presidio response, %w", err)
+	}
+
+	err = resp.Body.Close()
+	if err != nil {
+		return "", fmt.Errorf("could not close presidio response body, %w", err)
+	}
+
+	log.Println("presidio response headers:")
+	for key, value := range resp.Header {
+		log.Printf("  \"%v\": %v\n", key, value)
+	}
+	log.Println("presidio response body:")
+	log.Printf("%v\n", string(jsonResp))
+
+	return string(jsonResp), nil
+}
+
 func (f *filter) DecodeData(buffer api.BufferInstance, endStream bool) api.StatusType {
 	log.Println(">>> DECODE DATA")
 	log.Println("  <<About to forward", buffer.Len(), "bytes of data to service>>")
@@ -150,63 +207,23 @@ func (f *filter) DecodeData(buffer api.BufferInstance, endStream bool) api.Statu
 		log.Println("  <<decoded data: ", query)
 	}
 
-	//if f.contentType == "application/json" {
-	var jsonBody = []byte(`{
-		"json_to_analyze": {
-			"key_F": {
-				"key_a1": "My phone number is 212-121-1424"
-			},
-			"URL": "www.abc.com",
-			"key_c": 3,
-			"names": ["James Bond", "Clark Kent", "Hakeem Olajuwon", "No name here!"],
-			"address": "123 Alpha Beta, Waterloo ON N2L3G1, Canada",
-			"DOB": "01-01-1989",
-			"gender": "Female",
-			"race": "Asian",
-			"language": "English"
+	var err error
+	if f.contentType == "application/json" {
+		if f.piiTypes, err = piiAnalysis(f.istioHeader.Name, buffer); err != nil {
+			log.Println(err)
+			return api.Continue
 		}
-	}`)
-	resp, err := http.Post("http://presidio.prose-system.svc.cluster.local:3000/batchanalyze", "application/json", bytes.NewBuffer(jsonBody))
-	// var jsonData = buffer.Bytes()
-	//resp2, err := http.PostForm("http://presidio.prose-system.svc.cluster.local:3000/batchanalyze",
-	//	url.Values{"json_to_analyze": {string(jsonData)}})
-
-	if err != nil {
-		log.Printf("presidio post error: %v\n", err.Error())
-		return api.Continue
 	}
 
-	log.Printf("presidio responded '%v', content-length is %v bytes\n", resp.Status, resp.ContentLength)
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		log.Printf("Could not read Presidio response, %v\n", err.Error())
-		return api.Continue
-	}
-
-	err = resp.Body.Close()
-	if err != nil {
-		log.Printf("could not close presidio response body, %v\n", err.Error())
-		return api.Continue
-	}
-
-	log.Println("presidio response headers:")
-	for key, value := range resp.Header {
-		log.Printf("  \"%v\": %v\n", key, value)
-	}
-	log.Println("presidio response body:")
-	log.Printf("%v\n", string(body))
-
-	//}
-
-	piiTypes := []string{"EMAIL", "LOCATION"}
-	thirdParties := make([]string, 0)
-	return sendComposedProfile("advertising.svc.internal", "advertising", piiTypes, thirdParties)
+	return api.Continue
 }
 
 func (f *filter) DecodeTrailers(trailers api.RequestTrailerMap) api.StatusType {
 	log.Println(">>> DECODE TRAILERS")
 	log.Printf("%+v", trailers)
+	if f.piiTypes != "" {
+		trailers.Add("PII_TYPES", f.piiTypes) // For OPA
+	}
 	return api.Continue
 }
 
