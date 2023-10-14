@@ -62,6 +62,25 @@ func (f *filter) DecodeHeaders(header api.RequestHeaderMap, endStream bool) api.
 		f.istioHeader = parsedHeader
 	}
 
+	var purpose, svcName string
+	if &f.istioHeader != nil {
+		svcName = f.istioHeader.Name
+		labels := f.istioHeader.Labels
+		var purposeExists bool
+		purpose, purposeExists = labels["purpose"]
+		if purposeExists == false {
+			// The pod hasn't been labelled with a purpose
+			// Initialize the purpose to the svcName
+			// Infer it from the svcName using presidio
+			purpose = svcName
+		}
+	} else {
+		purpose = "ANY"
+		svcName = "UNKNOWN SVC"
+	}
+	// TODO: Insert it into OpenTelemetry baggage for tracing?
+	header.Add("PURPOSE", purpose) // For OPA
+
 	log.Printf("%v (%v) %v://%v%v\n", header.Method(), header.Protocol(), header.Scheme(), header.Host(), header.Path())
 	header.Range(func(key, value string) bool {
 		log.Printf("  \"%v\": %v\n", key, value)
