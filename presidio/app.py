@@ -1,5 +1,4 @@
 """REST API server for analyzer."""
-import json
 import logging
 import os
 import pprint
@@ -52,7 +51,7 @@ class Server:
             return "Presidio Analyzer service is up"
 
         @self.app.route("/analyze", methods=["POST"])
-        def analyze() -> Tuple[str, int]:
+        def analyze() -> Tuple[Response, int]:
             """Execute the analyzer function."""
             # Parse the request params
             try:
@@ -74,14 +73,7 @@ class Server:
                     context=req_data.context,
                 )
 
-                return Response(
-                    json.dumps(
-                        recognizer_result_list,
-                        default=lambda o: o.to_dict(),
-                        sort_keys=True,
-                    ),
-                    content_type="application/json",
-                )
+                return jsonify(recognizer_result_list), 200
             except TypeError as te:
                 error_msg = (
                     f"Failed to parse /analyze request "
@@ -98,7 +90,7 @@ class Server:
                 return jsonify(error=e.args[0]), 500
 
         @self.app.route("/recognizers", methods=["GET"])
-        def recognizers() -> Tuple[str, int]:
+        def recognizers() -> Tuple[Response, int]:
             """Return a list of supported recognizers."""
             language = request.args.get("language")
             try:
@@ -113,7 +105,7 @@ class Server:
                 return jsonify(error=e.args[0]), 500
 
         @self.app.route("/supportedentities", methods=["GET"])
-        def supported_entities() -> Tuple[str, int]:
+        def supported_entities() -> Tuple[Response, int]:
             """Return a list of supported entities."""
             language = request.args.get("language")
             try:
@@ -131,7 +123,7 @@ class Server:
             return jsonify(error=e.description), e.code
 
         @self.app.route("/batchanalyze", methods=["POST"])
-        def batch_analyze() -> Tuple[str, int]:
+        def batch_analyze() -> Tuple[Response, int]:
             """Execute the batch analyzer function."""
             # Parse the request params
             try:
@@ -155,14 +147,7 @@ class Server:
                 unique_pii_list = dict_find_pattern_in_value(anonymizer_results, class_substring_pattern, acc=[])
                 unique_valid_pii_list = [pii for pii in unique_pii_list if pii in data_items_set]
 
-                return Response(
-                    json.dumps(
-                        unique_valid_pii_list,
-                        default=lambda o: o.to_dict(),
-                        sort_keys=True,
-                    ),
-                    content_type="application/json",
-                )
+                return jsonify(unique_valid_pii_list), 200
             except TypeError as te:
                 error_msg = (
                     f"Failed to parse /batchanalyze request "
