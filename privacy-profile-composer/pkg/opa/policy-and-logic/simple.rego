@@ -1,5 +1,7 @@
    package authz
     import input.parsed_body
+    import input.parsed_path
+    import input.attributes.request.http
     import future.keywords
 
     default allow := false
@@ -16,7 +18,13 @@
         processing_is_allowed
     }
 
-    given_purpose_of_use := input.parsed_body.purpose_of_use
+    #TODO: parsed header "PURPOSE"
+    given_purpose_of_use := http.headers.x-prose-purpose
+    given_pii_types := http.headers.x-prose-pii-types
+
+    paths := input.parsed_path
+    #TODO: maybe Golang filter can include directionality of traffic,
+    #    so we only check path for truly outgoing requests?
 
     purpose_is_valid if valid_purposes[given_purpose_of_use]
 
@@ -48,13 +56,13 @@
     processing_is_allowed if {
         allowed_processing := target_policy[given_purpose_of_use]
         #For each item in that list,
-        every processing in input.parsed_body.processing {
+        every pii_type in given_pii_types {
             some allowed in allowed_processing
             processing.data_item in data_items_set
             processing.data_item == allowed.data_item
-            every third_party in processing.third_parties {
-                third_party in allowed.third_parties
-            }
+#            every third_party in processing.third_parties {
+#                third_party in allowed.third_parties
+#            }
             #processing.third_parties in allowed_processing[i].third_parties
             #msg := sprintf("Allowed processing for your purpose of use: %v", [allowed_processing])
             #msg := sprintf("Allowed processing: %v. This processing item is not allowed: %v", [allowed_processing, processing])
@@ -62,15 +70,22 @@
     }
 
     data_items_set := {
-        "device_id",
-        "location",
-        "email",
-        "username",
-        "password",
-        "ip_address",
-        "name",
-        "address",
-        "phone_number"
+        "CREDIT_CARD",
+        "NRP",
+        "US_ITIN",
+        "PERSON",
+        "US_BANK_NUMBER",
+        "US_PASSPORT",
+        "IP_ADDRESS",
+        "US_DRIVER_LICENSE",
+        "CRYPTO",
+        "URL",
+        "PHONE_NUMBER",
+        "IBAN_CODE",
+        "DATE_TIME",
+        "LOCATION",
+        "EMAIL_ADDRESS",
+        "US_SSN",
     }
 
     target_policy = {
