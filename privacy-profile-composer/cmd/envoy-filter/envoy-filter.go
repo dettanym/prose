@@ -81,7 +81,7 @@ func (f *filter) DecodeHeaders(header api.RequestHeaderMap, endStream bool) api.
 		svcName = "UNKNOWN SVC"
 	}
 	// TODO: Insert it into OpenTelemetry baggage for tracing?
-	header.Add("PURPOSE", purpose) // For OPA
+	header.Add("x-prose-purpose", purpose) // For OPA
 
 	log.Printf("%v (%v) %v://%v%v\n", header.Method(), header.Protocol(), header.Scheme(), header.Host(), header.Path())
 	header.Range(func(key, value string) bool {
@@ -222,7 +222,7 @@ func (f *filter) DecodeTrailers(trailers api.RequestTrailerMap) api.StatusType {
 	log.Println(">>> DECODE TRAILERS")
 	log.Printf("%+v", trailers)
 	if f.piiTypes != "" {
-		trailers.Add("PII_TYPES", f.piiTypes) // For OPA
+		trailers.Add("x-prose-pii-types", f.piiTypes) // For OPA
 	}
 	return api.Continue
 }
