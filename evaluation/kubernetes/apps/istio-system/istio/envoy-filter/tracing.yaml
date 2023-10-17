@@ -6,20 +6,7 @@ spec:
   meshConfig:
     enableTracing: true
     defaultConfig:
-      tracing: {}
-      extensionProviders:
-        name: zipkin
+      tracing:
         zipkin:
-          service: jaeger-collector.istio-system #jaeger-collector.prose-system.svc.cluster.local:9411
-          port: 9411
----
-apiVersion: telemetry.istio.io/v1alpha1
-kind: Telemetry
-metadata:
-  name: mesh-default
-  namespace: istio-system
-spec:
-  tracing:
-    - providers:
-        - name: zipkin
-      randomSamplingPercentage: 100.00
+          address: jaeger-collector.istio-system.svc.cluster.local:9411
+        sampling: 100.0
