@@ -1,0 +1,20 @@
+{
+  "json_to_analyze": {
+    "key_F": {
+      "key_a1": "My phone number is 212-121-1424"
+    },
+    "URL": "www.abc.com",
+    "key_c": 3,
+    "names": [
+      "James Bond",
+      "Clark Kent",
+      "Hakeem Olajuwon",
+      "No name here!"
+    ],
+    "address": "200 University Ave West, Waterloo ON N2L5G7, Canada",
+    "DOB": "01-01-1989",
+    "gender": "Female",
+    "race": "Asian",
+    "language": "French"
+  }
+}
