@@ -26,6 +26,7 @@ type filter struct {
 	contentLength string
 	host          string
 	istioHeader   XEnvoyPeerMetadataHeader
+	canAnalyzePIIOnBody bool
 	config        *config
 	piiTypes      string
 }
@@ -139,7 +140,7 @@ func sendComposedProfile(fqdn string, purpose string, piiTypes []string, thirdPa
 	return api.Continue
 }
 
-func piiAnalysis(svcName string, buffer api.BufferInstance) (string, error) {
+func piiAnalysis(svcName string, bufferBytes []byte) (string, error) {
 	var jsonBody = `{
 			"key_F": {
 				"key_a1": "My phone number is 212-121-1424"
@@ -159,15 +160,10 @@ func piiAnalysis(svcName string, buffer api.BufferInstance) (string, error) {
 		return "", fmt.Errorf("could not marshal service name string into a valid JSON string: %w", err)
 	}
 
-	// TODO replace jsonBody with buffer.Bytes()
+	// TODO replace jsonBody with bufferBytes input arg
 	msgString := `{"json_to_analyze":` + jsonBody + `,"derive_purpose":` + string(svcNameBuf) + `}`
 
 	resp, err := http.Post("http://presidio.prose-system.svc.cluster.local:3000/batchanalyze", "application/json", bytes.NewBufferString(msgString))
-
-	//var jsonData = buffer.Bytes()
-	//resp2, err := http.PostForm("http://presidio.prose-system.svc.cluster.local:3000/batchanalyze",
-	//	url.Values{"json_to_analyze": {string(jsonData)}})
-
 	if err != nil {
 		return "", fmt.Errorf("presidio post error: %w", err)
 	}
@@ -198,18 +194,30 @@ func (f *filter) DecodeData(buffer api.BufferInstance, endStream bool) api.Statu
 	log.Println(">>> DECODE DATA")
 	log.Println("  <<About to forward", buffer.Len(), "bytes of data to service>>")
 
+	var jsonBody []byte
 	if f.contentType == "application/x-www-form-urlencoded" {
 		query, err := url.ParseQuery(buffer.String())
 		if err != nil {
 			log.Printf("Failed to start decoding JSON data")
 			return api.Continue
 		}
-		log.Println("  <<decoded data: ", query)
+		log.Println("  <<decoded x-www-form-urlencoded data: ", query)
+		jsonBody, err = json.Marshal(query)
+		if err!= nil {
+			log.Printf("Could not transform URL encoded data to JSON to pass to Presidio")
+			return api.Continue
+		}
+		f.canAnalyzePIIOnBody = true
+	}
+
+	if f.contentType == "application/json" {
+		jsonBody = buffer.Bytes()
+		f.canAnalyzePIIOnBody = true
 	}
 
 	var err error
-	if f.contentType == "application/json" {
-		if f.piiTypes, err = piiAnalysis(f.istioHeader.Name, buffer); err != nil {
+	if f.canAnalyzePIIOnBody {
+		if f.piiTypes, err = piiAnalysis(f.istioHeader.Name, jsonBody); err != nil {
 			log.Println(err)
 			return api.Continue
 		}
