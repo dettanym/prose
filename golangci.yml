@@ -1,0 +1,301 @@
+linters:
+  disable-all: true
+
+  enable:
+    - asasalint
+    # asciicheck: unicode identifiers can help readability
+    - bidichk
+    - bodyclose
+    - containedctx
+    - contextcheck
+    - cyclop
+    # deadcode: deprecated
+    - decorder
+    # depguard: we have no dependency constraints
+    - dogsled
+    - dupl
+    - dupword
+    - durationcheck
+    - errcheck
+    - errchkjson
+    - errname
+    - errorlint
+    - execinquery
+    - exhaustive
+    # exhaustivestruct: deprecated
+    # exhaustruct: harms readability
+    - exportloopref
+    - forbidigo
+    - forcetypeassert
+    - funlen
+    - gci
+    - gocheckcompilerdirectives
+    - gochecknoglobals
+    - gochecknoinits
+    - gocognit
+    - goconst
+    - gocritic
+    - gocyclo
+    - godot
+    # godox: committing these can accelerate development
+    # goerr113: unnecessary in situations with adequate wrapping or where programmatic detection is not needed
+    - gofmt
+    # gofumpt: we don't use gofumpt, since it is too prescriptive
+    # goheader: we don't use copyright headers
+    - goimports
+    # golint: deprecated
+    - gomnd
+    - gomoddirectives
+    # gomodguard: we have no dependency constraints
+    - goprintffuncname
+    - gosec
+    - gosimple
+    - gosmopolitan
+    - govet
+    - grouper
+    # ifshort: deprecated
+    # importas: no aliases to act upon yet
+    - ineffassign
+    - interfacebloat
+    # interfacer: deprecated
+    - ireturn
+    - lll
+    - loggercheck
+    - maintidx
+    - makezero
+    # maligned: deprecated
+    - mirror
+    - misspell
+    - musttag
+    - nakedret
+    - nestif
+    - nilerr
+    - nilnil
+    - nlreturn
+    - noctx
+    - nolintlint
+    # nonamedreturns: named returns help readability, especially with duplicated types; naked returns are the problem
+    # nosnakecase: deprecated
+    - nosprintfhostport
+    - paralleltest
+    # prealloc: authors recommend not using it due to premature optimization
+    - predeclared
+    # promlinter: we don't use Prometheus
+    - reassign
+    - revive
+    - rowserrcheck
+    # scopelint: deprecated
+    - sqlclosecheck
+    - staticcheck
+    # structcheck: deprecated
+    # stylecheck: covered by staticcheck
+    - tagalign
+    - tagliatelle
+    - tenv
+    - testableexamples
+    # testpackage: we want to allow comprehensive testing, and we can still do basic testing in other test files
+    - thelper
+    - tparallel
+    - typecheck
+    - unconvert
+    - unparam
+    - unused
+    - usestdlibvars
+    # varcheck: deprecated
+    # varnamelen: too non-idiomatic in common cases
+    - wastedassign
+    - whitespace
+    - wrapcheck
+    # wsl: too prescriptive, gets in the way of logical line separation
+    # zerologlint: we don't use zerolog
+
+linters-settings:
+  cyclop:
+    max-complexity: 25
+  decorder:
+    disable-init-func-first-check: false
+  errchkjson:
+    report-no-exported: true
+  exhaustive:
+    check:
+      - switch
+      - map
+    default-signifies-exhaustive: true
+  gocyclo:
+    min-complexity: 25
+  govet:
+    check-shadowing: false
+  grouper:
+    import-require-single-import: true
+  lll:
+    tab-width: 4
+  misspell:
+    locale: "US"
+  nakedret:
+    max-func-lines: 0 # Named returns are okay, but always return explicitly
+  nestif:
+    min-complexity: 6
+  nolintlint:
+    require-explanation: true
+    require-specific: true
+  revive:
+    rules:
+      # add-constant: handled by goconst
+      - name: argument-limit
+        disabled: false
+        arguments: [6]
+      - name: atomic
+        disabled: false
+      - name: bare-return
+        disabled: false
+      # banned-characters: nothing to ban
+      - name: blank-imports
+        disabled: false
+      - name: bool-literal-in-expr
+        disabled: false
+      - name: call-to-gc
+        disabled: false
+      - name: comment-spacings
+        disabled: false
+      - name: confusing-naming
+        disabled: false
+      - name: confusing-results
+        disabled: false
+      # cognitive-complexity: handled by gocognit
+      - name: constant-logical-expr
+        disabled: false
+      - name: context-as-argument
+        disabled: false
+      - name: context-keys-type
+        disabled: false
+      # cyclomatic: handled by cyclop and gocyclo
+      - name: datarace
+        disabled: false
+      - name: deep-exit
+        disabled: false
+      - name: defer
+        disabled: false
+      - name: dot-imports
+        disabled: false
+      - name: duplicated-imports
+        disabled: false
+      - name: early-return
+        disabled: false
+      - name: empty-block
+        disabled: false
+      # empty-lines: conflicts with whitespace multi-func option
+      - name: error-naming
+        disabled: false
+      - name: error-return
+        disabled: false
+      - name: error-strings
+        disabled: false
+      - name: errorf
+        disabled: false
+      - name: exported
+        disabled: false
+      # file-header: we don't use copyright headers
+      - name: flag-parameter
+        disabled: false
+      # function-length: handled by funlen
+      - name: function-result-limit
+        disabled: false
+        arguments: [5]
+      # get-return: Get* functions are non-idiomatic
+      - name: identical-branches
+        disabled: false
+      # if-return: an extra "if" usually enhances line-of-sight readability
+      - name: increment-decrement
+        disabled: false
+      - name: indent-error-flow
+        disabled: false
+      # imports-blacklist: we have no dependency constraints
+      - name: import-shadowing
+        disabled: false
+      # line-length-limit: handled by lll
+      # modifies-parameter: this often enhances readability
+      - name: modifies-value-receiver
+        disabled: false
+      - name: nested-structs
+        disabled: false
+      # optimize-operands-order: not accurate enough to be useful
+      - name: package-comments
+        disabled: false
+      - name: range
+        disabled: false
+      - name: range-val-in-closure
+        disabled: false
+      - name: range-val-address
+        disabled: false
+      - name: receiver-naming
+        disabled: false
+      - name: redefines-builtin-id
+        disabled: false
+      - name: string-of-int
+        disabled: false
+      - name: struct-tag
+        disabled: false
+      # string-format: not a user-facing scenario
+      - name: superfluous-else
+        disabled: false
+      - name: time-equal
+        disabled: false
+      - name: time-naming
+        disabled: false
+      - name: unconditional-recursion
+        disabled: false
+      - name: unexported-naming
+        disabled: false
+      - name: unexported-return
+        disabled: false
+      - name: unhandled-error
+        disabled: false
+      - name: unnecessary-stmt
+        disabled: false
+      - name: unreachable-code
+        disabled: false
+      - name: unused-parameter
+        disabled: false
+      - name: unused-receiver
+        disabled: false
+      - name: use-any
+        disabled: false
+      # useless-break: often improves readability as an explicit reminder that Go does not default fallthrough
+      - name: var-declaration
+        disabled: false
+      - name: var-naming
+        disabled: false
+      - name: waitgroup-by-value
+        disabled: false
+  staticcheck:
+    checks:
+      - "all"
+    dot-import-whitelist: []
+  tagalign:
+    align: false # tagalign not integrated into formatting toolchain
+    sort: true
+  tagliatelle:
+    use-field-name: true
+    rules:
+      json: goCamel
+  tenv:
+    all: true
+  thelper:
+    test:
+      begin: false
+    benchmark:
+      begin: false
+    tb:
+      begin: false
+    fuzz:
+      begin: false
+  whitespace:
+    multi-func: true
+
+issues:
+  exclude-rules:
+    - path: '(.+)_test\.go'
+      linters:
+        - funlen
+        - wrapcheck
+
