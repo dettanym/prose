@@ -1,8 +1,0 @@
----
-apiVersion: kustomize.config.k8s.io/v1beta1
-kind: Kustomization
-namespace: prose-system
-resources:
-  - https://raw.githubusercontent.com/open-policy-agent/opa-envoy-plugin/main/quick_start.yaml
-#https://raw.githubusercontent.com/open-policy-agent/opa-envoy-plugin/main/examples/istio/quick_start.yaml
-  - service.yaml
