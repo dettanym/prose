@@ -5,6 +5,8 @@ metadata:
   name: cluster-apps-bookinfo-app
   namespace: flux-system
 spec:
+  dependsOn:
+    - name: cluster-apps-istio-system-istiod
   path: ./evaluation/kubernetes/apps/test-sample-microservices/bookinfo/app
   prune: true
   sourceRef:
