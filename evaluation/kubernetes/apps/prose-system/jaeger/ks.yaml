@@ -5,16 +5,12 @@ metadata:
   name: cluster-apps-prose-system-jaeger
   namespace: flux-system
 spec:
-  path: ./evaluation/kubernetes/apps/prose-system/jaeger/jaeger
+  path: ./evaluation/kubernetes/apps/prose-system/jaeger/app
   prune: true
   sourceRef:
     kind: GitRepository
     name: prose-k8s-home-ops
-  healthChecks:
-    - apiVersion: helm.toolkit.fluxcd.io/v2beta1
-      kind: HelmRelease
-      name: jaeger
-      namespace: prose-system
+  wait: true
   interval: 30m
   retryInterval: 1m
   timeout: 3m

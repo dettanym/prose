@@ -5,7 +5,8 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-    - host: &host "jaeger-query.${SECRET_DOMAIN}"
+    #TODO: Drop jaeger instance in istio-system and then drop prose from here for simplicity
+    - host: &host "jaeger-query-prose.${SECRET_DOMAIN}"
       http:
         paths:
           - backend:

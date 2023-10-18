@@ -34,3 +34,6 @@ spec:
         image: ghcr.io/dettanym/prose-istio-proxyv2:golang-filter-presidio
       proxy:
         image: ghcr.io/dettanym/prose-istio-proxyv2:golang-filter-presidio
+      tracer:
+        zipkin:
+          address: "jaeger-collector.prose-system.svc.cluster.local:9411"
