@@ -1,0 +1,1 @@
+Not using this as it runs too many containers with too much memory. Maybe configure it to limit resources used by Cassandra etc. 
