@@ -19,7 +19,7 @@ PRivacy ObServability and Enforcement Frameworks
 1. Run `minikube start` to create a K8s node. 
    Pass `--subnet=''` flag to set a subnet for a cluster (>1 nodes).
 
-2. Run `task cluster:verify` to check that all dependencies are setup.
+2. Run `task cluster:verify` to check that all dependencies are setup. Use `brew update` to check new versions of any dependencies. Use `brew upgrade` to upgrade dependencies. 
 
 3. Run `task cluster:install` to bootstrap minikube with flux andload cluster config/info into bootstrapped minikube cluster.
 
