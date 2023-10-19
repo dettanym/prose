@@ -34,3 +34,12 @@ spec:
         image: ghcr.io/dettanym/prose-istio-proxyv2:golang-filter-presidio
       proxy:
         image: ghcr.io/dettanym/prose-istio-proxyv2:golang-filter-presidio
+    meshConfig:
+      defaultProviders:
+        tracing:
+          - zipkin
+      extensionProviders:
+        - name: zipkin
+          zipkin:
+            service: jaeger-collector.prose-system.svc.cluster.local
+            port: 9411
