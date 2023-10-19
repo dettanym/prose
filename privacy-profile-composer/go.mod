@@ -3,7 +3,7 @@ module privacy-profile-composer
 go 1.18
 
 require (
-	github.com/cncf/xds/go v0.0.0-20230607035331-e9ce68804cb4
+	github.com/cncf/xds/go v0.0.0-20231016030527-8bd2eac9fb4a
 	github.com/envoyproxy/envoy v1.27.1-0.20230920193053-83e604abd821
 	google.golang.org/grpc v1.59.0
 	google.golang.org/protobuf v1.31.0
