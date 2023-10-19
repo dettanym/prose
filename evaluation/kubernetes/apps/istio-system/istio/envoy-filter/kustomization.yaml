@@ -6,4 +6,3 @@ resources:
   #- ./example-lua-filter.yaml
   - ./opa-envoy-filter.yaml
   - ./go-filter.yaml
-  - ./tap-filter.yaml
