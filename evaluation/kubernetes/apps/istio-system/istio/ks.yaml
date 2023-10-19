@@ -43,7 +43,7 @@ metadata:
   namespace: flux-system
 spec:
   dependsOn:
-    - name: cluster-apps-istio-system-istiod
+    - name: cluster-apps-istio-system-istio-base
   path: ./evaluation/kubernetes/apps/istio-system/istio/envoy-filter
   prune: true
   sourceRef:
@@ -60,7 +60,7 @@ metadata:
   namespace: flux-system
 spec:
   dependsOn:
-    - name: cluster-apps-istio-system-istiod
+    - name: cluster-apps-istio-system-istio-base
   path: ./evaluation/kubernetes/apps/istio-system/istio/telemetry
   prune: true
   sourceRef:
