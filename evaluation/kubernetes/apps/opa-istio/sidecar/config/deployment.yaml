@@ -20,7 +20,7 @@ spec:
       name: admission-controller
     spec:
       containers:
-        - image: openpolicyagent/opa:latest@sha256:9fa1113c89e321adb83a1a9494c5f680750bbe28bb19f20a5d2ac9abce8fc2ee
+        - image: openpolicyagent/opa:latest@sha256:48ee088b64c2ab0fc61c79bf8ce4e940a2e77e43dd6062c59e28d540cd0fd75b
           name: opa
           ports:
             - containerPort: 8443
