@@ -30,7 +30,7 @@ spec:
       strategy: RollingUpdate
     image:
       repository: docker.io/jmalloc/echo-server
-      tag: 0.3.5@sha256:57110914108448e6692cd28fc602332357f91951d74ca12217a347b1f7df599c
+      tag: 0.3.6@sha256:86f2c45aa7e7ebe1be30b21f8cfff25a7ed6e3b059751822d4b35bf244a688d5
     service:
       main:
         ports:
