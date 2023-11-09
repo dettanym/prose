@@ -1,4 +1,4 @@
-package config
+package envoyfilter
 
 import (
 	"errors"
@@ -13,11 +13,11 @@ type Config struct {
 	EchoBody string
 }
 
-type Parser struct {
+type ConfigParser struct {
 	api.StreamFilterConfigParser
 }
 
-func (p *Parser) Parse(any *anypb.Any) (interface{}, error) {
+func (p *ConfigParser) Parse(any *anypb.Any) (interface{}, error) {
 	configStruct := &xds.TypedStruct{}
 	if err := any.UnmarshalTo(configStruct); err != nil {
 		return nil, err
@@ -40,7 +40,7 @@ func (p *Parser) Parse(any *anypb.Any) (interface{}, error) {
 	return conf, nil
 }
 
-func (p *Parser) Merge(parent interface{}, child interface{}) interface{} {
+func (p *ConfigParser) Merge(parent interface{}, child interface{}) interface{} {
 	parentConfig := parent.(*Config)
 	childConfig := child.(*Config)
 
