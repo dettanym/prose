@@ -15,6 +15,7 @@ import (
 	"net/url"
 	pb "privacy-profile-composer/pkg/proto"
 
+	"privacy-profile-composer/pkg/envoy_filter/common"
 	"privacy-profile-composer/pkg/envoy_filter/config"
 )
 
@@ -29,7 +30,7 @@ type filter struct {
 	contentType         string
 	contentLength       string
 	host                string
-	istioHeader         XEnvoyPeerMetadataHeader
+	istioHeader         common.XEnvoyPeerMetadataHeader
 	canAnalyzePIIOnBody bool
 	piiTypes            string
 }
@@ -60,7 +61,7 @@ func (f *filter) DecodeHeaders(header api.RequestHeaderMap, endStream bool) api.
 
 	xEnvoyPeerMetadata, exists := header.Get("x-envoy-peer-metadata")
 	if exists {
-		parsedHeader, err := DecodeXEnvoyPeerMetadataHeader(xEnvoyPeerMetadata)
+		parsedHeader, err := common.DecodeXEnvoyPeerMetadataHeader(xEnvoyPeerMetadata)
 		if err != nil {
 			log.Printf("Error decoding x-envoy-peer-metadata header: %s", err)
 			return api.Continue
