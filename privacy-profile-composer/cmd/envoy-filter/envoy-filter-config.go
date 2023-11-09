@@ -5,6 +5,7 @@ import (
 	"github.com/envoyproxy/envoy/contrib/golang/filters/http/source/go/pkg/http"
 
 	"privacy-profile-composer/pkg/envoy_filter/config"
+	"privacy-profile-composer/pkg/envoy_filter/inbound"
 )
 
 const Name = "simple"
@@ -22,9 +23,6 @@ func ConfigFactory(c interface{}) api.StreamFilterFactory {
 	}
 
 	return func(callbacks api.FilterCallbackHandler) api.StreamFilter {
-		return &filter{
-			callbacks: callbacks,
-			config:    conf,
-		}
+		return inbound.NewFilter(callbacks, conf)
 	}
 }

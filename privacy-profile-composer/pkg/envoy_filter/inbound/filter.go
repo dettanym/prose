@@ -1,4 +1,4 @@
-package main
+package inbound
 
 import (
 	"bytes"
@@ -6,18 +6,23 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/envoyproxy/envoy/contrib/golang/common/go/api"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 	"io"
 	"log"
 	"net/http"
 	"net/url"
-	pb "privacy-profile-composer/pkg/proto"
+
+	"github.com/envoyproxy/envoy/contrib/golang/common/go/api"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 
 	"privacy-profile-composer/pkg/envoy_filter/common"
 	"privacy-profile-composer/pkg/envoy_filter/config"
+	pb "privacy-profile-composer/pkg/proto"
 )
+
+func NewFilter(callbacks api.FilterCallbackHandler, config *config.Config) api.StreamFilter {
+	return &filter{callbacks: callbacks, config: config}
+}
 
 type filter struct {
 	api.PassThroughStreamFilter
