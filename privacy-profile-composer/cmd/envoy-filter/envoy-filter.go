@@ -14,25 +14,28 @@ import (
 	"net/http"
 	"net/url"
 	pb "privacy-profile-composer/pkg/proto"
+
+	"privacy-profile-composer/pkg/envoy_filter/config"
 )
 
 type filter struct {
 	api.PassThroughStreamFilter
 
-	callbacks     api.FilterCallbackHandler
-	path          string
-	method        string
-	contentType   string
-	contentLength string
-	host          string
-	istioHeader   XEnvoyPeerMetadataHeader
+	callbacks api.FilterCallbackHandler
+	config    *config.Config
+
+	path                string
+	method              string
+	contentType         string
+	contentLength       string
+	host                string
+	istioHeader         XEnvoyPeerMetadataHeader
 	canAnalyzePIIOnBody bool
-	config        *config
-	piiTypes      string
+	piiTypes            string
 }
 
 func (f *filter) sendLocalReplyInternal() api.StatusType {
-	body := fmt.Sprintf("%s, path: %s\r\n", f.config.echoBody, f.path)
+	body := fmt.Sprintf("%s, path: %s\r\n", f.config.EchoBody, f.path)
 	f.callbacks.SendLocalReply(200, body, nil, 0, "")
 	return api.LocalReply
 }

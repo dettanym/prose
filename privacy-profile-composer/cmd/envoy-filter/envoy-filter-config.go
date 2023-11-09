@@ -1,65 +1,22 @@
 package main
 
 import (
-	"errors"
-	"fmt"
-
-	xds "github.com/cncf/xds/go/xds/type/v3"
-	"google.golang.org/protobuf/types/known/anypb"
-
 	"github.com/envoyproxy/envoy/contrib/golang/common/go/api"
 	"github.com/envoyproxy/envoy/contrib/golang/filters/http/source/go/pkg/http"
+
+	"privacy-profile-composer/pkg/envoy_filter/config"
 )
 
 const Name = "simple"
 
 func init() {
-	http.RegisterHttpFilterConfigFactoryAndParser(Name, ConfigFactory, &parser{})
+	http.RegisterHttpFilterConfigFactoryAndParser(Name, ConfigFactory, &config.Parser{})
 }
 
-type config struct {
-	echoBody string
-	// other fields
-}
-
-type parser struct {
-	api.StreamFilterConfigParser
-}
-
-func (p *parser) Parse(any *anypb.Any) (interface{}, error) {
-	configStruct := &xds.TypedStruct{}
-	if err := any.UnmarshalTo(configStruct); err != nil {
-		return nil, err
-	}
-
-	v := configStruct.Value
-	conf := &config{}
-	prefix, ok := v.AsMap()["prefix_localreply_body"]
-	if !ok {
-		return nil, errors.New("missing prefix_localreply_body")
-	}
-	if str, ok := prefix.(string); ok {
-		conf.echoBody = str
-	} else {
-		return nil, fmt.Errorf("prefix_localreply_body: expect string while got %T", prefix)
-	}
-	return conf, nil
-}
-
-func (p *parser) Merge(parent interface{}, child interface{}) interface{} {
-	parentConfig := parent.(*config)
-	childConfig := child.(*config)
-
-	// copy one, do not update parentConfig directly.
-	newConfig := *parentConfig
-	if childConfig.echoBody != "" {
-		newConfig.echoBody = childConfig.echoBody
-	}
-	return &newConfig
-}
+func main() {}
 
 func ConfigFactory(c interface{}) api.StreamFilterFactory {
-	conf, ok := c.(*config)
+	conf, ok := c.(*config.Config)
 	if !ok {
 		panic("unexpected config type")
 	}
@@ -71,5 +28,3 @@ func ConfigFactory(c interface{}) api.StreamFilterFactory {
 		}
 	}
 }
-
-func main() {}
