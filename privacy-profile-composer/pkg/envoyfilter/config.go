@@ -9,8 +9,8 @@ import (
 	"google.golang.org/protobuf/types/known/anypb"
 )
 
-type Config struct {
-	EchoBody string
+type config struct {
+	echoBody string
 }
 
 type ConfigParser struct {
@@ -23,7 +23,7 @@ func (p *ConfigParser) Parse(any *anypb.Any) (interface{}, error) {
 		return nil, err
 	}
 
-	conf := &Config{}
+	conf := &config{}
 
 	v := configStruct.Value
 	prefix, ok := v.AsMap()["prefix_localreply_body"]
@@ -32,7 +32,7 @@ func (p *ConfigParser) Parse(any *anypb.Any) (interface{}, error) {
 	}
 
 	if str, ok := prefix.(string); ok {
-		conf.EchoBody = str
+		conf.echoBody = str
 	} else {
 		return nil, fmt.Errorf("prefix_localreply_body: expect string while got %T", prefix)
 	}
@@ -41,14 +41,14 @@ func (p *ConfigParser) Parse(any *anypb.Any) (interface{}, error) {
 }
 
 func (p *ConfigParser) Merge(parent interface{}, child interface{}) interface{} {
-	parentConfig := parent.(*Config)
-	childConfig := child.(*Config)
+	parentConfig := parent.(*config)
+	childConfig := child.(*config)
 
 	// copy one, do not update parentConfig directly.
 	newConfig := *parentConfig
 
-	if childConfig.EchoBody != "" {
-		newConfig.EchoBody = childConfig.EchoBody
+	if childConfig.echoBody != "" {
+		newConfig.echoBody = childConfig.echoBody
 	}
 
 	return &newConfig

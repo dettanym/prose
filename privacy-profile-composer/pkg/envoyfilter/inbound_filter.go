@@ -19,7 +19,7 @@ import (
 	pb "privacy-profile-composer/pkg/proto"
 )
 
-func NewInboundFilter(callbacks api.FilterCallbackHandler, config *Config) api.StreamFilter {
+func NewInboundFilter(callbacks api.FilterCallbackHandler, config *config) api.StreamFilter {
 	return &inboundFilter{callbacks: callbacks, config: config}
 }
 
@@ -27,7 +27,7 @@ type inboundFilter struct {
 	api.PassThroughStreamFilter
 
 	callbacks api.FilterCallbackHandler
-	config    *Config
+	config    *config
 
 	path                string
 	method              string
@@ -40,7 +40,7 @@ type inboundFilter struct {
 }
 
 func (f *inboundFilter) sendLocalReplyInternal() api.StatusType {
-	body := fmt.Sprintf("%s, path: %s\r\n", f.config.EchoBody, f.path)
+	body := fmt.Sprintf("%s, path: %s\r\n", f.config.echoBody, f.path)
 	f.callbacks.SendLocalReply(200, body, nil, 0, "")
 	return api.LocalReply
 }
