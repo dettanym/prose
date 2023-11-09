@@ -1,4 +1,4 @@
-package inbound
+package envoyfilter
 
 import (
 	"bytes"
@@ -15,20 +15,19 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
-	"privacy-profile-composer/pkg/envoy_filter/common"
-	"privacy-profile-composer/pkg/envoy_filter/config"
+	"privacy-profile-composer/pkg/envoyfilter/internal/common"
 	pb "privacy-profile-composer/pkg/proto"
 )
 
-func NewFilter(callbacks api.FilterCallbackHandler, config *config.Config) api.StreamFilter {
-	return &filter{callbacks: callbacks, config: config}
+func NewInboundFilter(callbacks api.FilterCallbackHandler, config *Config) api.StreamFilter {
+	return &inboundFilter{callbacks: callbacks, config: config}
 }
 
-type filter struct {
+type inboundFilter struct {
 	api.PassThroughStreamFilter
 
 	callbacks api.FilterCallbackHandler
-	config    *config.Config
+	config    *Config
 
 	path                string
 	method              string
@@ -40,14 +39,14 @@ type filter struct {
 	piiTypes            string
 }
 
-func (f *filter) sendLocalReplyInternal() api.StatusType {
+func (f *inboundFilter) sendLocalReplyInternal() api.StatusType {
 	body := fmt.Sprintf("%s, path: %s\r\n", f.config.EchoBody, f.path)
 	f.callbacks.SendLocalReply(200, body, nil, 0, "")
 	return api.LocalReply
 }
 
 // Callbacks which are called in request path
-func (f *filter) DecodeHeaders(header api.RequestHeaderMap, endStream bool) api.StatusType {
+func (f *inboundFilter) DecodeHeaders(header api.RequestHeaderMap, endStream bool) api.StatusType {
 	log.Println(">>> DECODE HEADERS")
 
 	f.path = header.Path() //Get(":path")
@@ -199,7 +198,7 @@ func piiAnalysis(svcName string, bufferBytes []byte) (string, error) {
 	return string(jsonResp), nil
 }
 
-func (f *filter) DecodeData(buffer api.BufferInstance, endStream bool) api.StatusType {
+func (f *inboundFilter) DecodeData(buffer api.BufferInstance, endStream bool) api.StatusType {
 	log.Println(">>> DECODE DATA")
 	log.Println("  <<About to forward", buffer.Len(), "bytes of data to service>>")
 
@@ -235,7 +234,7 @@ func (f *filter) DecodeData(buffer api.BufferInstance, endStream bool) api.Statu
 	return api.Continue
 }
 
-func (f *filter) DecodeTrailers(trailers api.RequestTrailerMap) api.StatusType {
+func (f *inboundFilter) DecodeTrailers(trailers api.RequestTrailerMap) api.StatusType {
 	log.Println(">>> DECODE TRAILERS")
 	log.Printf("%+v", trailers)
 	if f.piiTypes != "" {
@@ -244,7 +243,7 @@ func (f *filter) DecodeTrailers(trailers api.RequestTrailerMap) api.StatusType {
 	return api.Continue
 }
 
-func (f *filter) EncodeHeaders(header api.ResponseHeaderMap, endStream bool) api.StatusType {
+func (f *inboundFilter) EncodeHeaders(header api.ResponseHeaderMap, endStream bool) api.StatusType {
 	//if f.path == "/update_upstream_response" {
 	//	header.Set("Content-Length", strconv.Itoa(len(UpdateUpstreamBody)))
 	//}
@@ -263,7 +262,7 @@ func (f *filter) EncodeHeaders(header api.ResponseHeaderMap, endStream bool) api
 }
 
 // Callbacks which are called in response path
-func (f *filter) EncodeData(buffer api.BufferInstance, endStream bool) api.StatusType {
+func (f *inboundFilter) EncodeData(buffer api.BufferInstance, endStream bool) api.StatusType {
 	//if f.path == "/update_upstream_response" {
 	//	if endStream {
 	//		buffer.SetString(UpdateUpstreamBody)
@@ -277,11 +276,11 @@ func (f *filter) EncodeData(buffer api.BufferInstance, endStream bool) api.Statu
 	return api.Continue
 }
 
-func (f *filter) EncodeTrailers(trailers api.ResponseTrailerMap) api.StatusType {
+func (f *inboundFilter) EncodeTrailers(trailers api.ResponseTrailerMap) api.StatusType {
 	log.Println("<<< ENCODE TRAILERS")
 	log.Printf("%+v", trailers)
 	return api.Continue
 }
 
-func (f *filter) OnDestroy(reason api.DestroyReason) {
+func (f *inboundFilter) OnDestroy(reason api.DestroyReason) {
 }

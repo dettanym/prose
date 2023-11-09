@@ -1,10 +1,6 @@
-package config
+package envoyfilter
 
-import (
-	"github.com/envoyproxy/envoy/contrib/golang/common/go/api"
-
-	"privacy-profile-composer/pkg/envoy_filter/inbound"
-)
+import "github.com/envoyproxy/envoy/contrib/golang/common/go/api"
 
 func ConfigFactory(c interface{}) api.StreamFilterFactory {
 	conf, ok := c.(*Config)
@@ -13,6 +9,6 @@ func ConfigFactory(c interface{}) api.StreamFilterFactory {
 	}
 
 	return func(callbacks api.FilterCallbackHandler) api.StreamFilter {
-		return inbound.NewFilter(callbacks, conf)
+		return NewInboundFilter(callbacks, conf)
 	}
 }
