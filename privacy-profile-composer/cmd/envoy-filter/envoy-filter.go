@@ -206,7 +206,7 @@ func (f *filter) DecodeData(buffer api.BufferInstance, endStream bool) api.Statu
 		}
 		log.Println("  <<decoded x-www-form-urlencoded data: ", query)
 		jsonBody, err = json.Marshal(query)
-		if err!= nil {
+		if err != nil {
 			log.Printf("Could not transform URL encoded data to JSON to pass to Presidio")
 			return api.Continue
 		}
