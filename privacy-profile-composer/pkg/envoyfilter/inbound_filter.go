@@ -29,18 +29,12 @@ type inboundFilter struct {
 	callbacks api.FilterCallbackHandler
 	config    *config
 
-	path                string
-	method              string
-	contentType         string
-	contentLength       string
-	host                string
-	istioHeader         common.XEnvoyPeerMetadataHeader
-	canAnalyzePIIOnBody bool
-	piiTypes            string
+	headerMetadata common.HeaderMetadata
+	piiTypes       string
 }
 
 func (f *inboundFilter) sendLocalReplyInternal() api.StatusType {
-	body := fmt.Sprintf("%s, path: %s\r\n", f.config.echoBody, f.path)
+	body := fmt.Sprintf("%s, path: %s\r\n", f.config.echoBody, f.headerMetadata.Path)
 	f.callbacks.SendLocalReply(200, body, nil, 0, "")
 	return api.LocalReply
 }
@@ -49,54 +43,12 @@ func (f *inboundFilter) sendLocalReplyInternal() api.StatusType {
 func (f *inboundFilter) DecodeHeaders(header api.RequestHeaderMap, endStream bool) api.StatusType {
 	log.Println(">>> DECODE HEADERS")
 
-	f.path = header.Path() //Get(":path")
-	f.method = header.Method()
-	f.host = header.Host()
+	f.headerMetadata = common.ExtractHeaderData(header)
 
-	contentType, exists := header.Get("content-type")
-	if exists {
-		f.contentType = contentType
-	}
-
-	contentLength, exists := header.Get("content-length")
-	if exists {
-		f.contentLength = contentLength
-	}
-
-	xEnvoyPeerMetadata, exists := header.Get("x-envoy-peer-metadata")
-	if exists {
-		parsedHeader, err := common.DecodeXEnvoyPeerMetadataHeader(xEnvoyPeerMetadata)
-		if err != nil {
-			log.Printf("Error decoding x-envoy-peer-metadata header: %s", err)
-			return api.Continue
-		}
-		f.istioHeader = parsedHeader
-	}
-
-	var purpose, svcName string
-	if &f.istioHeader != nil {
-		svcName = f.istioHeader.Name
-		labels := f.istioHeader.Labels
-		var purposeExists bool
-		purpose, purposeExists = labels["purpose"]
-		if purposeExists == false {
-			// The pod hasn't been labelled with a purpose
-			// Initialize the purpose to the svcName
-			// Infer it from the svcName using presidio
-			purpose = svcName
-		}
-	} else {
-		purpose = "ANY"
-		svcName = "UNKNOWN SVC"
-	}
 	// TODO: Insert it into OpenTelemetry baggage for tracing?
-	header.Add("x-prose-purpose", purpose) // For OPA
+	header.Add("x-prose-purpose", f.headerMetadata.Purpose) // For OPA
 
-	log.Printf("%v (%v) %v://%v%v\n", header.Method(), header.Protocol(), header.Scheme(), header.Host(), header.Path())
-	header.Range(func(key, value string) bool {
-		log.Printf("  \"%v\": %v\n", key, value)
-		return true
-	})
+	common.LogDecodeHeaderData(header)
 
 	return api.Continue
 }
@@ -202,8 +154,12 @@ func (f *inboundFilter) DecodeData(buffer api.BufferInstance, endStream bool) ap
 	log.Println(">>> DECODE DATA")
 	log.Println("  <<About to forward", buffer.Len(), "bytes of data to service>>")
 
+	canAnalyzePIIOnBody := false
 	var jsonBody []byte
-	if f.contentType == "application/x-www-form-urlencoded" {
+
+	if f.headerMetadata.ContentType == nil {
+		log.Println("ContentType header is not set. Cannot analyze body")
+	} else if *f.headerMetadata.ContentType == "application/x-www-form-urlencoded" {
 		query, err := url.ParseQuery(buffer.String())
 		if err != nil {
 			log.Printf("Failed to start decoding JSON data")
@@ -215,20 +171,21 @@ func (f *inboundFilter) DecodeData(buffer api.BufferInstance, endStream bool) ap
 			log.Printf("Could not transform URL encoded data to JSON to pass to Presidio")
 			return api.Continue
 		}
-		f.canAnalyzePIIOnBody = true
+		canAnalyzePIIOnBody = true
+	} else if *f.headerMetadata.ContentType == "application/json" {
+		jsonBody = buffer.Bytes()
+		canAnalyzePIIOnBody = true
+	} else {
+		log.Printf("Cannot analyze a body with contentType '%s'\n", f.headerMetadata.ContentType)
 	}
 
-	if f.contentType == "application/json" {
-		jsonBody = buffer.Bytes()
-		f.canAnalyzePIIOnBody = true
+	if !canAnalyzePIIOnBody {
+		return api.Continue
 	}
 
 	var err error
-	if f.canAnalyzePIIOnBody {
-		if f.piiTypes, err = piiAnalysis(f.istioHeader.Name, jsonBody); err != nil {
-			log.Println(err)
-			return api.Continue
-		}
+	if f.piiTypes, err = piiAnalysis(f.headerMetadata.SvcName, jsonBody); err != nil {
+		log.Println(err)
 	}
 
 	return api.Continue
@@ -244,26 +201,21 @@ func (f *inboundFilter) DecodeTrailers(trailers api.RequestTrailerMap) api.Statu
 }
 
 func (f *inboundFilter) EncodeHeaders(header api.ResponseHeaderMap, endStream bool) api.StatusType {
-	//if f.path == "/update_upstream_response" {
+	//if f.headerMetadata.Path == "/update_upstream_response" {
 	//	header.Set("Content-Length", strconv.Itoa(len(UpdateUpstreamBody)))
 	//}
 	//header.Set("Rsp-Header-From-Go", "bar-test")
 
 	log.Println("<<< ENCODE HEADERS")
 
-	status, statusWasSet := header.Status()
-	log.Printf("Status was set (%v) to %v with response headers:\n", statusWasSet, status)
-	header.Range(func(key, value string) bool {
-		log.Printf("  \"%v\": %v\n", key, value)
-		return true
-	})
+	common.LogEncodeHeaderData(header)
 
 	return api.Continue
 }
 
 // Callbacks which are called in response path
 func (f *inboundFilter) EncodeData(buffer api.BufferInstance, endStream bool) api.StatusType {
-	//if f.path == "/update_upstream_response" {
+	//if f.headerMetadata.Path == "/update_upstream_response" {
 	//	if endStream {
 	//		buffer.SetString(UpdateUpstreamBody)
 	//	} else {
