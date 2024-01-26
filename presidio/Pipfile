@@ -16,6 +16,7 @@ tldextract = "*"
 typing-extensions = "*"
 
 [dev-packages]
+black = "*"
 flake8-docstrings = "*"
 pep8-naming = "*"
 pre_commit = "*"
