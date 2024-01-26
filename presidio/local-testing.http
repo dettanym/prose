@@ -1,3 +1,7 @@
+POST http://localhost:3000/batchanalyze
+Content-Type: application/json
+Accept: application/json
+
 {
   "json_to_analyze": {
     "key_F": {
