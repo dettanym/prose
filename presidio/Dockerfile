@@ -1,4 +1,4 @@
-FROM python:3.9-slim
+FROM python:3.11-slim
 
 ARG NLP_CONF_FILE=conf/default.yaml
 
