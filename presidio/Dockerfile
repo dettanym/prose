@@ -1,6 +1,6 @@
 FROM python:3.11-slim
 
-ARG NLP_CONF_FILE=conf/default.yaml
+ARG NLP_CONF_FILE=server/conf/default.yaml
 
 ENV PORT=3000
 ENV PIPENV_VENV_IN_PROJECT=1
@@ -15,9 +15,11 @@ RUN \
     && pipenv sync
 
 # install nlp models specified in conf/default.yaml
-COPY ./install_nlp_models.py /app/
+COPY ./scripts/ /app/scripts/
 COPY ${NLP_CONF_FILE} /app/${NLP_CONF_FILE}
-RUN pipenv run python install_nlp_models.py --conf_file /app/${NLP_CONF_FILE}
 
-COPY . /app/
-CMD pipenv run python /app/app.py --host 0.0.0.0
+RUN pipenv run python scripts/install_nlp_models.py --conf_file /app/${NLP_CONF_FILE}
+
+COPY server/ /app/server/
+
+CMD pipenv run python /app/server --host 0.0.0.0
