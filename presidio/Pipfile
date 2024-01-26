@@ -4,19 +4,19 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-presidio_analyzer = "2.2.33"
-presidio_anonymizer = "2.2.33"
-spacy = ">=3.4.4"
-regex = "*"
-tldextract = "*"
-flask = ">=1.1"
+flake8 = "*"
+flask = "*"
+phonenumbers = "*"
+presidio-analyzer = "*"
+presidio-anonymizer = "*"
 pyyaml = "*"
-phonenumbers = ">=8.12"
+regex = "*"
+spacy = "*"
+tldextract = "*"
 typing-extensions = "*"
 
 [dev-packages]
-pytest = "*"
-flake8= {version = ">=3.7.9"}
-pep8-naming = "*"
 flake8-docstrings = "*"
+pep8-naming = "*"
 pre_commit = "*"
+pytest = "*"
