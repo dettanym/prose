@@ -1,4 +1,5 @@
 """REST API server for analyzer."""
+
 import logging
 import os
 import pprint
@@ -130,22 +131,29 @@ class Server:
                 request_obj = request.get_json()
                 print(request_obj["json_to_analyze"], type(request_obj))
                 if not request_obj["json_to_analyze"]:
-                    raise Exception("Please set a JSON field named 'json_to_analyze' in the body, with the JSON object "
-                                    "to analyze.")
+                    raise Exception(
+                        "Please set a JSON field named 'json_to_analyze' in the body, with the JSON object "
+                        "to analyze."
+                    )
 
                 # Note that this function implementation already adds the key as additional 'context'
                 # for the decision (see batch_analyzer_engine.py line 96)
                 recognizer_result_list = self.batch_analyzer.analyze_dict(
-                    input_dict=request_obj["json_to_analyze"],
-                    language="en"
+                    input_dict=request_obj["json_to_analyze"], language="en"
                 )
                 print(recognizer_result_list)
 
-                anonymizer_results = self.batch_anonymizer.anonymize_dict(recognizer_result_list)
+                anonymizer_results = self.batch_anonymizer.anonymize_dict(
+                    recognizer_result_list
+                )
                 pprint.pprint(anonymizer_results)
                 class_substring_pattern = re.compile(r"<([^>]*)>")
-                unique_pii_list = recursive_find_pattern(anonymizer_results, class_substring_pattern)
-                unique_valid_pii_list = [pii for pii in unique_pii_list if pii in data_items_set]
+                unique_pii_list = recursive_find_pattern(
+                    anonymizer_results, class_substring_pattern
+                )
+                unique_valid_pii_list = [
+                    pii for pii in unique_pii_list if pii in data_items_set
+                ]
 
                 return jsonify(unique_valid_pii_list), 200
             except TypeError as te:
@@ -164,13 +172,17 @@ class Server:
                 return jsonify(error=e.args[0]), 500
 
 
-def recursive_find_pattern(d: Dict[AnyStr, Any], pattern: re.Pattern[AnyStr]) -> List[AnyStr]:
+def recursive_find_pattern(
+    d: Dict[AnyStr, Any], pattern: re.Pattern[AnyStr]
+) -> List[AnyStr]:
     def match_string(input_string: str):
         pattern_found = pattern.search(input_string)
         if pattern_found is None:
             return
 
-        first_match = pattern_found.group(1)  # group(1) gets matching data type within <>
+        first_match = pattern_found.group(
+            1
+        )  # group(1) gets matching data type within <>
         if first_match is not None and first_match not in acc:
             acc.append(first_match)
 
