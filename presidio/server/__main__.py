@@ -2,19 +2,18 @@
 
 import logging
 import os
-import pprint
-import re
 from logging.config import fileConfig
 from pathlib import Path
-from typing import Tuple, List, Dict, Any, AnyStr
+from typing import Tuple
 
 from flask import Flask, request, jsonify, Response
+from presidio_analyzer.analyzer_engine import AnalyzerEngine
+from presidio_analyzer.analyzer_request import AnalyzerRequest
+from presidio_analyzer.batch_analyzer_engine import BatchAnalyzerEngine
+from presidio_anonymizer import BatchAnonymizerEngine
 from werkzeug.exceptions import HTTPException
 
-from presidio_analyzer.analyzer_engine import AnalyzerEngine
-from presidio_analyzer.batch_analyzer_engine import BatchAnalyzerEngine
-from presidio_analyzer.analyzer_request import AnalyzerRequest
-from presidio_anonymizer import BatchAnonymizerEngine
+from helpers import convert_all_lists_to_dicts, extract_data_types_from_results
 
 DEFAULT_PORT = "3000"
 
@@ -139,18 +138,17 @@ class Server:
                 # Note that this function implementation already adds the key as additional 'context'
                 # for the decision (see batch_analyzer_engine.py line 96)
                 recognizer_result_list = self.batch_analyzer.analyze_dict(
-                    input_dict=request_obj["json_to_analyze"], language="en"
+                    input_dict=convert_all_lists_to_dicts(
+                        request_obj["json_to_analyze"]
+                    ),
+                    language="en",
                 )
                 print(recognizer_result_list)
 
-                anonymizer_results = self.batch_anonymizer.anonymize_dict(
+                unique_pii_list = extract_data_types_from_results(
                     recognizer_result_list
                 )
-                pprint.pprint(anonymizer_results)
-                class_substring_pattern = re.compile(r"<([^>]*)>")
-                unique_pii_list = recursive_find_pattern(
-                    anonymizer_results, class_substring_pattern
-                )
+
                 unique_valid_pii_list = [
                     pii for pii in unique_pii_list if pii in data_items_set
                 ]
@@ -170,41 +168,6 @@ class Server:
                     f"BatchAnalyzer.analyze_dict(). {e}"
                 )
                 return jsonify(error=e.args[0]), 500
-
-
-def recursive_find_pattern(
-    d: Dict[AnyStr, Any], pattern: re.Pattern[AnyStr]
-) -> List[AnyStr]:
-    def match_string(input_string: str):
-        pattern_found = pattern.search(input_string)
-        if pattern_found is None:
-            return
-
-        first_match = pattern_found.group(
-            1
-        )  # group(1) gets matching data type within <>
-        if first_match is not None and first_match not in acc:
-            acc.append(first_match)
-
-    def recursive_switch_case(v):
-        if isinstance(v, dict):
-            dict_find_pattern_in_value(v)
-        elif isinstance(v, list):
-            list_find_pattern_in_value(v)
-        elif isinstance(v, str):
-            match_string(v)
-
-    def list_find_pattern_in_value(input_list: list):
-        for v in input_list:
-            recursive_switch_case(v)
-
-    def dict_find_pattern_in_value(input_dict: dict):
-        for v in input_dict.values():
-            recursive_switch_case(v)
-
-    acc = []
-    dict_find_pattern_in_value(d)
-    return acc
 
 
 data_items_set = [
