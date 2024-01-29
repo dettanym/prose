@@ -1,15 +1,13 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "config:base",
+    "config:recommended",
     "docker:enableMajor",
     "docker:pinDigests",
-    ":disableRateLimiting",
-    ":dependencyDashboard",
     ":automergeDigest",
     ":automergeBranch",
     ":semanticCommits",
-    "github>dettanym/prose//.github/renovate/groups.json"
+    ":prConcurrentLimit10"
   ],
   "dependencyDashboardTitle": "Renovate Dashboard 🤖",
   "schedule": ["every tuesday"],
@@ -21,5 +19,18 @@
   },
   "kubernetes": {
     "fileMatch": ["evaluation/kubernetes/.+\\.ya?ml$"]
-  }
+  },
+  "packageRules": [
+    {
+      "description": "Flux images and tags",
+      "groupName": "Flux",
+      "matchPackagePatterns": ["fluxcd"],
+      "matchDatasources": ["docker", "github-tags"],
+      "versioning": "semver",
+      "group": {
+        "commitMessageTopic": "{{{groupName}}} group"
+      },
+      "separateMinorPatch": true
+    }
+  ]
 }
