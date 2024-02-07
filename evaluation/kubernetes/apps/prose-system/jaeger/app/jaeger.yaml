@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
         - name: jaeger
-          image: "docker.io/jaegertracing/all-in-one:1.50@sha256:d589499a01e1e2f9d302db8e210af09688076fd8a93278fa024824a755c1a0f1"
+          image: "docker.io/jaegertracing/all-in-one:1.54@sha256:f4044964505c81bf12131c2dfd1f4ddf1d1421bbbd9d79f691221cac077599a8"
           env:
             - name: BADGER_EPHEMERAL
               value: "false"
