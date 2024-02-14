@@ -3,42 +3,41 @@ package main
 import (
 	"context"
 	"fmt"
-	"net/http"
+	"github.com/jaegertracing/jaeger/proto-gen/api_v2"
 
 	"github.com/jaegertracing/jaeger/model"
-	"github.com/jaegertracing/jaeger/proto-gen/api_v2"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
 
 // Run `docker compose up -d` to start services before this program
 func main() {
-	var err error
-
-	// run some workloads so traces are created
-	_, err = http.Get("http://localhost:8080/dispatch?customer=123")
-	if err != nil {
-		fmt.Printf("error querying hotrod app:\n%v\n", err)
-		return
-	}
-
-	_, err = http.Get("http://localhost:8080/dispatch?customer=392")
-	if err != nil {
-		fmt.Printf("error querying hotrod app:\n%v\n", err)
-		return
-	}
-
-	_, err = http.Get("http://localhost:8080/dispatch?customer=731")
-	if err != nil {
-		fmt.Printf("error querying hotrod app:\n%v\n", err)
-		return
-	}
-
-	_, err = http.Get("http://localhost:8080/dispatch?customer=567")
-	if err != nil {
-		fmt.Printf("error querying hotrod app:\n%v\n", err)
-		return
-	}
+	//var err error
+	//
+	//// run some workloads so traces are created
+	//_, err = http.Get("http://localhost:8080/dispatch?customer=123")
+	//if err != nil {
+	//	fmt.Printf("error querying hotrod app:\n%v\n", err)
+	//	return
+	//}
+	//
+	//_, err = http.Get("http://localhost:8080/dispatch?customer=392")
+	//if err != nil {
+	//	fmt.Printf("error querying hotrod app:\n%v\n", err)
+	//	return
+	//}
+	//
+	//_, err = http.Get("http://localhost:8080/dispatch?customer=731")
+	//if err != nil {
+	//	fmt.Printf("error querying hotrod app:\n%v\n", err)
+	//	return
+	//}
+	//
+	//_, err = http.Get("http://localhost:8080/dispatch?customer=567")
+	//if err != nil {
+	//	fmt.Printf("error querying hotrod app:\n%v\n", err)
+	//	return
+	//}
 
 	// setup grpc client and query jaeger
 
@@ -80,11 +79,11 @@ func main() {
 		&api_v2.FindTracesRequest{
 			Query: &api_v2.TraceQueryParameters{
 				// ServiceName seems to be required
-				ServiceName:   "mysql",
-				OperationName: "SQL SELECT",
-				Tags: map[string]string{
-					"span.kind": "client",
-				},
+				ServiceName: "golang-filter",
+				//OperationName: "SQL SELECT",
+				//Tags: map[string]string{
+				//	"span.kind": "client",
+				//},
 			},
 		},
 	)
@@ -100,6 +99,7 @@ func main() {
 	}
 
 	spans := spansResponse.GetSpans()
+	// spans := spansResponse.GetResourceSpans()
 
 	if len(spans) == 0 {
 		fmt.Printf("successfully queried. no spans found")
@@ -107,14 +107,64 @@ func main() {
 		fmt.Printf("successfully queried. found %d spans\n", len(spans))
 	}
 
-	traceids := []model.TraceID{}
-	traceidsSeen := map[model.TraceID]bool{}
+	var traceids []string
+	traceidsSeen := map[string]bool{}
 	for _, s := range spansResponse.GetSpans() {
-		if !traceidsSeen[s.TraceID] {
-			traceids = append(traceids, s.TraceID)
+		traceid := s.TraceID.String()
+		fmt.Printf("\ntrace id: %s", traceid)
+		if !traceidsSeen[traceid] {
+			traceids = append(traceids, traceid)
 		}
-		traceidsSeen[s.TraceID] = true
+		traceidsSeen[traceid] = true
+	}
+	//for _, s := range spansResponse.GetResourceSpans() {
+	//	for _, x := range s.ScopeSpans {
+	//		y := x.GetSpans()
+	//		for _, r := range y {
+	//			if !traceidsSeen[] {
+	//				traceids = append(traceids)
+	//			}
+	//			traceidsSeen[r.TraceID] = true
+	//		}
+	//	}
+	//}
+
+	fmt.Printf("\nfound relevant traces:\n%v\n", traceids)
+
+	//for i, t := range traceids {
+	t := traceids[0]
+	tName := t
+	traceid, err := model.TraceIDFromString(t)
+	if err != nil {
+		return
 	}
 
-	fmt.Printf("found relevant traces:\n%v\n", traceids)
+	fmt.Printf("selected trace '%v' with name '%s'\n", t, tName)
+
+	entireTraceClient, err := jaegerQueryClient.GetTrace(
+		context.Background(),
+		&api_v2.GetTraceRequest{
+			TraceID: traceid,
+		},
+	)
+	if err != nil {
+		fmt.Printf("error receiving details about the trace id \"%s\":\n%v\n", tName, err)
+		return
+	}
+
+	entiretrace, err := entireTraceClient.Recv()
+	if err != nil {
+		fmt.Printf("error receiving the response:\n%v\n", err)
+		return
+	}
+
+	allSpansInTrace := entiretrace.GetSpans()
+	if len(allSpansInTrace) == 0 {
+		fmt.Printf("no spans inside trace '%s'", tName)
+	}
+	for _, s := range allSpansInTrace {
+		fmt.Printf("received spans inside a trace '%s':\n%v\n", tName, s)
+	}
+	//}
+
 }
