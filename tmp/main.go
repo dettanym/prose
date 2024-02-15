@@ -159,31 +159,28 @@ func main() {
 
 	fmt.Printf("selected 0th trace with name '%02x'\n", traceids[0])
 
-	//entireTraceClient, err := jaegerQueryClient.GetTrace(
-	//	context.Background(),
-	//	&api_v3.GetTraceRequest{
-	//		TraceId: traceids[0],
-	//	},
-	//)
-	//if err != nil {
-	//	fmt.Printf("error receiving details about the trace id \"%s\":\n%v\n", traceids[0], err)
-	//	return
-	//}
-	//
-	//entiretrace, err := entireTraceClient.Recv()
-	//if err != nil {
-	//	fmt.Printf("error receiving the response:\n%v\n", err)
-	//	return
-	//}
-	////
-	//allSpansInTrace := entiretrace.GetResourceSpans()
-	//fmt.Printf("got all spans in trace: ", allSpansInTrace)
-	////if len(allSpansInTrace) == 0 {
-	////	fmt.Printf("no spans inside trace '%s'", tName)
-	////}
-	////for _, s := range allSpansInTrace {
-	////	fmt.Printf("received spans inside a trace '%s':\n%v\n", tName, s)
-	////}
-	////}
+	entireTraceClient, err := jaegerQueryClient.GetTrace(
+		context.Background(),
+		&api_v3.GetTraceRequest{
+			TraceId: fmt.Sprintf("%02x", traceids[0]),
+		},
+	)
 
+	if err != nil {
+		fmt.Printf("error receiving details about the trace id \"%s\":\n%v\n", traceids[0], err)
+		return
+	}
+
+	entiretrace, err := entireTraceClient.Recv()
+	if err != nil {
+		fmt.Printf("error receiving the response:\n%v\n", err)
+		return
+	}
+	//
+	allSpansInTrace := entiretrace.GetResourceSpans()
+	fmt.Printf("got all spans in trace: \n")
+	fmt.Println(allSpansInTrace)
+	if len(allSpansInTrace) == 0 {
+		fmt.Printf("no spans inside trace '%s'", traceids[0])
+	}
 }
