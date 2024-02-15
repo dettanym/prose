@@ -84,8 +84,8 @@ func main() {
 				//Tags: map[string]string{
 				//	"span.kind": "client",
 				//},
-				StartTimeMin: startDate,
-				StartTimeMax: endDate,
+				// Treated as num_traces, the number of traces to return in the response
+				// SearchDepth: 3,
 			},
 		},
 	)
