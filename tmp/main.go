@@ -8,7 +8,6 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"strings"
-	"time"
 )
 
 // Run `docker compose up -d` to start services before this program
@@ -74,18 +73,6 @@ func main() {
 	} else {
 		fmt.Printf("loaded services:\n%v\n", services.Services)
 	}
-
-	startDate := time.Date(2024, 02, 10, 00, 00, 00, 0, time.UTC)
-	endDate := startDate.AddDate(0, 1, 0)
-
-	//spanStartDate, err := types.TimestampProto(startDate)
-	//if err != nil {
-	//	fmt.Errorf("could not set span start date for FindTraces query: %v\n", err)
-	//}
-	//spanEndDate, err := types.TimestampProto(endDate)
-	//if err != nil {
-	//	fmt.Errorf("could not set span end date for FindTraces query: %v\n", err)
-	//}
 
 	findTracesClient, err := jaegerQueryClient.FindTraces(
 		context.Background(),
