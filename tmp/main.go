@@ -139,37 +139,4 @@ func main() {
 
 	fmt.Printf("selected 0th trace with name %s\n", traceids[0].String())
 
-	traceIDStr, err := model.TraceIDFromString(fmt.Sprintf("%02x", traceids[0]))
-	if err != nil {
-		fmt.Printf("error forming the traceID from the string:  %s\n", err)
-		return
-	}
-
-	// TODO: Instead of this call, just parse the results of the previous call
-	//  This assumes that FindTraces returns all spans of each trace that has at
-	//   least one span that satisfies its constraints.
-	entireTraceClient, err := jaegerQueryClient.GetTrace(
-		context.Background(),
-		&api_v2.GetTraceRequest{
-			TraceID: traceIDStr,
-		},
-	)
-
-	if err != nil {
-		fmt.Printf("error receiving details about the trace id \"%s\":\n%v\n", traceids[0], err)
-		return
-	}
-
-	entiretrace, err := entireTraceClient.Recv()
-	if err != nil {
-		fmt.Printf("error receiving the response:\n%v\n", err)
-		return
-	}
-	//
-	allSpansInTrace := entiretrace.GetSpans()
-	fmt.Printf("got all spans in trace: \n")
-	fmt.Println(allSpansInTrace)
-	if len(allSpansInTrace) == 0 {
-		fmt.Printf("no spans inside trace '%s'", traceids[0])
-	}
 }
