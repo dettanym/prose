@@ -126,7 +126,8 @@ func main() {
 	traceidsSeen := map[model.TraceID]bool{}
 
 	for _, resourceSpan := range spans {
-		fmt.Printf("--> --> New resource span. Number of scope spans: %d\n", len(resourceSpan.ScopeSpans))
+		fmt.Printf("-- Resource: %s\n", resourceSpan.GetResource())
+		fmt.Printf("--> --> New resource span. Number of scope spans: %d\n", len(resourceSpan.GetScopeSpans()))
 		for _, scopeSpan := range resourceSpan.ScopeSpans {
 			fmt.Printf("New scope span with %d spans\n", len(scopeSpan.Spans))
 			for _, s := range scopeSpan.GetSpans() {
