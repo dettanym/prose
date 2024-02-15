@@ -89,41 +89,43 @@ func main() {
 			},
 		},
 	)
-	if err != nil {
-		fmt.Printf("error finding traces:\n%v\n", err)
-		return
-	}
-
-	spansResponse, err := findTracesClient.Recv()
-	if err != nil {
-		fmt.Printf("error receiving the response:\n%v\n", err)
-		return
-	}
-
-	spans := spansResponse.GetSpans()
-
-	if len(spans) == 0 {
-		fmt.Printf("successfully queried. no spans found")
-	} else {
-		fmt.Printf("successfully queried. found %d *resource* spans\n", len(spans))
-	}
-
-	var traceids []model.TraceID
-	traceidsSeen := map[model.TraceID]bool{}
-
-	for _, s := range spans {
-		printTags(s)
-
-		if !traceidsSeen[s.TraceID] {
-			traceids = append(traceids, s.TraceID)
+	// TODO: Convert map value to []Spans
+	//  and then to map[SpanID]Span
+	traceIDToSpansMap := map[model.TraceID]api_v2.SpansResponseChunk{}
+	numberOfResponseChunksFound := 0
+	numberOfSpansFound := 0
+	for {
+		spansResponse, err := findTracesClient.Recv()
+		if err != nil { // probably got an EOF
+			if numberOfResponseChunksFound == 0 {
+				fmt.Printf("error finding traces:\n%v\n", err)
+			}
+			break
 		}
-		traceidsSeen[s.TraceID] = true
+		// found a spans response chunk
+		numberOfResponseChunksFound += 1
+
+		for _, span := range spansResponse.GetSpans() {
+			numberOfSpansFound += 1
+			spansResponseChunkForTrace, sameTraceExistsBefore := traceIDToSpansMap[span.TraceID]
+			if sameTraceExistsBefore {
+				otherSpansInSameTrace := spansResponseChunkForTrace.GetSpans()
+				otherSpansInSameTrace = append(otherSpansInSameTrace, span)
+				traceIDToSpansMap[span.TraceID] = api_v2.SpansResponseChunk{
+					Spans: otherSpansInSameTrace,
+				}
+			} else {
+				traceIDToSpansMap[span.TraceID] = *spansResponse
+			}
+
+			fmt.Printf("--> Span Operation name: %s\n", span.OperationName)
+			fmt.Printf("Span details: trace id %s, span id: %s, parent span id: %s,\n", span.TraceID, span.SpanID, span.ParentSpanID())
+			fmt.Printf("Span start time: %s, duration: %s, references:%s\n", span.GetStartTime(), span.GetDuration(), span.GetReferences())
+
+			printTags(span)
+		}
 	}
-
-	fmt.Printf("\nfound %d relevant traces\n", len(traceids))
-
-	fmt.Printf("selected 0th trace with name %s\n", traceids[0].String())
-
+	fmt.Printf("found %d spans across %d traces\n", numberOfSpansFound, len(traceIDToSpansMap))
 }
 
 func printTags(s model.Span) {
