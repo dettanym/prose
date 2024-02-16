@@ -7,40 +7,13 @@ import (
 	"github.com/jaegertracing/jaeger/proto-gen/api_v2"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"net/http"
 	"strings"
 )
 
 // Run `docker compose up -d` to start services before this program
 func main() {
-	//var err error
-	//
-	//// run some workloads so traces are created
-	//_, err = http.Get("http://localhost:8080/dispatch?customer=123")
-	//if err != nil {
-	//	fmt.Printf("error querying hotrod app:\n%v\n", err)
-	//	return
-	//}
-	//
-	//_, err = http.Get("http://localhost:8080/dispatch?customer=392")
-	//if err != nil {
-	//	fmt.Printf("error querying hotrod app:\n%v\n", err)
-	//	return
-	//}
-	//
-	//_, err = http.Get("http://localhost:8080/dispatch?customer=731")
-	//if err != nil {
-	//	fmt.Printf("error querying hotrod app:\n%v\n", err)
-	//	return
-	//}
-	//
-	//_, err = http.Get("http://localhost:8080/dispatch?customer=567")
-	//if err != nil {
-	//	fmt.Printf("error querying hotrod app:\n%v\n", err)
-	//	return
-	//}
-
 	// setup grpc client and query jaeger
-
 	grpcCC, err := grpc.Dial(
 		"localhost:16685",
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
@@ -126,6 +99,35 @@ func main() {
 		}
 	}
 	fmt.Printf("found %d spans across %d traces\n", numberOfSpansFound, len(traceIDToSpansMap))
+}
+
+func queryHotrod() {
+	var err error
+
+	// run some workloads so traces are created
+	_, err = http.Get("http://localhost:8080/dispatch?customer=123")
+	if err != nil {
+		fmt.Printf("error querying hotrod app:\n%v\n", err)
+		return
+	}
+
+	_, err = http.Get("http://localhost:8080/dispatch?customer=392")
+	if err != nil {
+		fmt.Printf("error querying hotrod app:\n%v\n", err)
+		return
+	}
+
+	_, err = http.Get("http://localhost:8080/dispatch?customer=731")
+	if err != nil {
+		fmt.Printf("error querying hotrod app:\n%v\n", err)
+		return
+	}
+
+	_, err = http.Get("http://localhost:8080/dispatch?customer=567")
+	if err != nil {
+		fmt.Printf("error querying hotrod app:\n%v\n", err)
+		return
+	}
 }
 
 func printTags(s model.Span) {
