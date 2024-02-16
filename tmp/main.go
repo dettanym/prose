@@ -253,10 +253,17 @@ func parseSpan(spanID model.SpanID, spanStore map[model.SpanID]model.Span) error
 }
 
 func findAnAncestorCaller(spanID model.SpanID, spansStore map[model.SpanID]model.Span) (model.Span, error) {
-	// TODO Implement this findAnAncestorCaller
 	// go access the parent using the span.ParentSpanID(). Look it up in the spansStore. If the span's operation name includes the words "router * egress" then go to its parent
 	// e.g. for service2's checkstock span
 	// the parent would be the service1's "router service2 egress" span, which we know has been inserted by envoy
 	// so we skip it and get to its parent, ie service1's checkStock and return it
-	return spansStore[spanID], nil
+	parentSpan, ok := spansStore[spanID]
+	if ok {
+		extraSpanInsertedByEnvoy := strings.Contains(parentSpan.GetOperationName(), "router") && strings.Contains(parentSpan.GetOperationName(), "egress")
+		if extraSpanInsertedByEnvoy {
+			return findAnAncestorCaller(parentSpan.ParentSpanID(), spansStore)
+		}
+		return spansStore[spanID], nil
+	}
+	return model.Span{}, fmt.Errorf("could not find a span with id %s\n", spanID)
 }
