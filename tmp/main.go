@@ -168,3 +168,91 @@ func printTags(s model.Span) {
 	// fmt.Printf("found an attribute with key %s value %s\n", kv.GetKey(), kv.Value.GetStringValue())
 
 }
+
+func parseSpan(spanID model.SpanID, spanStore map[model.SpanID]model.Span) error {
+	span, ok := spanStore[spanID]
+
+	if !ok {
+		return fmt.Errorf("could not find span with id %s\n", spanID)
+	}
+
+	// get whether the golang filter is inbound / outbound and encode / decode
+	var tags model.KeyValues
+	tags = span.GetTags()
+	inboundOutbound, ok := tags.FindByKey("direction")
+	if !ok {
+		return fmt.Errorf("could not determine the direction (inbound or outbound) of golangfilter span%s\n", inboundOutbound)
+	}
+	isInbound := strings.Contains(inboundOutbound.VStr, "INBOUND")
+	isDecode := strings.Contains(span.GetOperationName(), "decode")
+
+	// get the parent of the golang-filter span
+	parentSpanID := span.ParentSpanID()
+	parentSpan, ok := spanStore[parentSpanID]
+	if !ok { // this is unusual since a golang-filter service always has a parent span: namely, the Envoy SP
+		return fmt.Errorf("could not find parent span with id %s\n", parentSpan)
+	}
+
+	// validate that the parent is an envoy SP by checking for the component:proxy span tag
+	var parentTags model.KeyValues
+	parentTags = parentSpan.GetTags()
+	value, ok := parentTags.FindByKey("component")
+	parentIsEnvoyProxy := ok && value.VStr == "proxy"
+	if !parentIsEnvoyProxy {
+		return fmt.Errorf("parent of a Golangfilter span does not have a tag component:proxy and so is probably not an Envoy Proxy")
+	}
+	parentServiceName := parentSpan.GetProcess().GetServiceName()
+	parentOperationName := parentSpan.GetOperationName()
+	fmt.Printf("%s %s\n", parentServiceName, parentOperationName)
+
+	// In all cases add PII types in tags in *own* span to the profile of the parent (which can be the caller or the callee)
+	if isInbound {
+		// parent is the callee SP
+		// get the caller by traversing up the call stack
+		callerSpanID, err := findAnAncestorCaller(parentSpan.SpanID, spanStore)
+		if err != nil {
+			return fmt.Errorf("could not find the caller of this span %s\n", parentSpanID)
+		}
+		callerServiceName := callerSpanID.GetProcess().GetServiceName()
+		callerOperationName := callerSpanID.GetOperationName()
+		fmt.Printf("%s %s\n", callerServiceName, callerOperationName)
+
+		if isDecode {
+			// PII types are sent in a direct request to the parent (callee)
+			// Could lead to a direct purpose of use violation
+		} else { // Encode case
+			// Ignore for now. Handled in outbound encode case
+			// PII types are returned in a response by the parent (callee)
+		}
+	} else { // OUTBOUND sidecar
+		// parent is the caller SP
+		// get the callee by traversing down the call stack
+		// afaict the Span object doesn't store references to own children so can't go down the call stack
+		// maybe whenever you find an ancestor caller using the inbound SP, mark it as such?
+		calleeSpanID, err := findAnAncestorCaller(parentSpan.SpanID, spanStore)
+		if err != nil {
+			return fmt.Errorf("could not find the callee of this span %s\n", parentSpanID)
+		}
+		calleeServiceName := calleeSpanID.GetProcess().GetServiceName()
+		calleeOperationName := calleeSpanID.GetOperationName()
+		fmt.Printf("%s %s\n", calleeServiceName, calleeOperationName)
+		if isDecode {
+			// PII types are sent in a request to a third party
+			// can cause a data sharing violation
+		} else { // Encode case
+			// PII types are sent in a response from either a third party or another service
+			// we ignore the first case for now
+			// in the second case, can cause an indirect purpose of use violation
+		}
+	}
+	return nil
+}
+
+func findAnAncestorCaller(spanID model.SpanID, spansStore map[model.SpanID]model.Span) (model.Span, error) {
+	// TODO Implement this findAnAncestorCaller
+	// go access the parent using the span.ParentSpanID(). Look it up in the spansStore. If the span's operation name includes the words "router * egress" then go to its parent
+	// e.g. for service2's checkstock span
+	// the parent would be the service1's "router service2 egress" span, which we know has been inserted by envoy
+	// so we skip it and get to its parent, ie service1's checkStock and return it
+	return spansStore[spanID], nil
+}
