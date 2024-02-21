@@ -5,11 +5,11 @@ go 1.18
 require (
 	github.com/cncf/xds/go v0.0.0-20231016030527-8bd2eac9fb4a
 	github.com/envoyproxy/envoy v1.27.1-0.20230920193053-83e604abd821
+	github.com/open-policy-agent/opa v0.57.1
+	github.com/openzipkin/zipkin-go v0.4.2
 	google.golang.org/grpc v1.58.2
 	google.golang.org/protobuf v1.31.0
 )
-
-require github.com/open-policy-agent/opa v0.57.1
 
 require (
 	github.com/OneOfOne/xxhash v1.2.8 // indirect
@@ -29,7 +29,7 @@ require (
 	github.com/prometheus/client_model v0.3.0 // indirect
 	github.com/prometheus/common v0.42.0 // indirect
 	github.com/prometheus/procfs v0.10.1 // indirect
-	github.com/rcrowley/go-metrics v0.0.0-20200313005456-10cdbea86bc0 // indirect
+	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/tchap/go-patricia/v2 v2.3.1 // indirect
 	github.com/xeipuuv/gojsonpointer v0.0.0-20190905194746-02993c407bfb // indirect

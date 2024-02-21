@@ -12,6 +12,8 @@ import (
 	"net/url"
 
 	"github.com/envoyproxy/envoy/contrib/golang/common/go/api"
+	"github.com/openzipkin/zipkin-go"
+	"github.com/openzipkin/zipkin-go/model"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
@@ -29,13 +31,25 @@ type inboundFilter struct {
 	callbacks api.FilterCallbackHandler
 	config    *config
 
-	headerMetadata common.HeaderMetadata
-	piiTypes       string
+	parentSpanContext model.SpanContext
+	headerMetadata    common.HeaderMetadata
+	piiTypes          string
 }
 
 // Callbacks which are called in request path
 func (f *inboundFilter) DecodeHeaders(header api.RequestHeaderMap, endStream bool) api.StatusType {
 	log.Println(">>> DECODE HEADERS")
+
+	tracer, err := common.NewZipkinTracer(f.config.zipkinUrl)
+	if err != nil {
+		log.Fatalf("unable to create tracer: %+v\n", err)
+	}
+	defer tracer.Close()
+
+	f.parentSpanContext = tracer.Extract(header)
+
+	span := tracer.StartSpan("test span in decode headers", zipkin.Parent(f.parentSpanContext))
+	defer span.Finish()
 
 	f.headerMetadata = common.ExtractHeaderData(header)
 
@@ -203,6 +217,15 @@ func (f *inboundFilter) EncodeHeaders(header api.ResponseHeaderMap, endStream bo
 	log.Println("<<< ENCODE HEADERS")
 
 	common.LogEncodeHeaderData(header)
+
+	tracer, err := common.NewZipkinTracer(f.config.zipkinUrl)
+	if err != nil {
+		log.Fatalf("unable to create tracer: %+v\n", err)
+	}
+	defer tracer.Close()
+
+	span := tracer.StartSpan("test span in encode headers", zipkin.Parent(f.parentSpanContext))
+	defer span.Finish()
 
 	return api.Continue
 }

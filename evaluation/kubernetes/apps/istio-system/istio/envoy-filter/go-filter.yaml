@@ -30,6 +30,7 @@ spec:
             plugin_config:
               "@type": type.googleapis.com/xds.type.v3.TypedStruct
               value:
+                zipkin_url: http://zipkin.prose-system.svc.cluster.local:9411/api/v2/spans
 ---
 apiVersion: networking.istio.io/v1alpha3
 kind: EnvoyFilter
@@ -62,3 +63,4 @@ spec:
             plugin_config:
               "@type": type.googleapis.com/xds.type.v3.TypedStruct
               value:
+                zipkin_url: http://zipkin.prose-system.svc.cluster.local:9411/api/v2/spans
