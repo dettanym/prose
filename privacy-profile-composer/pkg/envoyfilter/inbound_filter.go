@@ -33,12 +33,6 @@ type inboundFilter struct {
 	piiTypes       string
 }
 
-func (f *inboundFilter) sendLocalReplyInternal() api.StatusType {
-	body := fmt.Sprintf("%s, path: %s\r\n", f.config.echoBody, f.headerMetadata.Path)
-	f.callbacks.SendLocalReply(200, body, nil, 0, "")
-	return api.LocalReply
-}
-
 // Callbacks which are called in request path
 func (f *inboundFilter) DecodeHeaders(header api.RequestHeaderMap, endStream bool) api.StatusType {
 	log.Println(">>> DECODE HEADERS")
