@@ -14,12 +14,10 @@ type ConfigParser struct {
 }
 
 func (p *ConfigParser) Parse(any *anypb.Any) (interface{}, error) {
-	configStruct := &xds.TypedStruct{}
-	if err := any.UnmarshalTo(configStruct); err != nil {
+	_, err := unmarshalConfig(any)
+	if err != nil {
 		return nil, err
 	}
-
-	_ = configStruct.Value.AsMap()
 
 	conf := &config{}
 
@@ -34,4 +32,14 @@ func (p *ConfigParser) Merge(parent interface{}, child interface{}) interface{} 
 	newConfig := *parentConfig
 
 	return &newConfig
+}
+
+func unmarshalConfig(any *anypb.Any) (map[string]interface{}, error) {
+	configStruct := &xds.TypedStruct{}
+
+	if err := any.UnmarshalTo(configStruct); err != nil {
+		return nil, err
+	}
+
+	return configStruct.Value.AsMap(), nil
 }
