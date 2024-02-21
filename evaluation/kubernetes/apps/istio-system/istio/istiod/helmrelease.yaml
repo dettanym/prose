@@ -31,9 +31,9 @@ spec:
     global:
       imagePullPolicy: Always
       proxy_init:
-        image: ghcr.io/dettanym/prose-istio-proxyv2:golang-filter-presidio
+        image: ghcr.io/dettanym/prose-istio-proxyv2:main
       proxy:
-        image: ghcr.io/dettanym/prose-istio-proxyv2:golang-filter-presidio
+        image: ghcr.io/dettanym/prose-istio-proxyv2:main
     meshConfig:
       defaultProviders:
         tracing:
