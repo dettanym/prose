@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - 'main'
-      - 'golang-filter-presidio'
     paths:
       - 'privacy-profile-composer/**'
       - 'docker/istio-proxyv2.Dockerfile'
