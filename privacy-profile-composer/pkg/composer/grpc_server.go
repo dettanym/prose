@@ -11,7 +11,7 @@ func (s server) PostObservedProfile(
 	profile *pb.SvcObservedProfile,
 ) (*emptypb.Empty, error) {
 	if profile != nil {
-		s.systemWideProfile = Composer(s.systemWideProfile, *profile)
+		s.systemWideProfile = *Composer(&s.systemWideProfile, profile)
 	}
 	return &emptypb.Empty{}, nil
 }
