@@ -52,6 +52,8 @@ func (f *Filter) DecodeHeaders(header api.RequestHeaderMap, endStream bool) api.
 	span.Tag("SIDECAR_DIRECTION", string(f.config.direction))
 	span.Tag("DATA_FLOW", "DECODE_HEADERS")
 
+	//_ = common.InjectParentcontextIntoRequestHeaders(&header, span.Context())
+
 	f.headerMetadata = common.ExtractHeaderData(header)
 
 	// common.LogDecodeHeaderData(header)
@@ -168,6 +170,8 @@ func (f *Filter) EncodeHeaders(header api.ResponseHeaderMap, endStream bool) api
 
 	span.Tag("SIDECAR_DIRECTION", string(f.config.direction))
 	span.Tag("DATA_FLOW", "ENCODE_HEADERS")
+
+	//_ = common.InjectParentcontextIntoResponseHeaders(&header, span.Context())
 
 	if endStream {
 		// here we have a header-only request

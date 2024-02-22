@@ -126,3 +126,68 @@ func (t ZipkinTracer) Extract(h envoyapi.HeaderMap) model.SpanContext {
 	})
 
 }
+
+// based on https://github.com/openzipkin/zipkin-go/blob/e84b2cf6d2d915fe0ee57c2dc4d736ec13a2ef6a/propagation/b3/http.go#L90
+func InjectParentcontextIntoRequestHeaders(h *envoyapi.RequestHeaderMap, sc model.SpanContext) error {
+	if h == nil {
+		return fmt.Errorf("missing target header map")
+	}
+
+	if (model.SpanContext{}) == sc {
+		return b3.ErrEmptyContext
+	}
+
+	if sc.Debug {
+		(*h).Set(b3.Flags, "1")
+	} else if sc.Sampled != nil {
+		// Debug is encoded as X-B3-Flags: 1. Since Debug implies Sampled,
+		// so don't also send "X-B3-Sampled: 1".
+		if *sc.Sampled {
+			(*h).Set(b3.Sampled, "1")
+		} else {
+			(*h).Set(b3.Sampled, "0")
+		}
+	}
+
+	if !sc.TraceID.Empty() && sc.ID > 0 {
+		(*h).Set(b3.TraceID, sc.TraceID.String())
+		(*h).Set(b3.SpanID, sc.ID.String())
+		if sc.ParentID != nil {
+			(*h).Set(b3.ParentSpanID, sc.ParentID.String())
+		}
+	}
+
+	return nil
+}
+
+func InjectParentcontextIntoResponseHeaders(h *envoyapi.ResponseHeaderMap, sc model.SpanContext) error {
+	if h == nil {
+		return fmt.Errorf("missing target header map")
+	}
+
+	if (model.SpanContext{}) == sc {
+		return b3.ErrEmptyContext
+	}
+
+	if sc.Debug {
+		(*h).Set(b3.Flags, "1")
+	} else if sc.Sampled != nil {
+		// Debug is encoded as X-B3-Flags: 1. Since Debug implies Sampled,
+		// so don't also send "X-B3-Sampled: 1".
+		if *sc.Sampled {
+			(*h).Set(b3.Sampled, "1")
+		} else {
+			(*h).Set(b3.Sampled, "0")
+		}
+	}
+
+	if !sc.TraceID.Empty() && sc.ID > 0 {
+		(*h).Set(b3.TraceID, sc.TraceID.String())
+		(*h).Set(b3.SpanID, sc.ID.String())
+		if sc.ParentID != nil {
+			(*h).Set(b3.ParentSpanID, sc.ParentID.String())
+		}
+	}
+
+	return nil
+}
