@@ -5,13 +5,11 @@ go 1.18
 require (
 	github.com/cncf/xds/go v0.0.0-20231109132714-523115ebc101
 	github.com/envoyproxy/envoy v1.27.1-0.20230920193053-83e604abd821
-	github.com/open-policy-agent/opa v0.57.1
-    github.com/openzipkin/zipkin-go v0.4.2
+	github.com/open-policy-agent/opa v0.61.0
+	github.com/openzipkin/zipkin-go v0.4.2
 	google.golang.org/grpc v1.61.0
 	google.golang.org/protobuf v1.31.0
 )
-
-require github.com/open-policy-agent/opa v0.61.0
 
 require (
 	github.com/AdaLogics/go-fuzz-headers v0.0.0-20230811130428-ced1acdcaa24 // indirect
@@ -33,7 +31,7 @@ require (
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/gorilla/mux v1.8.1 // indirect
-	github.com/klauspost/compress v1.16.0 // indirect
+	github.com/klauspost/compress v1.16.6 // indirect
 	github.com/matttproud/golang_protobuf_extensions/v2 v2.0.0 // indirect
 	github.com/moby/locker v1.0.1 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
