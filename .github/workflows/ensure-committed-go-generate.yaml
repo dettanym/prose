@@ -1,0 +1,39 @@
+# Developer needs to generate files using `go generate ./...` command within
+# `privacy-profile-composer/` folder. At the time of writing, specifically it
+# will regenerate protobuf `.pb.go` files as specified in
+# `pkg/proto/generate.go` file.
+
+name: Ensure all `go generate` files are committed
+
+on:
+  pull_request:
+
+jobs:
+  generated-committed:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: 'privacy-profile-composer/go.mod'
+      - uses: arduino/setup-protoc@v3
+        with:
+          # This needs to match the version on developer's machine
+          version: "25.3"
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+      - run: |
+          go mod download
+          go install google.golang.org/protobuf/cmd/protoc-gen-go
+          go install google.golang.org/grpc/cmd/protoc-gen-go-grpc
+          go generate ./...
+        working-directory: ./privacy-profile-composer
+      - run: |
+          changes=$(git status --untracked-files=no --porcelain)
+          if [[ -n "$changes" ]]; then
+            echo "=== DETECTED CHANGES ==="
+            echo "$changes"
+
+            git diff
+
+            exit 1
+          fi
