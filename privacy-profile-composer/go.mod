@@ -11,6 +11,8 @@ require (
 	google.golang.org/protobuf v1.31.0
 )
 
+require google.golang.org/grpc/cmd/protoc-gen-go-grpc v1.3.0
+
 require (
 	github.com/AdaLogics/go-fuzz-headers v0.0.0-20230811130428-ced1acdcaa24 // indirect
 	github.com/Microsoft/hcsshim v0.11.4 // indirect
