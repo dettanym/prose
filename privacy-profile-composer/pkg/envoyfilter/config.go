@@ -10,7 +10,8 @@ import (
 )
 
 type config struct {
-	zipkinUrl string
+	zipkinUrl          string
+	opaBundleServerUrl string // http://prose-server.prose-system.svc.cluster.local:8080
 }
 
 type ConfigParser struct {
@@ -33,6 +34,13 @@ func (p *ConfigParser) Parse(any *anypb.Any, callbacks api.ConfigCallbackHandler
 		conf.zipkinUrl = str
 	}
 
+	if parsedStr, ok := configStruct["opa_bundle_server_url"]; !ok {
+		return nil, errors.New("missing opa_bundle_server_url")
+	} else if opaBundleServerUrl, ok := parsedStr.(string); !ok {
+		return nil, fmt.Errorf("opa_bundle_server_url: expect string while got %T", opaBundleServerUrl)
+	} else {
+		conf.opaBundleServerUrl = opaBundleServerUrl
+	}
 	return conf, nil
 }
 
@@ -45,6 +53,10 @@ func (p *ConfigParser) Merge(parent interface{}, child interface{}) interface{} 
 
 	if childConfig.zipkinUrl != "" {
 		newConfig.zipkinUrl = childConfig.zipkinUrl
+	}
+
+	if childConfig.opaBundleServerUrl != "" {
+		newConfig.opaBundleServerUrl = childConfig.opaBundleServerUrl
 	}
 
 	return &newConfig
