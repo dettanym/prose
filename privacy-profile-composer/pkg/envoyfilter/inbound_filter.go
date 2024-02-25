@@ -14,6 +14,19 @@ import (
 	"privacy-profile-composer/pkg/envoyfilter/internal/common"
 )
 
+type inboundFilter struct {
+	api.PassThroughStreamFilter
+
+	callbacks api.FilterCallbackHandler
+	config    *config
+
+	parentSpanContext model.SpanContext
+	headerMetadata    common.HeaderMetadata
+	piiTypes          string
+	tracer            *common.ZipkinTracer
+	opa               *sdk.OPA
+}
+
 func NewInboundFilter(callbacks api.FilterCallbackHandler, config *config) api.StreamFilter {
 	tracer, err := common.NewZipkinTracer(config.zipkinUrl)
 	if err != nil {
@@ -31,19 +44,6 @@ func NewInboundFilter(callbacks api.FilterCallbackHandler, config *config) api.S
 	}
 
 	return &inboundFilter{callbacks: callbacks, config: config, tracer: tracer, opa: opaObj}
-}
-
-type inboundFilter struct {
-	api.PassThroughStreamFilter
-
-	callbacks api.FilterCallbackHandler
-	config    *config
-
-	parentSpanContext model.SpanContext
-	headerMetadata    common.HeaderMetadata
-	piiTypes          string
-	tracer            *common.ZipkinTracer
-	opa               *sdk.OPA
 }
 
 // Callbacks which are called in request path
@@ -78,11 +78,11 @@ func (f *inboundFilter) DecodeData(buffer api.BufferInstance, endStream bool) ap
 	log.Println(">>> DECODE DATA")
 	log.Println("  <<About to forward", buffer.Len(), "bytes of data to service>>")
 
-	canAnalyzePIIOnBody := false
 	var jsonBody []byte
-
+	var err error
 	if f.headerMetadata.ContentType == nil {
 		log.Println("ContentType header is not set. Cannot analyze body")
+		return api.Continue
 	} else if *f.headerMetadata.ContentType == "application/x-www-form-urlencoded" {
 		query, err := url.ParseQuery(buffer.String())
 		if err != nil {
@@ -95,21 +95,16 @@ func (f *inboundFilter) DecodeData(buffer api.BufferInstance, endStream bool) ap
 			log.Printf("Could not transform URL encoded data to JSON to pass to Presidio")
 			return api.Continue
 		}
-		canAnalyzePIIOnBody = true
 	} else if *f.headerMetadata.ContentType == "application/json" {
 		jsonBody = buffer.Bytes()
-		canAnalyzePIIOnBody = true
 	} else {
 		log.Printf("Cannot analyze a body with contentType '%s'\n", f.headerMetadata.ContentType)
-	}
-
-	if !canAnalyzePIIOnBody {
 		return api.Continue
 	}
 
-	var err error
 	if f.piiTypes, err = common.PiiAnalysis(f.config.presidioUrl, f.headerMetadata.SvcName, jsonBody); err != nil {
 		log.Println(err)
+		return api.Continue
 	}
 
 	return api.Continue
