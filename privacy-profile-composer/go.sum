@@ -39,8 +39,8 @@ github.com/dgraph-io/ristretto v0.1.1 h1:6CWw5tJNgpegArSHpNHJKldNeq03FQCwYvfMVWa
 github.com/dgryski/trifles v0.0.0-20200323201526-dd97f9abfb48 h1:fRzb/w+pyskVMQ+UbP35JkH8yB7MYb4q/qhBarqZE6g=
 github.com/dgryski/trifles v0.0.0-20200323201526-dd97f9abfb48/go.mod h1:if7Fbed8SFyPtHLHbg49SI7NAdJiC5WIA09pe59rfAA=
 github.com/dustin/go-humanize v1.0.0 h1:VSnTsYCnlFHaM2/igO1h6X3HA71jcobQuxemgkq4zYo=
-github.com/envoyproxy/envoy v1.27.1-0.20230920193053-83e604abd821 h1:ItDxVjyjqObN3aHD8DZpT4L83LX3MCTvo9UZ0dJk0xw=
-github.com/envoyproxy/envoy v1.27.1-0.20230920193053-83e604abd821/go.mod h1:evKXPgkH1BYJk2yAdlD5jyfgLj6tPGsi0R7PHC+uCFk=
+github.com/envoyproxy/envoy v1.28.1 h1:rZtu2XcD3I40KT6N4Xg6Njmbaapt5ka4W7Vtc/Qt9Mk=
+github.com/envoyproxy/envoy v1.28.1/go.mod h1:STO/nOGQMw2DNOFTaokM1VY72GJBs0mbXq0I1lJr0XQ=
 github.com/envoyproxy/go-control-plane v0.9.0/go.mod h1:YTl/9mNaCwkRvm6d1a2C3ymFceY/DCBVvsKhRF0iEA4=
 github.com/envoyproxy/protoc-gen-validate v0.1.0/go.mod h1:iSmxcyjqTsJpI2R4NaDN7+kN2VEUnK/pcBlmesArF7c=
 github.com/envoyproxy/protoc-gen-validate v1.0.2 h1:QkIBuU5k+x7/QXPvPPnWXWlCdaBFApVqftFV6k087DA=
