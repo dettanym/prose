@@ -28,7 +28,7 @@ func (p *ConfigParser) Parse(any *anypb.Any, callbacks api.ConfigCallbackHandler
 	if zipkinUrl, ok := configStruct["zipkin_url"]; !ok {
 		return nil, errors.New("missing zipkin_url")
 	} else if str, ok := zipkinUrl.(string); !ok {
-		return nil, fmt.Errorf("prefix_localreply_body: expect string while got %T", zipkinUrl)
+		return nil, fmt.Errorf("zipkin_url: expect string while got %T", zipkinUrl)
 	} else {
 		conf.zipkinUrl = str
 	}
