@@ -17,7 +17,7 @@ type ConfigParser struct {
 	api.StreamFilterConfigParser
 }
 
-func (p *ConfigParser) Parse(any *anypb.Any) (interface{}, error) {
+func (p *ConfigParser) Parse(any *anypb.Any, callbacks api.ConfigCallbackHandler) (interface{}, error) {
 	configStruct, err := unmarshalConfig(any)
 	if err != nil {
 		return nil, err

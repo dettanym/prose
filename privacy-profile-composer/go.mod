@@ -1,10 +1,10 @@
 module privacy-profile-composer
 
-go 1.18
+go 1.20
 
 require (
 	github.com/cncf/xds/go v0.0.0-20231128003011-0fa0005c9caa
-	github.com/envoyproxy/envoy v1.27.1-0.20230920193053-83e604abd821
+	github.com/envoyproxy/envoy v1.28.1
 	github.com/open-policy-agent/opa v0.61.0
 	github.com/openzipkin/zipkin-go v0.4.2
 	google.golang.org/grpc v1.61.0
