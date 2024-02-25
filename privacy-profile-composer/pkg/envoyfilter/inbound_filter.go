@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"flag"
 	"log"
 	"net/url"
 
@@ -12,11 +11,7 @@ import (
 	"github.com/open-policy-agent/opa/sdk"
 	"github.com/openzipkin/zipkin-go"
 	"github.com/openzipkin/zipkin-go/model"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
-
 	"privacy-profile-composer/pkg/envoyfilter/internal/common"
-	pb "privacy-profile-composer/pkg/proto"
 )
 
 func NewInboundFilter(callbacks api.FilterCallbackHandler, config *config) api.StreamFilter {
@@ -76,53 +71,6 @@ func (f *inboundFilter) DecodeHeaders(header api.RequestHeaderMap, endStream boo
 		log.Printf("policy accepted the input data \n")
 	}
 
-	return api.Continue
-}
-
-func sendComposedProfile(fqdn string, purpose string, piiTypes []string, thirdParties []string) api.StatusType {
-	var (
-		composerSvcAddr = flag.String("addr", "http://prose-server.prose-system.svc.cluster.local:50051", "the address to connect to")
-	)
-
-	flag.Parse()
-	// Set up a connection to the server.
-	conn, err := grpc.Dial(*composerSvcAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err != nil {
-		log.Printf("can not connect to Composer SVC at addr %v. ERROR: %v", composerSvcAddr, err)
-		return api.Continue
-	}
-	defer func(conn *grpc.ClientConn) {
-		err = conn.Close()
-		if err != nil {
-			log.Printf("could not close connection to Composer server %s", err)
-		}
-	}(conn)
-	c := pb.NewPrivacyProfileComposerClient(conn)
-
-	// Contact the server and print out its response.
-	ctx := context.Background()
-
-	processingEntries := make(map[string]*pb.DataItemAndThirdParties, len(piiTypes))
-	for _, pii := range piiTypes {
-		dataItemThirdParties := map[string]*pb.ThirdParties{
-			pii: {
-				ThirdParty: thirdParties,
-			},
-		}
-		processingEntries[purpose] = &pb.DataItemAndThirdParties{Entry: dataItemThirdParties}
-	}
-	_, err = c.PostObservedProfile(
-		ctx,
-		&pb.SvcObservedProfile{
-			SvcInternalFQDN: fqdn,
-			ObservedProcessingEntries: &pb.PurposeBasedProcessing{
-				ProcessingEntries: processingEntries},
-		},
-	)
-
-	if err != nil {
-		log.Printf("got this error when posting observed profile: %v", err)
-	}
 	return api.Continue
 }
 
