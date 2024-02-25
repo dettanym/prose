@@ -23,14 +23,22 @@ import (
 )
 
 func NewInboundFilter(callbacks api.FilterCallbackHandler, config *config) api.StreamFilter {
-	// TODO: Create OPA objects
 	tracer, err := common.NewZipkinTracer(config.zipkinUrl)
 	if err != nil {
 		log.Fatalf("unable to create tracer: %+v\n", err)
 	}
 
-	//  add them as fields to the inbound filter struct
-	return &inboundFilter{callbacks: callbacks, config: config, tracer: tracer}
+	opaObj, err := sdk.New(context.Background(), sdk.Options{
+		ID:     "golang-filter-opa",
+		Config: bytes.NewReader([]byte(config.opaConfig)),
+	})
+
+	if err != nil {
+		log.Fatalf("could not initialize an OPA object --- "+
+			"this means that the data plane cannot evaluate the target privacy policy ----- %+v\n", err)
+	}
+
+	return &inboundFilter{callbacks: callbacks, config: config, tracer: tracer, opa: opaObj}
 }
 
 type inboundFilter struct {
@@ -43,6 +51,7 @@ type inboundFilter struct {
 	headerMetadata    common.HeaderMetadata
 	piiTypes          string
 	tracer            *common.ZipkinTracer
+	opa               *sdk.OPA
 }
 
 // Callbacks which are called in request path
@@ -61,47 +70,8 @@ func (f *inboundFilter) DecodeHeaders(header api.RequestHeaderMap, endStream boo
 
 	common.LogDecodeHeaderData(header)
 
-	ctx := context.Background()
-	// Replace url with http://prose-server.prose-system.svc.cluster.local:8080
-	// Remove the leading /bundles/ in the resource // bundles.default.resource=bundle.tar.gz
-	opa_config := []byte(`{
-		"services": {
-			"bundles": {
-				"url": "http://prose-server.prose-system.svc.cluster.local:8080"
-			}
-		},
-		"bundles": {
-			"default": {
-				"resource": "/bundles/bundle.tar.gz",
-				"polling": {
-					"min_delay_seconds": 120,
-					"max_delay_seconds": 3600,	
-				}
-			}
-		},
-		"decision_logs": {
-			"console": true
-		}
-	}`)
-
-	log.Printf("about to instantiate a new opaObj sdk object\n")
-	// create an instance of the OPA object
-	opaObj, err := sdk.New(ctx, sdk.Options{
-		ID:     "opaObj-test-1",
-		Config: bytes.NewReader(opa_config),
-	})
-	log.Printf("got a response from sdk.New\n")
-
-	if err != nil {
-		log.Printf("could not initialize an OPA object --- this means that the data plane cannot evaluate the target privacy policy ----- %s\n", err)
-		return api.Continue
-	}
-
-	defer opaObj.Stop(ctx)
-	log.Printf("initialized an OPA object\n")
-
 	// get the named policy decision for the specified input
-	if result, err := opaObj.Decision(ctx, sdk.DecisionOptions{Path: "/authz/allow", Input: map[string]interface{}{"hello": "world"}}); err != nil {
+	if result, err := f.opa.Decision(context.Background(), sdk.DecisionOptions{Path: "/authz/allow", Input: map[string]interface{}{"hello": "world"}}); err != nil {
 		log.Printf("had an error evaluating the policy: %s\n", err)
 	} else if decision, ok := result.Result.(bool); !ok || !decision {
 		log.Printf("result: descision: %v, ok: %v\n", decision, ok)
@@ -298,5 +268,5 @@ func (f *inboundFilter) EncodeTrailers(trailers api.ResponseTrailerMap) api.Stat
 
 func (f *inboundFilter) OnDestroy(reason api.DestroyReason) {
 	f.tracer.Close()
-	// TODO: Close the opa object here
+	f.opa.Stop(context.Background())
 }
