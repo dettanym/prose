@@ -10,8 +10,9 @@ import (
 )
 
 type config struct {
-	zipkinUrl string
-	opaConfig string // http://prose-server.prose-system.svc.cluster.local:8080
+	zipkinUrl   string
+	opaConfig   string
+	presidioUrl string
 }
 
 type ConfigParser struct {
@@ -34,14 +35,22 @@ func (p *ConfigParser) Parse(any *anypb.Any, callbacks api.ConfigCallbackHandler
 		conf.zipkinUrl = str
 	}
 
+	// opa_config should be a YAML inline string,
+	// following this example: https://www.openpolicyagent.org/docs/latest/configuration/#example
 	if parsedStr, ok := configStruct["opa_config"]; !ok {
-		return nil, errors.New("missing opa_config: expect a YAML inline string, " +
-			"as in this example: https://www.openpolicyagent.org/docs/latest/configuration/#example")
+		return nil, errors.New("missing opa_config")
 	} else if opaConfig, ok := parsedStr.(string); !ok {
-		return nil, fmt.Errorf("opa_config: expect YAML inline string (for OPA config, as "+
-			"at https://www.openpolicyagent.org/docs/latest/configuration/#example) while got %T", opaConfig)
+		return nil, fmt.Errorf("opa_config: expect (YAML inline) string while got %T", opaConfig)
 	} else {
 		conf.opaConfig = opaConfig
+	}
+
+	if parsedStr, ok := configStruct["presidio_url"]; !ok {
+		return nil, errors.New("missing presidio_url")
+	} else if presidioUrl, ok := parsedStr.(string); !ok {
+		return nil, fmt.Errorf("presidio_url: expect string while got %T", presidioUrl)
+	} else {
+		conf.opaConfig = presidioUrl
 	}
 	return conf, nil
 }
@@ -59,6 +68,10 @@ func (p *ConfigParser) Merge(parent interface{}, child interface{}) interface{} 
 
 	if childConfig.opaConfig != "" {
 		newConfig.opaConfig = childConfig.opaConfig
+	}
+
+	if childConfig.presidioUrl != "" {
+		newConfig.presidioUrl = childConfig.presidioUrl
 	}
 
 	return &newConfig

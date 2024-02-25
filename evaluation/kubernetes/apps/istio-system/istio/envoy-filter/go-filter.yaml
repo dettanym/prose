@@ -43,6 +43,7 @@ spec:
                         max_delay_seconds: 3600
                   decision_logs:
                     console: true
+                presidio_url: http://presidio.prose-system.svc.cluster.local:3000/batchanalyze
 ---
 apiVersion: networking.istio.io/v1alpha3
 kind: EnvoyFilter
@@ -88,3 +89,4 @@ spec:
                         max_delay_seconds: 3600
                   decision_logs:
                     console: true
+                presidio_url: http://presidio.prose-system.svc.cluster.local:3000/batchanalyze
