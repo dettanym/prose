@@ -23,7 +23,14 @@ import (
 )
 
 func NewInboundFilter(callbacks api.FilterCallbackHandler, config *config) api.StreamFilter {
-	return &inboundFilter{callbacks: callbacks, config: config}
+	// TODO: Create OPA objects
+	tracer, err := common.NewZipkinTracer(config.zipkinUrl)
+	if err != nil {
+		log.Fatalf("unable to create tracer: %+v\n", err)
+	}
+
+	//  add them as fields to the inbound filter struct
+	return &inboundFilter{callbacks: callbacks, config: config, tracer: tracer}
 }
 
 type inboundFilter struct {
@@ -35,21 +42,16 @@ type inboundFilter struct {
 	parentSpanContext model.SpanContext
 	headerMetadata    common.HeaderMetadata
 	piiTypes          string
+	tracer            *common.ZipkinTracer
 }
 
 // Callbacks which are called in request path
 func (f *inboundFilter) DecodeHeaders(header api.RequestHeaderMap, endStream bool) api.StatusType {
 	log.Println(">>> DECODE HEADERS")
 
-	tracer, err := common.NewZipkinTracer(f.config.zipkinUrl)
-	if err != nil {
-		log.Fatalf("unable to create tracer: %+v\n", err)
-	}
-	defer tracer.Close()
+	f.parentSpanContext = f.tracer.Extract(header)
 
-	f.parentSpanContext = tracer.Extract(header)
-
-	span := tracer.StartSpan("test span in decode headers", zipkin.Parent(f.parentSpanContext))
+	span := f.tracer.StartSpan("test span in decode headers", zipkin.Parent(f.parentSpanContext))
 	defer span.Finish()
 
 	f.headerMetadata = common.ExtractHeaderData(header)
@@ -267,13 +269,7 @@ func (f *inboundFilter) EncodeHeaders(header api.ResponseHeaderMap, endStream bo
 
 	common.LogEncodeHeaderData(header)
 
-	tracer, err := common.NewZipkinTracer(f.config.zipkinUrl)
-	if err != nil {
-		log.Fatalf("unable to create tracer: %+v\n", err)
-	}
-	defer tracer.Close()
-
-	span := tracer.StartSpan("test span in encode headers", zipkin.Parent(f.parentSpanContext))
+	span := f.tracer.StartSpan("test span in encode headers", zipkin.Parent(f.parentSpanContext))
 	defer span.Finish()
 
 	return api.Continue
@@ -301,4 +297,6 @@ func (f *inboundFilter) EncodeTrailers(trailers api.ResponseTrailerMap) api.Stat
 }
 
 func (f *inboundFilter) OnDestroy(reason api.DestroyReason) {
+	f.tracer.Close()
+	// TODO: Close the opa object here
 }
