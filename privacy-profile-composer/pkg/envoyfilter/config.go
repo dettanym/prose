@@ -10,8 +10,8 @@ import (
 )
 
 type config struct {
-	zipkinUrl          string
-	opaBundleServerUrl string // http://prose-server.prose-system.svc.cluster.local:8080
+	zipkinUrl string
+	opaConfig string // http://prose-server.prose-system.svc.cluster.local:8080
 }
 
 type ConfigParser struct {
@@ -34,12 +34,14 @@ func (p *ConfigParser) Parse(any *anypb.Any, callbacks api.ConfigCallbackHandler
 		conf.zipkinUrl = str
 	}
 
-	if parsedStr, ok := configStruct["opa_bundle_server_url"]; !ok {
-		return nil, errors.New("missing opa_bundle_server_url")
-	} else if opaBundleServerUrl, ok := parsedStr.(string); !ok {
-		return nil, fmt.Errorf("opa_bundle_server_url: expect string while got %T", opaBundleServerUrl)
+	if parsedStr, ok := configStruct["opa_config"]; !ok {
+		return nil, errors.New("missing opa_config: expect a YAML inline string, " +
+			"as in this example: https://www.openpolicyagent.org/docs/latest/configuration/#example")
+	} else if opaConfig, ok := parsedStr.(string); !ok {
+		return nil, fmt.Errorf("opa_config: expect YAML inline string (for OPA config, as "+
+			"at https://www.openpolicyagent.org/docs/latest/configuration/#example) while got %T", opaConfig)
 	} else {
-		conf.opaBundleServerUrl = opaBundleServerUrl
+		conf.opaConfig = opaConfig
 	}
 	return conf, nil
 }
@@ -55,8 +57,8 @@ func (p *ConfigParser) Merge(parent interface{}, child interface{}) interface{} 
 		newConfig.zipkinUrl = childConfig.zipkinUrl
 	}
 
-	if childConfig.opaBundleServerUrl != "" {
-		newConfig.opaBundleServerUrl = childConfig.opaBundleServerUrl
+	if childConfig.opaConfig != "" {
+		newConfig.opaConfig = childConfig.opaConfig
 	}
 
 	return &newConfig
