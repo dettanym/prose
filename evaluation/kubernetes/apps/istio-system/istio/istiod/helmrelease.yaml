@@ -31,9 +31,9 @@ spec:
     global:
       imagePullPolicy: Always
       proxy_init:
-        image: ghcr.io/dettanym/prose-istio-proxyv2:main
+        image: ghcr.io/dettanym/prose-istio-proxyv2:main@sha256:f9e5ede854e995e18392a3c2449eb5fcf87e8d072b3b084cf6e3c06381efe663
       proxy:
-        image: ghcr.io/dettanym/prose-istio-proxyv2:main
+        image: ghcr.io/dettanym/prose-istio-proxyv2:main@sha256:f9e5ede854e995e18392a3c2449eb5fcf87e8d072b3b084cf6e3c06381efe663
     meshConfig:
       defaultProviders:
         tracing:
