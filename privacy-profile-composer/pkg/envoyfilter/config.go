@@ -83,6 +83,8 @@ func (p *ConfigParser) Merge(parent interface{}, child interface{}) interface{} 
 		newConfig.presidioUrl = childConfig.presidioUrl
 	}
 
+	newConfig.opaEnable = childConfig.opaEnable
+
 	return &newConfig
 }
 
