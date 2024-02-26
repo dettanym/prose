@@ -36,14 +36,12 @@ func (p *ConfigParser) Parse(any *anypb.Any, callbacks api.ConfigCallbackHandler
 		conf.zipkinUrl = str
 	}
 
-	if val, ok := configStruct["opa_enable"]; ok {
-		if opaEnable, ok := val.(bool); !ok {
-			return nil, fmt.Errorf("opa_enable: expect bool while got %T", opaEnable)
-		} else {
-			conf.opaEnable = opaEnable
-		}
-	} else {
+	if val, ok := configStruct["opa_enable"]; !ok {
 		conf.opaEnable = true
+	} else if opaEnable, ok := val.(bool); !ok {
+		return nil, fmt.Errorf("opa_enable: expect bool while got %T", opaEnable)
+	} else {
+		conf.opaEnable = opaEnable
 	}
 
 	// opa_config should be a YAML inline string,
