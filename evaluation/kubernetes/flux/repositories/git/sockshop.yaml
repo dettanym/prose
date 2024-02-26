@@ -8,7 +8,7 @@ spec:
   interval: 30m
   url: https://github.com/microservices-demo/microservices-demo
   ref:
-    commit: 9bffa02d273568b8bddaeaa9e5a3ef6a045b4151
+    commit: 9dff06fae4981921caec6a62393a6ebfce4b3e3f
   ignore: |
     # exclude all
     /*
