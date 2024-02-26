@@ -61,7 +61,7 @@ func (p *ConfigParser) Parse(any *anypb.Any, callbacks api.ConfigCallbackHandler
 	} else if presidioUrl, ok := parsedStr.(string); !ok {
 		return nil, fmt.Errorf("presidio_url: expect string while got %T", presidioUrl)
 	} else {
-		conf.opaConfig = presidioUrl
+		conf.presidioUrl = presidioUrl
 	}
 	return conf, nil
 }
