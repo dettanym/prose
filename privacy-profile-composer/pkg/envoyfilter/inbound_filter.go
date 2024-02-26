@@ -33,17 +33,19 @@ func NewInboundFilter(callbacks api.FilterCallbackHandler, config *config) api.S
 		log.Fatalf("unable to create tracer: %+v\n", err)
 	}
 
-	opaObj, err := sdk.New(context.Background(), sdk.Options{
-		ID:     "golang-filter-opa",
-		Config: bytes.NewReader([]byte(config.opaConfig)),
-	})
+	if config.opaEnable {
+		opaObj, err := sdk.New(context.Background(), sdk.Options{
+			ID:     "golang-filter-opa",
+			Config: bytes.NewReader([]byte(config.opaConfig)),
+		})
 
-	if err != nil {
-		log.Fatalf("could not initialize an OPA object --- "+
-			"this means that the data plane cannot evaluate the target privacy policy ----- %+v\n", err)
+		if err != nil {
+			log.Fatalf("could not initialize an OPA object --- "+
+				"this means that the data plane cannot evaluate the target privacy policy ----- %+v\n", err)
+		}
+		return &inboundFilter{callbacks: callbacks, config: config, tracer: tracer, opa: opaObj}
 	}
-
-	return &inboundFilter{callbacks: callbacks, config: config, tracer: tracer, opa: opaObj}
+	return &inboundFilter{callbacks: callbacks, config: config, tracer: tracer}
 }
 
 // Callbacks which are called in request path
@@ -62,13 +64,15 @@ func (f *inboundFilter) DecodeHeaders(header api.RequestHeaderMap, endStream boo
 
 	common.LogDecodeHeaderData(header)
 
-	// get the named policy decision for the specified input
-	if result, err := f.opa.Decision(context.Background(), sdk.DecisionOptions{Path: "/authz/allow", Input: map[string]interface{}{"hello": "world"}}); err != nil {
-		log.Printf("had an error evaluating the policy: %s\n", err)
-	} else if decision, ok := result.Result.(bool); !ok || !decision {
-		log.Printf("result: descision: %v, ok: %v\n", decision, ok)
-	} else {
-		log.Printf("policy accepted the input data \n")
+	if f.config.opaEnable {
+		// get the named policy decision for the specified input
+		if result, err := f.opa.Decision(context.Background(), sdk.DecisionOptions{Path: "/authz/allow", Input: map[string]interface{}{"hello": "world"}}); err != nil {
+			log.Printf("had an error evaluating the policy: %s\n", err)
+		} else if decision, ok := result.Result.(bool); !ok || !decision {
+			log.Printf("result: descision: %v, ok: %v\n", decision, ok)
+		} else {
+			log.Printf("policy accepted the input data \n")
+		}
 	}
 
 	return api.Continue
@@ -158,5 +162,7 @@ func (f *inboundFilter) EncodeTrailers(trailers api.ResponseTrailerMap) api.Stat
 
 func (f *inboundFilter) OnDestroy(reason api.DestroyReason) {
 	f.tracer.Close()
-	f.opa.Stop(context.Background())
+	if f.config.opaEnable {
+		f.opa.Stop(context.Background())
+	}
 }

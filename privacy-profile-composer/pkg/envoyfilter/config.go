@@ -11,6 +11,7 @@ import (
 
 type config struct {
 	zipkinUrl   string
+	opaEnable   bool
 	opaConfig   string
 	presidioUrl string
 }
@@ -33,6 +34,16 @@ func (p *ConfigParser) Parse(any *anypb.Any, callbacks api.ConfigCallbackHandler
 		return nil, fmt.Errorf("zipkin_url: expect string while got %T", zipkinUrl)
 	} else {
 		conf.zipkinUrl = str
+	}
+
+	if val, ok := configStruct["opa_enable"]; ok {
+		if opaEnable, ok := val.(bool); !ok {
+			return nil, fmt.Errorf("opa_enable: expect bool while got %T", opaEnable)
+		} else {
+			conf.opaEnable = opaEnable
+		}
+	} else {
+		conf.opaEnable = true
 	}
 
 	// opa_config should be a YAML inline string,
