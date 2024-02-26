@@ -84,7 +84,7 @@ func (f *inboundFilter) DecodeData(buffer api.BufferInstance, endStream bool) ap
 	log.Println("  <<About to forward", buffer.Len(), "bytes of data to service>>")
 
 	var jsonBody []byte
-	var err error
+
 	if f.headerMetadata.ContentType == nil {
 		log.Println("ContentType header is not set. Cannot analyze body")
 		return api.Continue
@@ -107,6 +107,7 @@ func (f *inboundFilter) DecodeData(buffer api.BufferInstance, endStream bool) ap
 		return api.Continue
 	}
 
+	var err error
 	if f.piiTypes, err = common.PiiAnalysis(f.config.presidioUrl, f.headerMetadata.SvcName, jsonBody); err != nil {
 		log.Println(err)
 		return api.Continue
