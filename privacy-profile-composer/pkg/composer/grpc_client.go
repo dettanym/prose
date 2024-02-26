@@ -5,7 +5,6 @@ import (
 	"flag"
 	"log"
 
-	"github.com/envoyproxy/envoy/contrib/golang/common/go/api"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/protobuf/types/known/emptypb"
@@ -61,7 +60,9 @@ func Run_client() {
 	log.Println(profile)
 }
 
-func sendComposedProfile(fqdn string, purpose string, piiTypes []string, thirdParties []string) api.StatusType {
+// TODO: Call this within the jaeger trace querying API, to submit updates to all observed profiles,
+//  after going through a batch of traces. Remove the flag as it won't be run via cli.
+func sendComposedProfile(fqdn string, purpose string, piiTypes []string, thirdParties []string) {
 	var (
 		composerSvcAddr = flag.String("addr", "http://prose-server.prose-system.svc.cluster.local:50051", "the address to connect to")
 	)
@@ -71,12 +72,13 @@ func sendComposedProfile(fqdn string, purpose string, piiTypes []string, thirdPa
 	conn, err := grpc.Dial(*composerSvcAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Printf("can not connect to Composer SVC at addr %v. ERROR: %v", composerSvcAddr, err)
-		return api.Continue
+		return
 	}
 	defer func(conn *grpc.ClientConn) {
 		err = conn.Close()
 		if err != nil {
 			log.Printf("could not close connection to Composer server %s", err)
+			return
 		}
 	}(conn)
 	c := pb.NewPrivacyProfileComposerClient(conn)
@@ -105,5 +107,5 @@ func sendComposedProfile(fqdn string, purpose string, piiTypes []string, thirdPa
 	if err != nil {
 		log.Printf("got this error when posting observed profile: %v", err)
 	}
-	return api.Continue
+	return
 }
