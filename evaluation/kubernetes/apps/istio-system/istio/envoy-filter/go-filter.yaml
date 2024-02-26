@@ -30,6 +30,7 @@ spec:
             plugin_config:
               "@type": type.googleapis.com/xds.type.v3.TypedStruct
               value:
+                presidio_url: http://presidio.prose-system.svc.cluster.local:3000/batchanalyze
                 zipkin_url: http://zipkin.prose-system.svc.cluster.local:9411/api/v2/spans
                 opa_config: |
                   services: 
@@ -43,7 +44,6 @@ spec:
                         max_delay_seconds: 3600
                   decision_logs:
                     console: true
-                presidio_url: http://presidio.prose-system.svc.cluster.local:3000/batchanalyze
 ---
 apiVersion: networking.istio.io/v1alpha3
 kind: EnvoyFilter
@@ -76,6 +76,7 @@ spec:
             plugin_config:
               "@type": type.googleapis.com/xds.type.v3.TypedStruct
               value:
+                presidio_url: http://presidio.prose-system.svc.cluster.local:3000/batchanalyze
                 zipkin_url: http://zipkin.prose-system.svc.cluster.local:9411/api/v2/spans
                 opa_config: |
                   services: 
@@ -89,4 +90,3 @@ spec:
                         max_delay_seconds: 3600
                   decision_logs:
                     console: true
-                presidio_url: http://presidio.prose-system.svc.cluster.local:3000/batchanalyze
