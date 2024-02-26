@@ -14,19 +14,6 @@ import (
 	"privacy-profile-composer/pkg/envoyfilter/internal/common"
 )
 
-type inboundFilter struct {
-	api.PassThroughStreamFilter
-
-	callbacks api.FilterCallbackHandler
-	config    *config
-
-	parentSpanContext model.SpanContext
-	headerMetadata    common.HeaderMetadata
-	piiTypes          string
-	tracer            *common.ZipkinTracer
-	opa               *sdk.OPA
-}
-
 func NewInboundFilter(callbacks api.FilterCallbackHandler, config *config) api.StreamFilter {
 	tracer, err := common.NewZipkinTracer(config.zipkinUrl)
 	if err != nil {
@@ -46,6 +33,20 @@ func NewInboundFilter(callbacks api.FilterCallbackHandler, config *config) api.S
 		return &inboundFilter{callbacks: callbacks, config: config, tracer: tracer, opa: opaObj}
 	}
 	return &inboundFilter{callbacks: callbacks, config: config, tracer: tracer}
+}
+
+type inboundFilter struct {
+	api.PassThroughStreamFilter
+
+	callbacks api.FilterCallbackHandler
+	config    *config
+	tracer    *common.ZipkinTracer
+	opa       *sdk.OPA
+
+	// Runtime state of the filter
+	parentSpanContext model.SpanContext
+	headerMetadata    common.HeaderMetadata
+	piiTypes          string
 }
 
 // Callbacks which are called in request path
