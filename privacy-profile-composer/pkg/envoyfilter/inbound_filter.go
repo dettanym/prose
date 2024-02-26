@@ -4,26 +4,35 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"flag"
-	"fmt"
-	"io"
 	"log"
-	"net/http"
 	"net/url"
 
 	"github.com/envoyproxy/envoy/contrib/golang/common/go/api"
 	"github.com/open-policy-agent/opa/sdk"
 	"github.com/openzipkin/zipkin-go"
 	"github.com/openzipkin/zipkin-go/model"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
-
 	"privacy-profile-composer/pkg/envoyfilter/internal/common"
-	pb "privacy-profile-composer/pkg/proto"
 )
 
 func NewInboundFilter(callbacks api.FilterCallbackHandler, config *config) api.StreamFilter {
-	return &inboundFilter{callbacks: callbacks, config: config}
+	tracer, err := common.NewZipkinTracer(config.zipkinUrl)
+	if err != nil {
+		log.Fatalf("unable to create tracer: %+v\n", err)
+	}
+
+	if config.opaEnable {
+		opaObj, err := sdk.New(context.Background(), sdk.Options{
+			ID:     "golang-filter-opa",
+			Config: bytes.NewReader([]byte(config.opaConfig)),
+		})
+
+		if err != nil {
+			log.Fatalf("could not initialize an OPA object --- "+
+				"this means that the data plane cannot evaluate the target privacy policy ----- %+v\n", err)
+		}
+		return &inboundFilter{callbacks: callbacks, config: config, tracer: tracer, opa: opaObj}
+	}
+	return &inboundFilter{callbacks: callbacks, config: config, tracer: tracer}
 }
 
 type inboundFilter struct {
@@ -31,7 +40,10 @@ type inboundFilter struct {
 
 	callbacks api.FilterCallbackHandler
 	config    *config
+	tracer    *common.ZipkinTracer
+	opa       *sdk.OPA
 
+	// Runtime state of the filter
 	parentSpanContext model.SpanContext
 	headerMetadata    common.HeaderMetadata
 	piiTypes          string
@@ -41,15 +53,9 @@ type inboundFilter struct {
 func (f *inboundFilter) DecodeHeaders(header api.RequestHeaderMap, endStream bool) api.StatusType {
 	log.Println(">>> DECODE HEADERS")
 
-	tracer, err := common.NewZipkinTracer(f.config.zipkinUrl)
-	if err != nil {
-		log.Fatalf("unable to create tracer: %+v\n", err)
-	}
-	defer tracer.Close()
+	f.parentSpanContext = f.tracer.Extract(header)
 
-	f.parentSpanContext = tracer.Extract(header)
-
-	span := tracer.StartSpan("test span in decode headers", zipkin.Parent(f.parentSpanContext))
+	span := f.tracer.StartSpan("test span in decode headers", zipkin.Parent(f.parentSpanContext))
 	defer span.Finish()
 
 	f.headerMetadata = common.ExtractHeaderData(header)
@@ -59,163 +65,29 @@ func (f *inboundFilter) DecodeHeaders(header api.RequestHeaderMap, endStream boo
 
 	common.LogDecodeHeaderData(header)
 
-	ctx := context.Background()
-	// Replace url with http://prose-server.prose-system.svc.cluster.local:8080
-	// Remove the leading /bundles/ in the resource // bundles.default.resource=bundle.tar.gz
-	opa_config := []byte(`{
-		"services": {
-			"bundles": {
-				"url": "http://prose-server.prose-system.svc.cluster.local:8080"
-			}
-		},
-		"bundles": {
-			"default": {
-				"resource": "/bundles/bundle.tar.gz",
-				"polling": {
-					"min_delay_seconds": 120,
-					"max_delay_seconds": 3600,	
-				}
-			}
-		},
-		"decision_logs": {
-			"console": true
+	if f.config.opaEnable {
+		// get the named policy decision for the specified input
+		if result, err := f.opa.Decision(context.Background(), sdk.DecisionOptions{Path: "/authz/allow", Input: map[string]interface{}{"hello": "world"}}); err != nil {
+			log.Printf("had an error evaluating the policy: %s\n", err)
+		} else if decision, ok := result.Result.(bool); !ok || !decision {
+			log.Printf("result: descision: %v, ok: %v\n", decision, ok)
+		} else {
+			log.Printf("policy accepted the input data \n")
 		}
-	}`)
-
-	log.Printf("about to instantiate a new opaObj sdk object\n")
-	// create an instance of the OPA object
-	opaObj, err := sdk.New(ctx, sdk.Options{
-		ID:     "opaObj-test-1",
-		Config: bytes.NewReader(opa_config),
-	})
-	log.Printf("got a response from sdk.New\n")
-
-	if err != nil {
-		log.Printf("could not initialize an OPA object --- this means that the data plane cannot evaluate the target privacy policy ----- %s\n", err)
-		return api.Continue
-	}
-
-	defer opaObj.Stop(ctx)
-	log.Printf("initialized an OPA object\n")
-
-	// get the named policy decision for the specified input
-	if result, err := opaObj.Decision(ctx, sdk.DecisionOptions{Path: "/authz/allow", Input: map[string]interface{}{"hello": "world"}}); err != nil {
-		log.Printf("had an error evaluating the policy: %s\n", err)
-	} else if decision, ok := result.Result.(bool); !ok || !decision {
-		log.Printf("result: descision: %v, ok: %v\n", decision, ok)
-	} else {
-		log.Printf("policy accepted the input data \n")
 	}
 
 	return api.Continue
-}
-
-func sendComposedProfile(fqdn string, purpose string, piiTypes []string, thirdParties []string) api.StatusType {
-	var (
-		composerSvcAddr = flag.String("addr", "http://prose-server.prose-system.svc.cluster.local:50051", "the address to connect to")
-	)
-
-	flag.Parse()
-	// Set up a connection to the server.
-	conn, err := grpc.Dial(*composerSvcAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err != nil {
-		log.Printf("can not connect to Composer SVC at addr %v. ERROR: %v", composerSvcAddr, err)
-		return api.Continue
-	}
-	defer func(conn *grpc.ClientConn) {
-		err = conn.Close()
-		if err != nil {
-			log.Printf("could not close connection to Composer server %s", err)
-		}
-	}(conn)
-	c := pb.NewPrivacyProfileComposerClient(conn)
-
-	// Contact the server and print out its response.
-	ctx := context.Background()
-
-	processingEntries := make(map[string]*pb.DataItemAndThirdParties, len(piiTypes))
-	for _, pii := range piiTypes {
-		dataItemThirdParties := map[string]*pb.ThirdParties{
-			pii: {
-				ThirdParty: thirdParties,
-			},
-		}
-		processingEntries[purpose] = &pb.DataItemAndThirdParties{Entry: dataItemThirdParties}
-	}
-	_, err = c.PostObservedProfile(
-		ctx,
-		&pb.SvcObservedProfile{
-			SvcInternalFQDN: fqdn,
-			ObservedProcessingEntries: &pb.PurposeBasedProcessing{
-				ProcessingEntries: processingEntries},
-		},
-	)
-
-	if err != nil {
-		log.Printf("got this error when posting observed profile: %v", err)
-	}
-	return api.Continue
-}
-
-func piiAnalysis(svcName string, bufferBytes []byte) (string, error) {
-	var jsonBody = `{
-			"key_F": {
-				"key_a1": "My phone number is 212-121-1424"
-			},
-			"URL": "www.abc.com",
-			"key_c": 3,
-			"names": ["James Bond", "Clark Kent", "Hakeem Olajuwon", "No name here!"],
-			"address": "123 Alpha Beta, Waterloo ON N2L3G1, Canada",
-			"DOB": "01-01-1989",
-			"gender": "Female",
-			"race": "Asian",
-			"language": "English"
-		}`
-
-	svcNameBuf, err := json.Marshal(svcName)
-	if err != nil {
-		return "", fmt.Errorf("could not marshal service name string into a valid JSON string: %w", err)
-	}
-
-	// TODO replace jsonBody with bufferBytes input arg
-	msgString := `{"json_to_analyze":` + jsonBody + `,"derive_purpose":` + string(svcNameBuf) + `}`
-
-	resp, err := http.Post("http://presidio.prose-system.svc.cluster.local:3000/batchanalyze", "application/json", bytes.NewBufferString(msgString))
-	if err != nil {
-		return "", fmt.Errorf("presidio post error: %w", err)
-	}
-
-	log.Printf("presidio responded '%v', content-length is %v bytes\n", resp.Status, resp.ContentLength)
-
-	jsonResp, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return "", fmt.Errorf("could not read Presidio response, %w", err)
-	}
-
-	err = resp.Body.Close()
-	if err != nil {
-		return "", fmt.Errorf("could not close presidio response body, %w", err)
-	}
-
-	log.Println("presidio response headers:")
-	for key, value := range resp.Header {
-		log.Printf("  \"%v\": %v\n", key, value)
-	}
-	log.Println("presidio response body:")
-	log.Printf("%v\n", string(jsonResp))
-
-	return string(jsonResp), nil
 }
 
 func (f *inboundFilter) DecodeData(buffer api.BufferInstance, endStream bool) api.StatusType {
 	log.Println(">>> DECODE DATA")
 	log.Println("  <<About to forward", buffer.Len(), "bytes of data to service>>")
 
-	canAnalyzePIIOnBody := false
 	var jsonBody []byte
 
 	if f.headerMetadata.ContentType == nil {
 		log.Println("ContentType header is not set. Cannot analyze body")
+		return api.Continue
 	} else if *f.headerMetadata.ContentType == "application/x-www-form-urlencoded" {
 		query, err := url.ParseQuery(buffer.String())
 		if err != nil {
@@ -228,21 +100,17 @@ func (f *inboundFilter) DecodeData(buffer api.BufferInstance, endStream bool) ap
 			log.Printf("Could not transform URL encoded data to JSON to pass to Presidio")
 			return api.Continue
 		}
-		canAnalyzePIIOnBody = true
 	} else if *f.headerMetadata.ContentType == "application/json" {
 		jsonBody = buffer.Bytes()
-		canAnalyzePIIOnBody = true
 	} else {
 		log.Printf("Cannot analyze a body with contentType '%s'\n", f.headerMetadata.ContentType)
-	}
-
-	if !canAnalyzePIIOnBody {
 		return api.Continue
 	}
 
 	var err error
-	if f.piiTypes, err = piiAnalysis(f.headerMetadata.SvcName, jsonBody); err != nil {
+	if f.piiTypes, err = common.PiiAnalysis(f.config.presidioUrl, f.headerMetadata.SvcName, jsonBody); err != nil {
 		log.Println(err)
+		return api.Continue
 	}
 
 	return api.Continue
@@ -267,13 +135,7 @@ func (f *inboundFilter) EncodeHeaders(header api.ResponseHeaderMap, endStream bo
 
 	common.LogEncodeHeaderData(header)
 
-	tracer, err := common.NewZipkinTracer(f.config.zipkinUrl)
-	if err != nil {
-		log.Fatalf("unable to create tracer: %+v\n", err)
-	}
-	defer tracer.Close()
-
-	span := tracer.StartSpan("test span in encode headers", zipkin.Parent(f.parentSpanContext))
+	span := f.tracer.StartSpan("test span in encode headers", zipkin.Parent(f.parentSpanContext))
 	defer span.Finish()
 
 	return api.Continue
@@ -301,4 +163,8 @@ func (f *inboundFilter) EncodeTrailers(trailers api.ResponseTrailerMap) api.Stat
 }
 
 func (f *inboundFilter) OnDestroy(reason api.DestroyReason) {
+	f.tracer.Close()
+	if f.config.opaEnable {
+		f.opa.Stop(context.Background())
+	}
 }

@@ -10,7 +10,10 @@ import (
 )
 
 type config struct {
-	zipkinUrl string
+	zipkinUrl   string
+	opaEnable   bool
+	opaConfig   string
+	presidioUrl string
 }
 
 type ConfigParser struct {
@@ -28,11 +31,36 @@ func (p *ConfigParser) Parse(any *anypb.Any, callbacks api.ConfigCallbackHandler
 	if zipkinUrl, ok := configStruct["zipkin_url"]; !ok {
 		return nil, errors.New("missing zipkin_url")
 	} else if str, ok := zipkinUrl.(string); !ok {
-		return nil, fmt.Errorf("prefix_localreply_body: expect string while got %T", zipkinUrl)
+		return nil, fmt.Errorf("zipkin_url: expect string while got %T", zipkinUrl)
 	} else {
 		conf.zipkinUrl = str
 	}
 
+	if val, ok := configStruct["opa_enable"]; !ok {
+		conf.opaEnable = true
+	} else if opaEnable, ok := val.(bool); !ok {
+		return nil, fmt.Errorf("opa_enable: expect bool while got %T", opaEnable)
+	} else {
+		conf.opaEnable = opaEnable
+	}
+
+	// opa_config should be a YAML inline string,
+	// following this example: https://www.openpolicyagent.org/docs/latest/configuration/#example
+	if parsedStr, ok := configStruct["opa_config"]; !ok {
+		return nil, errors.New("missing opa_config")
+	} else if opaConfig, ok := parsedStr.(string); !ok {
+		return nil, fmt.Errorf("opa_config: expect (YAML inline) string while got %T", opaConfig)
+	} else {
+		conf.opaConfig = opaConfig
+	}
+
+	if parsedStr, ok := configStruct["presidio_url"]; !ok {
+		return nil, errors.New("missing presidio_url")
+	} else if presidioUrl, ok := parsedStr.(string); !ok {
+		return nil, fmt.Errorf("presidio_url: expect string while got %T", presidioUrl)
+	} else {
+		conf.presidioUrl = presidioUrl
+	}
 	return conf, nil
 }
 
@@ -46,6 +74,16 @@ func (p *ConfigParser) Merge(parent interface{}, child interface{}) interface{} 
 	if childConfig.zipkinUrl != "" {
 		newConfig.zipkinUrl = childConfig.zipkinUrl
 	}
+
+	if childConfig.opaConfig != "" {
+		newConfig.opaConfig = childConfig.opaConfig
+	}
+
+	if childConfig.presidioUrl != "" {
+		newConfig.presidioUrl = childConfig.presidioUrl
+	}
+
+	newConfig.opaEnable = childConfig.opaEnable
 
 	return &newConfig
 }
