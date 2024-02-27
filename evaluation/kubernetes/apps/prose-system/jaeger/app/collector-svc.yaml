@@ -1,5 +1,4 @@
 ---
-# Jaeger implements the Zipkin API. To support swapping out the tracing backend, we use a Service named Zipkin.
 apiVersion: v1
 kind: Service
 metadata:
@@ -17,7 +16,7 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: jaeger-collector
+  name: jaeger
   labels:
     app: jaeger
 spec:
@@ -31,8 +30,5 @@ spec:
       port: 14250
       targetPort: 14250
       protocol: TCP
-    - port: 9411
-      targetPort: 9411
-      name: http-zipkin
   selector:
     app: jaeger
