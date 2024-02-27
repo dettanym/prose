@@ -5,11 +5,14 @@ metadata:
   name: tracing
   labels:
     app: jaeger
+  annotations:
+    metallb.universe.tf/loadBalancerIPs: "${METALLB_JAEGER_QUERY}"
 spec:
-  type: ClusterIP
+  type: LoadBalancer
+  externalTrafficPolicy: Local
   ports:
     - name: http-query
-      port: 80
+      port: 16686
       protocol: TCP
       targetPort: 16686
     # Note: Change port name if you add '--query.grpc.tls.enabled=true'
@@ -34,7 +37,7 @@ spec:
               service:
                 name: tracing
                 port:
-                  number: 80
+                  number: 16686
             path: /
             pathType: Prefix
   tls:
