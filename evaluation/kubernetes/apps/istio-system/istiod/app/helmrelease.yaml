@@ -41,5 +41,5 @@ spec:
       extensionProviders:
         - name: zipkin
           zipkin:
-            service: jaeger-collector.prose-system.svc.cluster.local
+            service: zipkin.prose-system.svc.cluster.local
             port: 9411
