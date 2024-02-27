@@ -3,19 +3,21 @@ package main
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"strings"
+	"time"
+
 	"github.com/jaegertracing/jaeger/model"
 	"github.com/jaegertracing/jaeger/proto-gen/api_v2"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-	"net/http"
-	"strings"
 )
 
 // Run `docker compose up -d` to start services before this program
 func main() {
 	// setup grpc client and query jaeger
 	grpcCC, err := grpc.Dial(
-		"localhost:16685",
+		"192.168.49.22:16685",
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
 	if err != nil {
@@ -59,6 +61,8 @@ func main() {
 				//},
 				// Treated as num_traces, the number of traces to return in the response
 				// SearchDepth: 3,
+				StartTimeMin: time.Now().Add(-time.Hour),
+				StartTimeMax: time.Now(),
 			},
 		},
 	)
