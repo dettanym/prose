@@ -4,7 +4,6 @@ kind: Kustomization
 resources:
   - ./namespace.yaml
   - ./addons/ks.yaml
-  - ./envoy-filter/ks.yaml
   - ./istio-base/ks.yaml
   - ./istiod/ks.yaml
   - ./telemetry/ks.yaml

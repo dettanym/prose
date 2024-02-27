@@ -4,5 +4,4 @@ kind: Kustomization
 resources:
   - ./namespace.yaml
   - ./jaeger/ks.yaml
-  #- ./opentelemetry-operator/ks.yaml
   - ./prose/ks.yaml
