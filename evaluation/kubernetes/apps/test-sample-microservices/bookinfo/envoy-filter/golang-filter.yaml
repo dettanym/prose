@@ -1,12 +1,9 @@
 apiVersion: networking.istio.io/v1alpha3
 kind: EnvoyFilter
 metadata:
-  name: productpage-golang-inbound
-  namespace: istio-system
+  name: golang-inbound
+  namespace: bookinfo
 spec:
-  workloadSelector:
-    labels:
-      app: productpage
   configPatches:
     - applyTo: HTTP_FILTER
       match:
@@ -49,12 +46,9 @@ spec:
 apiVersion: networking.istio.io/v1alpha3
 kind: EnvoyFilter
 metadata:
-  name: productpage-golang-outbound
+  name: golang-outbound
   namespace: istio-system
 spec:
-  workloadSelector:
-    labels:
-      app: productpage
   configPatches:
     - applyTo: HTTP_FILTER
       match:
