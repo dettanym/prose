@@ -6,7 +6,3 @@ resources:
   - https://raw.githubusercontent.com/istio/istio/1.20.3/samples/bookinfo/platform/kube/bookinfo.yaml
   - ingress.yaml
 #  - https://raw.githubusercontent.com/istio/istio/1.20.3/samples/bookinfo/networking/bookinfo-gateway.yaml
-  - https://raw.githubusercontent.com/istio/istio/1.20.3/samples/addons/kiali.yaml
-#  - https://raw.githubusercontent.com/istio/istio/1.20.3/samples/addons/prometheus.yaml
-#  - https://raw.githubusercontent.com/istio/istio/1.20.3/samples/addons/jaeger.yaml
-#  - https://raw.githubusercontent.com/istio/istio/1.20.3/samples/addons/grafana.yaml
