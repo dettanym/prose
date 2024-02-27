@@ -15,7 +15,7 @@ import (
 	"strconv"
 )
 
-func NewInboundFilter(callbacks api.FilterCallbackHandler, config *config) api.StreamFilter {
+func NewFilter(callbacks api.FilterCallbackHandler, config *config) api.StreamFilter {
 	sidecarDirection, err := getDirection(callbacks)
 	if err != nil {
 		log.Fatal(err)
@@ -36,7 +36,7 @@ func NewInboundFilter(callbacks api.FilterCallbackHandler, config *config) api.S
 			log.Fatalf("could not initialize an OPA object --- "+
 				"this means that the data plane cannot evaluate the target privacy policy ----- %+v\n", err)
 		}
-		return &inboundFilter{
+		return &Filter{
 			callbacks:        callbacks,
 			config:           config,
 			tracer:           tracer,
@@ -44,14 +44,14 @@ func NewInboundFilter(callbacks api.FilterCallbackHandler, config *config) api.S
 			opa:              opaObj,
 		}
 	}
-	return &inboundFilter{
+	return &Filter{
 		callbacks:        callbacks,
 		config:           config,
 		tracer:           tracer,
 		sidecarDirection: sidecarDirection}
 }
 
-type inboundFilter struct {
+type Filter struct {
 	api.PassThroughStreamFilter
 
 	callbacks        api.FilterCallbackHandler
@@ -74,7 +74,7 @@ const (
 )
 
 // Callbacks which are called in request path
-func (f *inboundFilter) DecodeHeaders(header api.RequestHeaderMap, endStream bool) api.StatusType {
+func (f *Filter) DecodeHeaders(header api.RequestHeaderMap, endStream bool) api.StatusType {
 	log.Println(">>> DECODE HEADERS")
 
 	f.parentSpanContext = f.tracer.Extract(header)
@@ -92,7 +92,7 @@ func (f *inboundFilter) DecodeHeaders(header api.RequestHeaderMap, endStream boo
 	return api.Continue
 }
 
-func (f *inboundFilter) DecodeData(buffer api.BufferInstance, endStream bool) api.StatusType {
+func (f *Filter) DecodeData(buffer api.BufferInstance, endStream bool) api.StatusType {
 	log.Println(">>> DECODE DATA")
 	log.Println("  <<About to forward", buffer.Len(), "bytes of data to service>>")
 
@@ -140,7 +140,7 @@ func (f *inboundFilter) DecodeData(buffer api.BufferInstance, endStream bool) ap
 	return api.Continue
 }
 
-func (f *inboundFilter) DecodeTrailers(trailers api.RequestTrailerMap) api.StatusType {
+func (f *Filter) DecodeTrailers(trailers api.RequestTrailerMap) api.StatusType {
 	log.Println(">>> DECODE TRAILERS")
 	log.Printf("%+v", trailers)
 	if f.piiTypes != "" {
@@ -149,7 +149,7 @@ func (f *inboundFilter) DecodeTrailers(trailers api.RequestTrailerMap) api.Statu
 	return api.Continue
 }
 
-func (f *inboundFilter) EncodeHeaders(header api.ResponseHeaderMap, endStream bool) api.StatusType {
+func (f *Filter) EncodeHeaders(header api.ResponseHeaderMap, endStream bool) api.StatusType {
 	//if f.headerMetadata.Path == "/update_upstream_response" {
 	//	header.Set("Content-Length", strconv.Itoa(len(UpdateUpstreamBody)))
 	//}
@@ -166,7 +166,7 @@ func (f *inboundFilter) EncodeHeaders(header api.ResponseHeaderMap, endStream bo
 }
 
 // Callbacks which are called in response path
-func (f *inboundFilter) EncodeData(buffer api.BufferInstance, endStream bool) api.StatusType {
+func (f *Filter) EncodeData(buffer api.BufferInstance, endStream bool) api.StatusType {
 	//if f.headerMetadata.Path == "/update_upstream_response" {
 	//	if endStream {
 	//		buffer.SetString(UpdateUpstreamBody)
@@ -180,13 +180,13 @@ func (f *inboundFilter) EncodeData(buffer api.BufferInstance, endStream bool) ap
 	return api.Continue
 }
 
-func (f *inboundFilter) EncodeTrailers(trailers api.ResponseTrailerMap) api.StatusType {
+func (f *Filter) EncodeTrailers(trailers api.ResponseTrailerMap) api.StatusType {
 	log.Println("<<< ENCODE TRAILERS")
 	log.Printf("%+v", trailers)
 	return api.Continue
 }
 
-func (f *inboundFilter) OnDestroy(reason api.DestroyReason) {
+func (f *Filter) OnDestroy(reason api.DestroyReason) {
 	f.tracer.Close()
 	if f.config.opaEnable {
 		f.opa.Stop(context.Background())
