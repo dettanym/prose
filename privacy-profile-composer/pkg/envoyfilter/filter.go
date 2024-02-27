@@ -96,31 +96,12 @@ func (f *Filter) DecodeData(buffer api.BufferInstance, endStream bool) api.Statu
 	log.Println(">>> DECODE DATA")
 	log.Println("  <<About to forward", buffer.Len(), "bytes of data to service>>")
 
-	var jsonBody []byte
-
-	if f.headerMetadata.ContentType == nil {
-		log.Println("ContentType header is not set. Cannot analyze body")
-		return api.Continue
-	} else if *f.headerMetadata.ContentType == "application/x-www-form-urlencoded" {
-		query, err := url.ParseQuery(buffer.String())
-		if err != nil {
-			log.Printf("Failed to start decoding JSON data")
-			return api.Continue
-		}
-		log.Println("  <<decoded x-www-form-urlencoded data: ", query)
-		jsonBody, err = json.Marshal(query)
-		if err != nil {
-			log.Printf("Could not transform URL encoded data to JSON to pass to Presidio")
-			return api.Continue
-		}
-	} else if *f.headerMetadata.ContentType == "application/json" {
-		jsonBody = buffer.Bytes()
-	} else {
-		log.Printf("Cannot analyze a body with contentType '%s'\n", f.headerMetadata.ContentType)
+	jsonBody, err := getJSONBody(f.headerMetadata, buffer)
+	if err != nil {
+		log.Println(err)
 		return api.Continue
 	}
 
-	var err error
 	if f.piiTypes, err = common.PiiAnalysis(f.config.presidioUrl, f.headerMetadata.SvcName, jsonBody); err != nil {
 		log.Println(err)
 		return api.Continue
@@ -220,4 +201,27 @@ func getDirection(callbacks api.FilterCallbackHandler) (SidecarDirection, error)
 
 	return -1, fmt.Errorf("envoy's xds.listener_direction key contains an unsupported value for the direction enum: %d "+
 		"check the Envoy docs for the range of values for this key", directionInt)
+}
+
+func getJSONBody(headerMetadata common.HeaderMetadata, buffer api.BufferInstance) ([]byte, error) {
+	var jsonBody []byte
+
+	if headerMetadata.ContentType == nil {
+		return nil, fmt.Errorf("ContentType header is not set. Cannot analyze body")
+	} else if *headerMetadata.ContentType == "application/x-www-form-urlencoded" {
+		query, err := url.ParseQuery(buffer.String())
+		if err != nil {
+			return nil, fmt.Errorf("Failed to start decoding JSON data")
+		}
+		log.Println("  <<decoded x-www-form-urlencoded data: ", query)
+		jsonBody, err = json.Marshal(query)
+		if err != nil {
+			return nil, fmt.Errorf("Could not transform URL encoded data to JSON to pass to Presidio")
+		}
+	} else if *headerMetadata.ContentType == "application/json" {
+		jsonBody = buffer.Bytes()
+	} else {
+		return nil, fmt.Errorf("Cannot analyze a body with contentType '%s'\n", *headerMetadata.ContentType)
+	}
+	return jsonBody, nil
 }
