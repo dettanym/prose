@@ -39,6 +39,8 @@ spec:
       ingressClassResource:
         default: true
       config:
+        enable-opentracing: true
+        zipkin-collector-host: zipkin.prose-system.svc.cluster.local
         client-header-timeout: 120
         client-body-buffer-size: "100M"
         client-body-timeout: 120
