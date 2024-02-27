@@ -5,12 +5,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/envoyproxy/envoy/contrib/golang/common/go/api"
-	"github.com/open-policy-agent/opa/sdk"
-	"github.com/openzipkin/zipkin-go"
-	"github.com/openzipkin/zipkin-go/model"
 	"log"
 	"net/url"
+
+	"github.com/envoyproxy/envoy/contrib/golang/common/go/api"
+	"github.com/open-policy-agent/opa/sdk"
+	"github.com/open-policy-agent/opa/topdown"
+	"github.com/openzipkin/zipkin-go"
+	"github.com/openzipkin/zipkin-go/model"
+
 	"privacy-profile-composer/pkg/envoyfilter/internal/common"
 	"strconv"
 )
@@ -102,20 +105,10 @@ func (f *Filter) DecodeData(buffer api.BufferInstance, endStream bool) api.Statu
 		return api.Continue
 	}
 
-	if f.piiTypes, err = common.PiiAnalysis(f.config.presidioUrl, f.headerMetadata.SvcName, jsonBody); err != nil {
+	err = f.runPresidioAndOPA(jsonBody)
+	if err != nil {
 		log.Println(err)
 		return api.Continue
-	}
-
-	if f.config.opaEnable {
-		// get the named policy decision for the specified input
-		if result, err := f.opa.Decision(context.Background(), sdk.DecisionOptions{Path: "/authz/allow", Input: map[string]interface{}{"hello": "world"}}); err != nil {
-			log.Printf("had an error evaluating the policy: %s\n", err)
-		} else if decision, ok := result.Result.(bool); !ok || !decision {
-			log.Printf("result: descision: %v, ok: %v\n", decision, ok)
-		} else {
-			log.Printf("policy accepted the input data \n")
-		}
 	}
 
 	return api.Continue
@@ -224,4 +217,49 @@ func getJSONBody(headerMetadata common.HeaderMetadata, buffer api.BufferInstance
 		return nil, fmt.Errorf("Cannot analyze a body with contentType '%s'\n", *headerMetadata.ContentType)
 	}
 	return jsonBody, nil
+}
+
+func (f *Filter) checkIfRequestToThirdParty() (bool, error) {
+	// use f.callbacks
+	// use f.headerMetadata
+	return true, nil
+}
+
+func (f *Filter) runPresidioAndOPA(jsonBody []byte) error {
+	piiTypes, err := common.PiiAnalysis(f.config.presidioUrl, f.headerMetadata.SvcName, jsonBody)
+	if err != nil {
+		return err
+	}
+	f.piiTypes = piiTypes
+	// TODO: Inject PII types into span.Tags
+
+	if f.config.opaEnable {
+		// get the named policy decision for the specified input
+		if result, err := f.opa.Decision(context.Background(),
+			sdk.DecisionOptions{
+				Path: "/authz/allow",
+				// TODO: Pass in the purpose of use,
+				//  the PII types and optionally, the third parties
+				//  following the structure in simple_test.rego
+				//  note that those test-cases are potentially out of date wrt simple.rego
+				//  as simple.rego expects PII type & purpose to be passed as headers
+				//  (i.e. as if we had an OPA sidecar)
+				Input:  map[string]interface{}{"hello": "world"},
+				Tracer: topdown.NewBufferTracer()}); err != nil {
+			return fmt.Errorf("had an error evaluating the policy: %s\n", err)
+		} else if decision, ok := result.Result.(bool); !ok {
+			log.Printf("result: Result type: %v\n", decision)
+		} else if decision {
+			log.Printf("policy accepted the input data \n")
+		} else {
+			log.Printf("policy rejected the input data \n")
+			// TODO: Get the reason why it was rejected, e.g. which clause was violated
+			//  the result.Provenance field includes version info, bundle info etc.
+			//  https://github.com/open-policy-agent/opa/pull/5460
+			//  but afaict the "explanation" is through a special tracer that they built-in to OPA
+			//  https://github.com/open-policy-agent/opa/pull/5447
+			//  can initialize it in the DecisionOptions above
+		}
+	}
+	return nil
 }
