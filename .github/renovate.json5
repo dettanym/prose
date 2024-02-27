@@ -20,6 +20,19 @@
   "kubernetes": {
     "fileMatch": ["evaluation/kubernetes/.+\\.ya?ml$"]
   },
+  "ignorePaths": [
+    // default set
+    "**/node_modules/**",
+    "**/bower_components/**",
+    "**/vendor/**",
+    "**/examples/**",
+    "**/__tests__/**",
+    "**/test/**",
+    "**/tests/**",
+    "**/__fixtures__/**",
+    // custom extra
+    ".archive/**"
+  ],
   "packageRules": [
     {
       "description": "Flux images and tags",
