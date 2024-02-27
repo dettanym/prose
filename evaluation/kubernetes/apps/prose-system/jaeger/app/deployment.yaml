@@ -1,3 +1,4 @@
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -54,62 +55,3 @@ spec:
       volumes:
         - name: data
           emptyDir: {}
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: tracing
-  labels:
-    app: jaeger
-spec:
-  type: ClusterIP
-  ports:
-    - name: http-query
-      port: 80
-      protocol: TCP
-      targetPort: 16686
-    # Note: Change port name if you add '--query.grpc.tls.enabled=true'
-    - name: grpc-query
-      port: 16685
-      protocol: TCP
-      targetPort: 16685
-  selector:
-    app: jaeger
----
-# Jaeger implements the Zipkin API. To support swapping out the tracing backend, we use a Service named Zipkin.
-apiVersion: v1
-kind: Service
-metadata:
-  labels:
-    name: zipkin
-  name: zipkin
-spec:
-  ports:
-    - port: 9411
-      targetPort: 9411
-      name: http-query
-  selector:
-    app: jaeger
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: jaeger-collector
-  labels:
-    app: jaeger
-spec:
-  type: ClusterIP
-  ports:
-    - name: jaeger-collector-http
-      port: 14268
-      targetPort: 14268
-      protocol: TCP
-    - name: jaeger-collector-grpc
-      port: 14250
-      targetPort: 14250
-      protocol: TCP
-    - port: 9411
-      targetPort: 9411
-      name: http-zipkin
-  selector:
-    app: jaeger
