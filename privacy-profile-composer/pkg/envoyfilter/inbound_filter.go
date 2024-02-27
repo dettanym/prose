@@ -65,17 +65,6 @@ func (f *inboundFilter) DecodeHeaders(header api.RequestHeaderMap, endStream boo
 
 	common.LogDecodeHeaderData(header)
 
-	if f.config.opaEnable {
-		// get the named policy decision for the specified input
-		if result, err := f.opa.Decision(context.Background(), sdk.DecisionOptions{Path: "/authz/allow", Input: map[string]interface{}{"hello": "world"}}); err != nil {
-			log.Printf("had an error evaluating the policy: %s\n", err)
-		} else if decision, ok := result.Result.(bool); !ok || !decision {
-			log.Printf("result: descision: %v, ok: %v\n", decision, ok)
-		} else {
-			log.Printf("policy accepted the input data \n")
-		}
-	}
-
 	return api.Continue
 }
 
@@ -111,6 +100,17 @@ func (f *inboundFilter) DecodeData(buffer api.BufferInstance, endStream bool) ap
 	if f.piiTypes, err = common.PiiAnalysis(f.config.presidioUrl, f.headerMetadata.SvcName, jsonBody); err != nil {
 		log.Println(err)
 		return api.Continue
+	}
+
+	if f.config.opaEnable {
+		// get the named policy decision for the specified input
+		if result, err := f.opa.Decision(context.Background(), sdk.DecisionOptions{Path: "/authz/allow", Input: map[string]interface{}{"hello": "world"}}); err != nil {
+			log.Printf("had an error evaluating the policy: %s\n", err)
+		} else if decision, ok := result.Result.(bool); !ok || !decision {
+			log.Printf("result: descision: %v, ok: %v\n", decision, ok)
+		} else {
+			log.Printf("policy accepted the input data \n")
+		}
 	}
 
 	return api.Continue
