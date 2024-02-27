@@ -4,17 +4,23 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"log"
-	"net/url"
-
+	"fmt"
 	"github.com/envoyproxy/envoy/contrib/golang/common/go/api"
 	"github.com/open-policy-agent/opa/sdk"
 	"github.com/openzipkin/zipkin-go"
 	"github.com/openzipkin/zipkin-go/model"
+	"log"
+	"net/url"
 	"privacy-profile-composer/pkg/envoyfilter/internal/common"
+	"strconv"
 )
 
 func NewInboundFilter(callbacks api.FilterCallbackHandler, config *config) api.StreamFilter {
+	sidecarDirection, err := getDirection(callbacks)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	tracer, err := common.NewZipkinTracer(config.zipkinUrl)
 	if err != nil {
 		log.Fatalf("unable to create tracer: %+v\n", err)
@@ -30,24 +36,42 @@ func NewInboundFilter(callbacks api.FilterCallbackHandler, config *config) api.S
 			log.Fatalf("could not initialize an OPA object --- "+
 				"this means that the data plane cannot evaluate the target privacy policy ----- %+v\n", err)
 		}
-		return &inboundFilter{callbacks: callbacks, config: config, tracer: tracer, opa: opaObj}
+		return &inboundFilter{
+			callbacks:        callbacks,
+			config:           config,
+			tracer:           tracer,
+			sidecarDirection: sidecarDirection,
+			opa:              opaObj,
+		}
 	}
-	return &inboundFilter{callbacks: callbacks, config: config, tracer: tracer}
+	return &inboundFilter{
+		callbacks:        callbacks,
+		config:           config,
+		tracer:           tracer,
+		sidecarDirection: sidecarDirection}
 }
 
 type inboundFilter struct {
 	api.PassThroughStreamFilter
 
-	callbacks api.FilterCallbackHandler
-	config    *config
-	tracer    *common.ZipkinTracer
-	opa       *sdk.OPA
+	callbacks        api.FilterCallbackHandler
+	config           *config
+	tracer           *common.ZipkinTracer
+	opa              *sdk.OPA
+	sidecarDirection SidecarDirection
 
 	// Runtime state of the filter
 	parentSpanContext model.SpanContext
 	headerMetadata    common.HeaderMetadata
 	piiTypes          string
 }
+
+type SidecarDirection int
+
+const (
+	Inbound SidecarDirection = iota
+	Outbound
+)
 
 // Callbacks which are called in request path
 func (f *inboundFilter) DecodeHeaders(header api.RequestHeaderMap, endStream bool) api.StatusType {
@@ -167,4 +191,33 @@ func (f *inboundFilter) OnDestroy(reason api.DestroyReason) {
 	if f.config.opaEnable {
 		f.opa.Stop(context.Background())
 	}
+}
+
+func getDirection(callbacks api.FilterCallbackHandler) (SidecarDirection, error) {
+	directionEnum, err := callbacks.GetProperty("xds.listener_direction")
+	if err != nil {
+		return -1, fmt.Errorf("cannot determine sidecar direction as there is no xds.listener_direction key")
+	}
+	directionInt, err := strconv.Atoi(directionEnum)
+	if err != nil {
+		// check https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/base.proto#envoy-v3-api-enum-config-core-v3-trafficdirection
+		return -1, fmt.Errorf("envoy's xds.listener_direction key does not contain an integer " +
+			"check the Envoy docs for the range of values for this key")
+	}
+
+	if directionInt == 0 {
+		return -1, fmt.Errorf("envoy's xds.listener_direction key indicates that this sidecar is deployed as a gateway." +
+			"Prose does not need to be run in a gateway sidecar." +
+			"It will continue to get deployed in other sidecars that are configured as inbound or outbound sidecars")
+	}
+
+	if directionInt == 1 {
+		return Inbound, nil
+	}
+	if directionInt == 2 {
+		return Outbound, nil
+	}
+
+	return -1, fmt.Errorf("envoy's xds.listener_direction key contains an unsupported value for the direction enum: %d "+
+		"check the Envoy docs for the range of values for this key", directionInt)
 }
