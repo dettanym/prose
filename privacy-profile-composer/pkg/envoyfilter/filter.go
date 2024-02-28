@@ -3,10 +3,8 @@ package envoyfilter
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"log"
-	"net/url"
 	"strconv"
 
 	"github.com/envoyproxy/envoy/contrib/golang/common/go/api"
@@ -19,7 +17,7 @@ import (
 )
 
 func NewFilter(callbacks api.FilterCallbackHandler, config *config) api.StreamFilter {
-	sidecarDirection, err := getDirection(callbacks)
+	sidecarDirection, err := common.GetDirection(callbacks)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -55,20 +53,13 @@ type Filter struct {
 	config           *config
 	tracer           *common.ZipkinTracer
 	opa              *sdk.OPA
-	sidecarDirection SidecarDirection
+	sidecarDirection common.SidecarDirection
 
 	// Runtime state of the filter
 	parentSpanContext model.SpanContext
 	headerMetadata    common.HeaderMetadata
 	piiTypes          string
 }
-
-type SidecarDirection int
-
-const (
-	Inbound SidecarDirection = iota
-	Outbound
-)
 
 // Callbacks which are called in request path
 func (f *Filter) DecodeHeaders(header api.RequestHeaderMap, endStream bool) api.StatusType {
@@ -96,13 +87,13 @@ func (f *Filter) DecodeData(buffer api.BufferInstance, endStream bool) api.Statu
 	processBody := false
 	// If it is an inbound sidecar, then do process the body
 	// run PII Analysis + OPA directly
-	if f.sidecarDirection == Inbound {
+	if f.sidecarDirection == common.Inbound {
 		processBody = true
 	}
 
 	//  If it is an outbound sidecar, then check if it's a request to a third party
 	//  and only process the body in this case
-	if f.sidecarDirection == Outbound {
+	if f.sidecarDirection == common.Outbound {
 		thirdPartyURL, err := f.checkIfRequestToThirdParty()
 		if err != nil {
 			log.Println(err)
@@ -132,11 +123,6 @@ func (f *Filter) DecodeTrailers(trailers api.RequestTrailerMap) api.StatusType {
 }
 
 func (f *Filter) EncodeHeaders(header api.ResponseHeaderMap, endStream bool) api.StatusType {
-	//if f.headerMetadata.Path == "/update_upstream_response" {
-	//	header.Set("Content-Length", strconv.Itoa(len(UpdateUpstreamBody)))
-	//}
-	//header.Set("Rsp-Header-From-Go", "bar-test")
-
 	log.Println("<<< ENCODE HEADERS")
 
 	common.LogEncodeHeaderData(header)
@@ -149,14 +135,6 @@ func (f *Filter) EncodeHeaders(header api.ResponseHeaderMap, endStream bool) api
 
 // Callbacks which are called in response path
 func (f *Filter) EncodeData(buffer api.BufferInstance, endStream bool) api.StatusType {
-	//if f.headerMetadata.Path == "/update_upstream_response" {
-	//	if endStream {
-	//		buffer.SetString(UpdateUpstreamBody)
-	//	} else {
-	//		// TODO implement buffer->Drain, buffer.SetString means buffer->Drain(buffer.Len())
-	//		buffer.SetString("")
-	//	}
-	//}
 	log.Println("<<< ENCODE DATA")
 	log.Println("  <<About to forward", buffer.Len(), "bytes of data to client>>")
 
@@ -164,7 +142,7 @@ func (f *Filter) EncodeData(buffer api.BufferInstance, endStream bool) api.Statu
 	// TODO: This is usually data obtained from another service
 	//  but it could also be data obtained from a third party. I.e. a kind of join violation.
 	//  Not sure if we'll run into those cases in the examples we look at.
-	if f.sidecarDirection == Outbound {
+	if f.sidecarDirection == common.Outbound {
 		return f.processBody(buffer, false)
 	}
 
@@ -184,62 +162,19 @@ func (f *Filter) OnDestroy(reason api.DestroyReason) {
 	f.opa.Stop(context.Background())
 }
 
-func getDirection(callbacks api.FilterCallbackHandler) (SidecarDirection, error) {
-	directionEnum, err := callbacks.GetProperty("xds.listener_direction")
+func (f *Filter) processBody(buffer api.BufferInstance, isDecode bool) api.StatusType {
+	jsonBody, err := common.GetJSONBody(f.headerMetadata, buffer)
 	if err != nil {
-		return -1, fmt.Errorf("cannot determine sidecar direction as there is no xds.listener_direction key")
+		log.Println(err)
+		return api.Continue
 	}
-	directionInt, err := strconv.Atoi(directionEnum)
+
+	err = f.runPresidioAndOPA(jsonBody, isDecode)
 	if err != nil {
-		// check https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/base.proto#envoy-v3-api-enum-config-core-v3-trafficdirection
-		return -1, fmt.Errorf("envoy's xds.listener_direction key does not contain an integer " +
-			"check the Envoy docs for the range of values for this key")
+		log.Println(err)
+		return api.Continue
 	}
-
-	if directionInt == 0 {
-		return -1, fmt.Errorf("envoy's xds.listener_direction key indicates that this sidecar is deployed as a gateway." +
-			"Prose does not need to be run in a gateway sidecar." +
-			"It will continue to get deployed in other sidecars that are configured as inbound or outbound sidecars")
-	}
-
-	if directionInt == 1 {
-		return Inbound, nil
-	}
-	if directionInt == 2 {
-		return Outbound, nil
-	}
-
-	return -1, fmt.Errorf("envoy's xds.listener_direction key contains an unsupported value for the direction enum: %d "+
-		"check the Envoy docs for the range of values for this key", directionInt)
-}
-
-func getJSONBody(headerMetadata common.HeaderMetadata, buffer api.BufferInstance) ([]byte, error) {
-	var jsonBody []byte
-
-	if headerMetadata.ContentType == nil {
-		return nil, fmt.Errorf("ContentType header is not set. Cannot analyze body")
-	} else if *headerMetadata.ContentType == "application/x-www-form-urlencoded" {
-		query, err := url.ParseQuery(buffer.String())
-		if err != nil {
-			return nil, fmt.Errorf("Failed to start decoding JSON data")
-		}
-		log.Println("  <<decoded x-www-form-urlencoded data: ", query)
-		jsonBody, err = json.Marshal(query)
-		if err != nil {
-			return nil, fmt.Errorf("Could not transform URL encoded data to JSON to pass to Presidio")
-		}
-	} else if *headerMetadata.ContentType == "application/json" {
-		jsonBody = buffer.Bytes()
-	} else {
-		return nil, fmt.Errorf("Cannot analyze a body with contentType '%s'\n", *headerMetadata.ContentType)
-	}
-	return jsonBody, nil
-}
-
-func (f *Filter) checkIfRequestToThirdParty() (string, error) {
-	// use f.callbacks
-	// use f.headerMetadata
-	return "", nil
+	return api.Continue
 }
 
 func (f *Filter) runPresidioAndOPA(jsonBody []byte, isDecode bool) error {
@@ -300,24 +235,17 @@ func (f *Filter) runPresidioAndOPA(jsonBody []byte, isDecode bool) error {
 
 		// Include a tag for the violation type
 		if isDecode {
-			if f.sidecarDirection == Outbound {
+			if f.sidecarDirection == common.Outbound {
 				span.Tag(PROSE_VIOLATION_TYPE, DataSharing)
 			} else { // inbound sidecar within decode method
 				span.Tag(PROSE_VIOLATION_TYPE, PurposeOfUseDirect)
 			}
 		} else { // encode method
-			if f.sidecarDirection == Outbound {
+			if f.sidecarDirection == common.Outbound {
 				span.Tag(PROSE_VIOLATION_TYPE, PurposeOfUseIndirect)
 			}
 			// we don't call this method (from EncodeData) if it's an inbound sidecar
 		}
-
-		// Actually drop the request if it is a violation
-		// Earlier, the OPA enable mode just decided whether to run OPA or not
-		//  instead, we use it to decide whether to
-		//  drop requests after a violation or not
-		//  Ideally, I avoided having two opa flags (one for whether to run OPA or not
-		//  and another for whether to enforce its decision), as that can be confusing
 
 		// If OPA is configured to an enforce mode (for production),
 		// then actually drop the request when it violates the policy
@@ -330,17 +258,8 @@ func (f *Filter) runPresidioAndOPA(jsonBody []byte, isDecode bool) error {
 	return nil
 }
 
-func (f *Filter) processBody(buffer api.BufferInstance, isDecode bool) api.StatusType {
-	jsonBody, err := getJSONBody(f.headerMetadata, buffer)
-	if err != nil {
-		log.Println(err)
-		return api.Continue
-	}
-
-	err = f.runPresidioAndOPA(jsonBody, isDecode)
-	if err != nil {
-		log.Println(err)
-		return api.Continue
-	}
-	return api.Continue
+func (f *Filter) checkIfRequestToThirdParty() (string, error) {
+	// use f.callbacks
+	// use f.headerMetadata
+	return "", nil
 }
