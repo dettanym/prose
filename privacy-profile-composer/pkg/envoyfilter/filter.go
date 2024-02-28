@@ -122,17 +122,7 @@ func (f *Filter) DecodeData(buffer api.BufferInstance, endStream bool) api.Statu
 	}
 
 	if processBody {
-		jsonBody, err := getJSONBody(f.headerMetadata, buffer)
-		if err != nil {
-			log.Println(err)
-			return api.Continue
-		}
-
-		err = f.runPresidioAndOPA(jsonBody, true)
-		if err != nil {
-			log.Println(err)
-			return api.Continue
-		}
+		return f.processBody(buffer, true)
 	}
 
 	return api.Continue
@@ -175,6 +165,17 @@ func (f *Filter) EncodeData(buffer api.BufferInstance, endStream bool) api.Statu
 	//}
 	log.Println("<<< ENCODE DATA")
 	log.Println("  <<About to forward", buffer.Len(), "bytes of data to client>>")
+
+	// if outbound then indirect purpose of use violation
+	// TODO: This is usually data obtained from another service
+	//  but it could also be data obtained from a third party. I.e. a kind of join violation.
+	//  Not sure if we'll run into those cases in the examples we look at.
+	if f.sidecarDirection == Outbound {
+		return f.processBody(buffer, false)
+	}
+
+	// if inbound then ignore
+	// we will just address them in the inbound call to the caller svc
 	return api.Continue
 }
 
@@ -292,4 +293,19 @@ func (f *Filter) runPresidioAndOPA(jsonBody []byte, isDecode bool) error {
 		}
 	}
 	return nil
+}
+
+func (f *Filter) processBody(buffer api.BufferInstance, isDecode bool) api.StatusType {
+	jsonBody, err := getJSONBody(f.headerMetadata, buffer)
+	if err != nil {
+		log.Println(err)
+		return api.Continue
+	}
+
+	err = f.runPresidioAndOPA(jsonBody, isDecode)
+	if err != nil {
+		log.Println(err)
+		return api.Continue
+	}
+	return api.Continue
 }
