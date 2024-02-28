@@ -80,7 +80,11 @@ func (f *Filter) DecodeHeaders(header api.RequestHeaderMap, endStream bool) api.
 }
 
 func (f *Filter) DecodeData(buffer api.BufferInstance, endStream bool) api.StatusType {
-	span := f.tracer.StartSpan("DecodeData", zipkin.Parent(f.parentSpanContext))
+	span, ctx := f.tracer.StartSpanFromContext(
+		context.Background(),
+		"DecodeData",
+		zipkin.Parent(f.parentSpanContext),
+	)
 	defer span.Finish()
 
 	log.Println(">>> DECODE DATA")
@@ -109,7 +113,7 @@ func (f *Filter) DecodeData(buffer api.BufferInstance, endStream bool) api.Statu
 	}
 
 	if processBody {
-		proseTags, err := f.processBody(buffer, true)
+		proseTags, err := f.processBody(ctx, buffer, true)
 		for k, v := range proseTags {
 			span.Tag(k, v)
 		}
@@ -140,7 +144,11 @@ func (f *Filter) EncodeHeaders(header api.ResponseHeaderMap, endStream bool) api
 
 // Callbacks which are called in response path
 func (f *Filter) EncodeData(buffer api.BufferInstance, endStream bool) api.StatusType {
-	span := f.tracer.StartSpan("EncodeData", zipkin.Parent(f.parentSpanContext))
+	span, ctx := f.tracer.StartSpanFromContext(
+		context.Background(),
+		"EncodeData",
+		zipkin.Parent(f.parentSpanContext),
+	)
 	defer span.Finish()
 
 	log.Println("<<< ENCODE DATA")
@@ -151,7 +159,7 @@ func (f *Filter) EncodeData(buffer api.BufferInstance, endStream bool) api.Statu
 	//  but it could also be data obtained from a third party. I.e. a kind of join violation.
 	//  Not sure if we'll run into those cases in the examples we look at.
 	if f.sidecarDirection == common.Outbound {
-		proseTags, err := f.processBody(buffer, false)
+		proseTags, err := f.processBody(ctx, buffer, false)
 		for k, v := range proseTags {
 			span.Tag(k, v)
 		}
@@ -176,16 +184,16 @@ func (f *Filter) OnDestroy(reason api.DestroyReason) {
 	f.opa.Stop(context.Background())
 }
 
-func (f *Filter) processBody(buffer api.BufferInstance, isDecode bool) (map[string]string, error) {
+func (f *Filter) processBody(ctx context.Context, buffer api.BufferInstance, isDecode bool) (map[string]string, error) {
 	jsonBody, err := common.GetJSONBody(f.headerMetadata, buffer)
 	if err != nil {
 		return map[string]string{}, err
 	}
 
-	return f.runPresidioAndOPA(jsonBody, isDecode)
+	return f.runPresidioAndOPA(ctx, jsonBody, isDecode)
 }
 
-func (f *Filter) runPresidioAndOPA(jsonBody []byte, isDecode bool) (map[string]string, error) {
+func (f *Filter) runPresidioAndOPA(ctx context.Context, jsonBody []byte, isDecode bool) (map[string]string, error) {
 	proseTags := map[string]string{}
 
 	var decodeOrEncode string
@@ -195,7 +203,7 @@ func (f *Filter) runPresidioAndOPA(jsonBody []byte, isDecode bool) (map[string]s
 		decodeOrEncode = "encode"
 	}
 
-	span := f.tracer.StartSpan(fmt.Sprintf("test span in %s body (in runPresidioAndOPA)", decodeOrEncode))
+	span, ctx := f.tracer.StartSpanFromContext(ctx, fmt.Sprintf("test span in %s body (in runPresidioAndOPA)", decodeOrEncode))
 	defer span.Finish()
 
 	// Run Presidio and add tags for PII types or an error from Presidio
@@ -209,7 +217,7 @@ func (f *Filter) runPresidioAndOPA(jsonBody []byte, isDecode bool) (map[string]s
 
 	// get the named policy decision for the specified input
 	if result, err := f.opa.Decision(
-		context.Background(),
+		ctx,
 		sdk.DecisionOptions{
 			Path: "/authz/allow",
 			// TODO: Pass in the purpose of use,
