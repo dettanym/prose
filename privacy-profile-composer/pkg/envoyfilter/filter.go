@@ -195,7 +195,8 @@ func (f *Filter) runPresidioAndOPA(jsonBody []byte, isDecode bool) error {
 	span.Tag(PROSE_OPA_ENFORCE, strconv.FormatBool(f.config.opaEnforce))
 
 	// get the named policy decision for the specified input
-	if result, err := f.opa.Decision(context.Background(),
+	if result, err := f.opa.Decision(
+		context.Background(),
 		sdk.DecisionOptions{
 			Path: "/authz/allow",
 			// TODO: Pass in the purpose of use,
@@ -206,7 +207,9 @@ func (f *Filter) runPresidioAndOPA(jsonBody []byte, isDecode bool) error {
 			//  as simple.rego expects PII type & purpose to be passed as headers
 			//  (i.e. as if we had an OPA sidecar)
 			Input:  map[string]interface{}{"hello": "world"},
-			Tracer: topdown.NewBufferTracer()}); err != nil {
+			Tracer: topdown.NewBufferTracer(),
+		},
+	); err != nil {
 		errStr := fmt.Sprintf("had an error evaluating the policy: %s", err)
 		span.Tag(PROSE_OPA_ERROR, errStr)
 		return fmt.Errorf("%s\n", errStr)
