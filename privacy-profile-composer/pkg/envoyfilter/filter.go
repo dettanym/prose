@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"net/url"
+	"strconv"
 
 	"github.com/envoyproxy/envoy/contrib/golang/common/go/api"
 	"github.com/open-policy-agent/opa/sdk"
@@ -15,7 +16,6 @@ import (
 	"github.com/openzipkin/zipkin-go/model"
 
 	"privacy-profile-composer/pkg/envoyfilter/internal/common"
-	"strconv"
 )
 
 func NewFilter(callbacks api.FilterCallbackHandler, config *config) api.StreamFilter {
@@ -264,19 +264,17 @@ func (f *Filter) runPresidioAndOPA(jsonBody []byte, isDecode bool) error {
 	// Run Presidio and add tags for PII types or an error from Presidio
 	piiTypes, err := common.PiiAnalysis(f.config.presidioUrl, f.headerMetadata.SvcName, jsonBody)
 	if err != nil {
-		span.Tag("prose_presidio_error", fmt.Sprintf("%s", err))
+		span.Tag(PROSE_PRESIDIO_ERROR, fmt.Sprintf("%s", err))
 		return err
 	}
 	f.piiTypes = piiTypes
-	// TODO: Gather keys for all span tags and declare them up top as constants or something
-	//  reuse them in the Jaeger trace querying package for consistency
-	span.Tag("prose_pii_types", piiTypes)
+	span.Tag(PROSE_PII_TYPES, piiTypes)
 
 	// TODO: May want to repurpose this flag to instead
 	//  decide whether to enforce the decision output by OPA
 	//  see the comment at the end of this case
 	if f.config.opaEnable {
-		span.Tag("prose_opa_status", "enable")
+		span.Tag(PROSE_OPA_STATUS, "enable")
 
 		// get the named policy decision for the specified input
 		if result, err := f.opa.Decision(context.Background(),
@@ -292,17 +290,17 @@ func (f *Filter) runPresidioAndOPA(jsonBody []byte, isDecode bool) error {
 				Input:  map[string]interface{}{"hello": "world"},
 				Tracer: topdown.NewBufferTracer()}); err != nil {
 			errStr := fmt.Sprintf("had an error evaluating the policy: %s", err)
-			span.Tag("prose_opa_error", errStr)
+			span.Tag(PROSE_OPA_ERROR, errStr)
 			return fmt.Errorf("%s\n", errStr)
 		} else if decision, ok := result.Result.(bool); !ok {
 			errStr := fmt.Sprintf("result: Result type: %v", decision)
-			span.Tag("prose_opa_error", errStr)
+			span.Tag(PROSE_OPA_ERROR, errStr)
 			return fmt.Errorf("%s\n", errStr)
 		} else if decision {
-			span.Tag("prose_opa_decision", "accept")
+			span.Tag(PROSE_OPA_DECISION, "accept")
 			log.Printf("policy accepted the input data \n")
 		} else {
-			span.Tag("prose_opa_decision", "deny")
+			span.Tag(PROSE_OPA_DECISION, "deny")
 			log.Printf("policy rejected the input data \n")
 
 			// TODO: Get the reason why it was rejected, e.g. which clause was violated
@@ -315,13 +313,13 @@ func (f *Filter) runPresidioAndOPA(jsonBody []byte, isDecode bool) error {
 			// Include a tag for the violation type
 			if isDecode {
 				if f.sidecarDirection == Outbound {
-					span.Tag("prose_violation_type", "data_sharing")
+					span.Tag(PROSE_VIOLATION_TYPE, DataSharing)
 				} else { // inbound sidecar within decode method
-					span.Tag("prose_violation_type", "purpose_of_use_direct")
+					span.Tag(PROSE_VIOLATION_TYPE, PurposeOfUseDirect)
 				}
 			} else { // encode method
 				if f.sidecarDirection == Outbound {
-					span.Tag("prose_violation_type", "purpose_of_use_indirect")
+					span.Tag(PROSE_VIOLATION_TYPE, PurposeOfUseIndirect)
 				}
 				// we don't call this method (from EncodeData) if it's an inbound sidecar
 			}
@@ -333,7 +331,7 @@ func (f *Filter) runPresidioAndOPA(jsonBody []byte, isDecode bool) error {
 			//  and another for whether to enforce its decision), as that can be confusing
 		}
 	} else {
-		span.Tag("prose_opa_status", "disable")
+		span.Tag(PROSE_OPA_STATUS, "disable")
 	}
 	return nil
 }
