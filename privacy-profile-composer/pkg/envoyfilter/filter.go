@@ -99,16 +99,40 @@ func (f *Filter) DecodeData(buffer api.BufferInstance, endStream bool) api.Statu
 	log.Println(">>> DECODE DATA")
 	log.Println("  <<About to forward", buffer.Len(), "bytes of data to service>>")
 
-	jsonBody, err := getJSONBody(f.headerMetadata, buffer)
-	if err != nil {
-		log.Println(err)
-		return api.Continue
+	processBody := false
+	// If it is an inbound sidecar, then do process the body
+	// run PII Analysis + OPA directly
+	if f.sidecarDirection == Inbound {
+		processBody = true
 	}
 
-	err = f.runPresidioAndOPA(jsonBody)
-	if err != nil {
-		log.Println(err)
-		return api.Continue
+	//  If it is an outbound sidecar, then check if it's a request to a third party
+	//  and only process the body in this case
+	if f.sidecarDirection == Outbound {
+		thirdPartyURL, err := f.checkIfRequestToThirdParty()
+		if err != nil {
+			log.Println(err)
+			return api.Continue
+		} else if thirdPartyURL == "" {
+			log.Printf("outbound sidecar processed a request to another sidecar in the mesh" +
+				"Prose will process it through the inbound decode function\n")
+			return api.Continue
+		}
+		processBody = true
+	}
+
+	if processBody {
+		jsonBody, err := getJSONBody(f.headerMetadata, buffer)
+		if err != nil {
+			log.Println(err)
+			return api.Continue
+		}
+
+		err = f.runPresidioAndOPA(jsonBody, true)
+		if err != nil {
+			log.Println(err)
+			return api.Continue
+		}
 	}
 
 	return api.Continue
@@ -219,13 +243,13 @@ func getJSONBody(headerMetadata common.HeaderMetadata, buffer api.BufferInstance
 	return jsonBody, nil
 }
 
-func (f *Filter) checkIfRequestToThirdParty() (bool, error) {
+func (f *Filter) checkIfRequestToThirdParty() (string, error) {
 	// use f.callbacks
 	// use f.headerMetadata
-	return true, nil
+	return "", nil
 }
 
-func (f *Filter) runPresidioAndOPA(jsonBody []byte) error {
+func (f *Filter) runPresidioAndOPA(jsonBody []byte, isDecode bool) error {
 	piiTypes, err := common.PiiAnalysis(f.config.presidioUrl, f.headerMetadata.SvcName, jsonBody)
 	if err != nil {
 		return err
@@ -240,6 +264,7 @@ func (f *Filter) runPresidioAndOPA(jsonBody []byte) error {
 				Path: "/authz/allow",
 				// TODO: Pass in the purpose of use,
 				//  the PII types and optionally, the third parties
+				//  (if isDecode is true and f.sidecarDirection is outbound)
 				//  following the structure in simple_test.rego
 				//  note that those test-cases are potentially out of date wrt simple.rego
 				//  as simple.rego expects PII type & purpose to be passed as headers
@@ -259,6 +284,11 @@ func (f *Filter) runPresidioAndOPA(jsonBody []byte) error {
 			//  but afaict the "explanation" is through a special tracer that they built-in to OPA
 			//  https://github.com/open-policy-agent/opa/pull/5447
 			//  can initialize it in the DecisionOptions above
+			// TODO: Insert the violation type into the span using span.Tags
+			//  If isDecode and f.sidecarDirection is outbound, then data sharing violation
+			//  If isDecode and f.sidecarDirection is inbound, then direct purpose of use violation
+			//  If isEncode and f.sidecarDirection is outbound, then indirect purpose of use violation
+			//  If isEncode and f.sidecarDirection is inbound, then we ignore it?
 		}
 	}
 	return nil
