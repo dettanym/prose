@@ -1,6 +1,7 @@
 package envoyfilter
 
 // TODO: The tracing unit should use these as well.
+//  So these constants are shared between the data and control planes.
 const (
 	PROSE_PRESIDIO_ERROR = "prose_presidio_error"
 	PROSE_PII_TYPES      = "prose_pii_types"
