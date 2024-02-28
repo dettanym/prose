@@ -58,7 +58,6 @@ type Filter struct {
 	// Runtime state of the filter
 	parentSpanContext model.SpanContext
 	headerMetadata    common.HeaderMetadata
-	piiTypes          string
 }
 
 // Callbacks which are called in request path
@@ -116,9 +115,6 @@ func (f *Filter) DecodeData(buffer api.BufferInstance, endStream bool) api.Statu
 func (f *Filter) DecodeTrailers(trailers api.RequestTrailerMap) api.StatusType {
 	log.Println(">>> DECODE TRAILERS")
 	log.Printf("%+v", trailers)
-	if f.piiTypes != "" {
-		trailers.Add("x-prose-pii-types", f.piiTypes) // For OPA
-	}
 	return api.Continue
 }
 
@@ -194,7 +190,6 @@ func (f *Filter) runPresidioAndOPA(jsonBody []byte, isDecode bool) error {
 		span.Tag(PROSE_PRESIDIO_ERROR, fmt.Sprintf("%s", err))
 		return err
 	}
-	f.piiTypes = piiTypes
 	span.Tag(PROSE_PII_TYPES, piiTypes)
 
 	span.Tag(PROSE_OPA_ENFORCE, strconv.FormatBool(f.config.opaEnforce))
