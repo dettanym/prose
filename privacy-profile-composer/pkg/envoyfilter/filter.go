@@ -106,7 +106,10 @@ func (f *Filter) DecodeData(buffer api.BufferInstance, endStream bool) api.Statu
 	}
 
 	if processBody {
-		return f.processBody(buffer, true)
+		err := f.processBody(buffer, true)
+		if err != nil {
+			log.Println(err)
+		}
 	}
 
 	return api.Continue
@@ -139,7 +142,10 @@ func (f *Filter) EncodeData(buffer api.BufferInstance, endStream bool) api.Statu
 	//  but it could also be data obtained from a third party. I.e. a kind of join violation.
 	//  Not sure if we'll run into those cases in the examples we look at.
 	if f.sidecarDirection == common.Outbound {
-		return f.processBody(buffer, false)
+		err := f.processBody(buffer, false)
+		if err != nil {
+			log.Println(err)
+		}
 	}
 
 	// if inbound then ignore
@@ -158,19 +164,13 @@ func (f *Filter) OnDestroy(reason api.DestroyReason) {
 	f.opa.Stop(context.Background())
 }
 
-func (f *Filter) processBody(buffer api.BufferInstance, isDecode bool) api.StatusType {
+func (f *Filter) processBody(buffer api.BufferInstance, isDecode bool) error {
 	jsonBody, err := common.GetJSONBody(f.headerMetadata, buffer)
 	if err != nil {
-		log.Println(err)
-		return api.Continue
+		return err
 	}
 
-	err = f.runPresidioAndOPA(jsonBody, isDecode)
-	if err != nil {
-		log.Println(err)
-		return api.Continue
-	}
-	return api.Continue
+	return f.runPresidioAndOPA(jsonBody, isDecode)
 }
 
 func (f *Filter) runPresidioAndOPA(jsonBody []byte, isDecode bool) error {
