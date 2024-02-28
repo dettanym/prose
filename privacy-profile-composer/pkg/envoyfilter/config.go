@@ -11,7 +11,7 @@ import (
 
 type config struct {
 	zipkinUrl   string
-	opaEnable   bool
+	opaEnforce  bool
 	opaConfig   string
 	presidioUrl string
 }
@@ -36,12 +36,13 @@ func (p *ConfigParser) Parse(any *anypb.Any, callbacks api.ConfigCallbackHandler
 		conf.zipkinUrl = str
 	}
 
+	// decide whether to drop requests after a violation or not
 	if val, ok := configStruct["opa_enable"]; !ok {
-		conf.opaEnable = true
+		conf.opaEnforce = false // by default, don't drop requests (i.e. dev mode)
 	} else if opaEnable, ok := val.(bool); !ok {
 		return nil, fmt.Errorf("opa_enable: expect bool while got %T", opaEnable)
 	} else {
-		conf.opaEnable = opaEnable
+		conf.opaEnforce = opaEnable
 	}
 
 	// opa_config should be a YAML inline string,
@@ -83,7 +84,7 @@ func (p *ConfigParser) Merge(parent interface{}, child interface{}) interface{} 
 		newConfig.presidioUrl = childConfig.presidioUrl
 	}
 
-	newConfig.opaEnable = childConfig.opaEnable
+	newConfig.opaEnforce = childConfig.opaEnforce
 
 	return &newConfig
 }

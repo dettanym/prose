@@ -56,7 +56,7 @@ spec:
               value:
                 presidio_url: http://presidio.prose-system.svc.cluster.local:3000/batchanalyze
                 zipkin_url: http://zipkin.prose-system.svc.cluster.local:9411/api/v2/spans
-                opa_enable: false
+                opa_enforce: false
                 opa_config: |
                   services:
                     bundle_server:
@@ -127,7 +127,7 @@ spec:
               value:
                 presidio_url: http://presidio.prose-system.svc.cluster.local:3000/batchanalyze
                 zipkin_url: http://zipkin.prose-system.svc.cluster.local:9411/api/v2/spans
-                opa_enable: false
+                opa_enforce: false
                 opa_config: |
                   services:
                     bundle_server:

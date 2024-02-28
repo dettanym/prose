@@ -4,7 +4,7 @@ package envoyfilter
 const (
 	PROSE_PRESIDIO_ERROR = "prose_presidio_error"
 	PROSE_PII_TYPES      = "prose_pii_types"
-	PROSE_OPA_STATUS     = "prose_opa_status"
+	PROSE_OPA_ENFORCE    = "prose_opa_enforce"
 	PROSE_OPA_ERROR      = "prose_opa_error"
 	PROSE_OPA_DECISION   = "prose_opa_decision"
 	PROSE_VIOLATION_TYPE = "prose_violation_type"

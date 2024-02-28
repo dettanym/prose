@@ -29,29 +29,23 @@ func NewFilter(callbacks api.FilterCallbackHandler, config *config) api.StreamFi
 		log.Fatalf("unable to create tracer: %+v\n", err)
 	}
 
-	if config.opaEnable {
-		opaObj, err := sdk.New(context.Background(), sdk.Options{
-			ID:     "golang-filter-opa",
-			Config: bytes.NewReader([]byte(config.opaConfig)),
-		})
+	opaObj, err := sdk.New(context.Background(), sdk.Options{
+		ID:     "golang-filter-opa",
+		Config: bytes.NewReader([]byte(config.opaConfig)),
+	})
 
-		if err != nil {
-			log.Fatalf("could not initialize an OPA object --- "+
-				"this means that the data plane cannot evaluate the target privacy policy ----- %+v\n", err)
-		}
-		return &Filter{
-			callbacks:        callbacks,
-			config:           config,
-			tracer:           tracer,
-			sidecarDirection: sidecarDirection,
-			opa:              opaObj,
-		}
+	if err != nil {
+		log.Fatalf("could not initialize an OPA object --- "+
+			"this means that the data plane cannot evaluate the target privacy policy ----- %+v\n", err)
 	}
+
 	return &Filter{
 		callbacks:        callbacks,
 		config:           config,
 		tracer:           tracer,
-		sidecarDirection: sidecarDirection}
+		sidecarDirection: sidecarDirection,
+		opa:              opaObj,
+	}
 }
 
 type Filter struct {
@@ -187,9 +181,7 @@ func (f *Filter) EncodeTrailers(trailers api.ResponseTrailerMap) api.StatusType 
 
 func (f *Filter) OnDestroy(reason api.DestroyReason) {
 	f.tracer.Close()
-	if f.config.opaEnable {
-		f.opa.Stop(context.Background())
-	}
+	f.opa.Stop(context.Background())
 }
 
 func getDirection(callbacks api.FilterCallbackHandler) (SidecarDirection, error) {
@@ -251,14 +243,14 @@ func (f *Filter) checkIfRequestToThirdParty() (string, error) {
 }
 
 func (f *Filter) runPresidioAndOPA(jsonBody []byte, isDecode bool) error {
-	var substr string
+	var decodeOrEncode string
 	if isDecode {
-		substr = "decode"
+		decodeOrEncode = "decode"
 	} else {
-		substr = "encode"
+		decodeOrEncode = "encode"
 	}
 
-	span := f.tracer.StartSpan(fmt.Sprintf("test span in %s body (in runPresidioAndOPA)", substr), zipkin.Parent(f.parentSpanContext))
+	span := f.tracer.StartSpan(fmt.Sprintf("test span in %s body (in runPresidioAndOPA)", decodeOrEncode), zipkin.Parent(f.parentSpanContext))
 	defer span.Finish()
 
 	// Run Presidio and add tags for PII types or an error from Presidio
@@ -270,68 +262,70 @@ func (f *Filter) runPresidioAndOPA(jsonBody []byte, isDecode bool) error {
 	f.piiTypes = piiTypes
 	span.Tag(PROSE_PII_TYPES, piiTypes)
 
-	// TODO: May want to repurpose this flag to instead
-	//  decide whether to enforce the decision output by OPA
-	//  see the comment at the end of this case
-	if f.config.opaEnable {
-		span.Tag(PROSE_OPA_STATUS, "enable")
+	span.Tag(PROSE_OPA_ENFORCE, strconv.FormatBool(f.config.opaEnforce))
 
-		// get the named policy decision for the specified input
-		if result, err := f.opa.Decision(context.Background(),
-			sdk.DecisionOptions{
-				Path: "/authz/allow",
-				// TODO: Pass in the purpose of use,
-				//  the PII types and optionally, the third parties
-				//  (if isDecode is true and f.sidecarDirection is outbound)
-				//  following the structure in simple_test.rego
-				//  note that those test-cases are potentially out of date wrt simple.rego
-				//  as simple.rego expects PII type & purpose to be passed as headers
-				//  (i.e. as if we had an OPA sidecar)
-				Input:  map[string]interface{}{"hello": "world"},
-				Tracer: topdown.NewBufferTracer()}); err != nil {
-			errStr := fmt.Sprintf("had an error evaluating the policy: %s", err)
-			span.Tag(PROSE_OPA_ERROR, errStr)
-			return fmt.Errorf("%s\n", errStr)
-		} else if decision, ok := result.Result.(bool); !ok {
-			errStr := fmt.Sprintf("result: Result type: %v", decision)
-			span.Tag(PROSE_OPA_ERROR, errStr)
-			return fmt.Errorf("%s\n", errStr)
-		} else if decision {
-			span.Tag(PROSE_OPA_DECISION, "accept")
-			log.Printf("policy accepted the input data \n")
-		} else {
-			span.Tag(PROSE_OPA_DECISION, "deny")
-			log.Printf("policy rejected the input data \n")
-
-			// TODO: Get the reason why it was rejected, e.g. which clause was violated
-			//  the result.Provenance field includes version info, bundle info etc.
-			//  https://github.com/open-policy-agent/opa/pull/5460
-			//  but afaict the "explanation" is through a special tracer that they built-in to OPA
-			//  https://github.com/open-policy-agent/opa/pull/5447
-			//  can initialize it in the DecisionOptions above
-
-			// Include a tag for the violation type
-			if isDecode {
-				if f.sidecarDirection == Outbound {
-					span.Tag(PROSE_VIOLATION_TYPE, DataSharing)
-				} else { // inbound sidecar within decode method
-					span.Tag(PROSE_VIOLATION_TYPE, PurposeOfUseDirect)
-				}
-			} else { // encode method
-				if f.sidecarDirection == Outbound {
-					span.Tag(PROSE_VIOLATION_TYPE, PurposeOfUseIndirect)
-				}
-				// we don't call this method (from EncodeData) if it's an inbound sidecar
-			}
-			// TODO: Actually drop the request if it is a violation
-			//  the OPA enable mode just decides whether to run OPA or not
-			//  instead, we actually need it to decide whether to
-			//  drop requests after a violation or not
-			//  Ideally, avoid having two opa flags (one for whether to run OPA or not
-			//  and another for whether to enforce its decision), as that can be confusing
-		}
+	// get the named policy decision for the specified input
+	if result, err := f.opa.Decision(context.Background(),
+		sdk.DecisionOptions{
+			Path: "/authz/allow",
+			// TODO: Pass in the purpose of use,
+			//  the PII types and optionally, the third parties
+			//  (if isDecode is true and f.sidecarDirection is outbound)
+			//  following the structure in simple_test.rego
+			//  note that those test-cases are potentially out of date wrt simple.rego
+			//  as simple.rego expects PII type & purpose to be passed as headers
+			//  (i.e. as if we had an OPA sidecar)
+			Input:  map[string]interface{}{"hello": "world"},
+			Tracer: topdown.NewBufferTracer()}); err != nil {
+		errStr := fmt.Sprintf("had an error evaluating the policy: %s", err)
+		span.Tag(PROSE_OPA_ERROR, errStr)
+		return fmt.Errorf("%s\n", errStr)
+	} else if decision, ok := result.Result.(bool); !ok {
+		errStr := fmt.Sprintf("result: Result type: %v", decision)
+		span.Tag(PROSE_OPA_ERROR, errStr)
+		return fmt.Errorf("%s\n", errStr)
+	} else if decision {
+		span.Tag(PROSE_OPA_DECISION, "accept")
+		log.Printf("policy accepted the input data \n")
 	} else {
-		span.Tag(PROSE_OPA_STATUS, "disable")
+		span.Tag(PROSE_OPA_DECISION, "deny")
+		log.Printf("policy rejected the input data \n")
+
+		// Ideally, get the reason why it was rejected, e.g. which clause was violated
+		//  the result.Provenance field includes version info, bundle info etc.
+		//  https://github.com/open-policy-agent/opa/pull/5460
+		//  but afaict the "explanation" is through a special tracer that they built-in to OPA
+		//  https://github.com/open-policy-agent/opa/pull/5447
+		//  can initialize it in the DecisionOptions above
+
+		// Include a tag for the violation type
+		if isDecode {
+			if f.sidecarDirection == Outbound {
+				span.Tag(PROSE_VIOLATION_TYPE, DataSharing)
+			} else { // inbound sidecar within decode method
+				span.Tag(PROSE_VIOLATION_TYPE, PurposeOfUseDirect)
+			}
+		} else { // encode method
+			if f.sidecarDirection == Outbound {
+				span.Tag(PROSE_VIOLATION_TYPE, PurposeOfUseIndirect)
+			}
+			// we don't call this method (from EncodeData) if it's an inbound sidecar
+		}
+
+		// Actually drop the request if it is a violation
+		// Earlier, the OPA enable mode just decided whether to run OPA or not
+		//  instead, we use it to decide whether to
+		//  drop requests after a violation or not
+		//  Ideally, I avoided having two opa flags (one for whether to run OPA or not
+		//  and another for whether to enforce its decision), as that can be confusing
+
+		// If OPA is configured to an enforce mode (for production),
+		// then actually drop the request when it violates the policy
+		if f.config.opaEnforce {
+			body := "OPA target policy rejected the input data"
+			f.callbacks.SendLocalReply(403, body, nil, 0, "")
+			// return api.LocalReply
+		}
 	}
 	return nil
 }
