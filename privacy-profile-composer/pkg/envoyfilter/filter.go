@@ -251,14 +251,33 @@ func (f *Filter) checkIfRequestToThirdParty() (string, error) {
 }
 
 func (f *Filter) runPresidioAndOPA(jsonBody []byte, isDecode bool) error {
+	var substr string
+	if isDecode {
+		substr = "decode"
+	} else {
+		substr = "encode"
+	}
+
+	span := f.tracer.StartSpan(fmt.Sprintf("test span in %s body (in runPresidioAndOPA)", substr), zipkin.Parent(f.parentSpanContext))
+	defer span.Finish()
+
+	// Run Presidio and add tags for PII types or an error from Presidio
 	piiTypes, err := common.PiiAnalysis(f.config.presidioUrl, f.headerMetadata.SvcName, jsonBody)
 	if err != nil {
+		span.Tag("prose_presidio_error", fmt.Sprintf("%s", err))
 		return err
 	}
 	f.piiTypes = piiTypes
-	// TODO: Inject PII types into span.Tags
+	// TODO: Gather keys for all span tags and declare them up top as constants or something
+	//  reuse them in the Jaeger trace querying package for consistency
+	span.Tag("prose_pii_types", piiTypes)
 
+	// TODO: May want to repurpose this flag to instead
+	//  decide whether to enforce the decision output by OPA
+	//  see the comment at the end of this case
 	if f.config.opaEnable {
+		span.Tag("prose_opa_status", "enable")
+
 		// get the named policy decision for the specified input
 		if result, err := f.opa.Decision(context.Background(),
 			sdk.DecisionOptions{
@@ -272,25 +291,49 @@ func (f *Filter) runPresidioAndOPA(jsonBody []byte, isDecode bool) error {
 				//  (i.e. as if we had an OPA sidecar)
 				Input:  map[string]interface{}{"hello": "world"},
 				Tracer: topdown.NewBufferTracer()}); err != nil {
-			return fmt.Errorf("had an error evaluating the policy: %s\n", err)
+			errStr := fmt.Sprintf("had an error evaluating the policy: %s", err)
+			span.Tag("prose_opa_error", errStr)
+			return fmt.Errorf("%s\n", errStr)
 		} else if decision, ok := result.Result.(bool); !ok {
-			log.Printf("result: Result type: %v\n", decision)
+			errStr := fmt.Sprintf("result: Result type: %v", decision)
+			span.Tag("prose_opa_error", errStr)
+			return fmt.Errorf("%s\n", errStr)
 		} else if decision {
+			span.Tag("prose_opa_decision", "accept")
 			log.Printf("policy accepted the input data \n")
 		} else {
+			span.Tag("prose_opa_decision", "deny")
 			log.Printf("policy rejected the input data \n")
+
 			// TODO: Get the reason why it was rejected, e.g. which clause was violated
 			//  the result.Provenance field includes version info, bundle info etc.
 			//  https://github.com/open-policy-agent/opa/pull/5460
 			//  but afaict the "explanation" is through a special tracer that they built-in to OPA
 			//  https://github.com/open-policy-agent/opa/pull/5447
 			//  can initialize it in the DecisionOptions above
-			// TODO: Insert the violation type into the span using span.Tags
-			//  If isDecode and f.sidecarDirection is outbound, then data sharing violation
-			//  If isDecode and f.sidecarDirection is inbound, then direct purpose of use violation
-			//  If isEncode and f.sidecarDirection is outbound, then indirect purpose of use violation
-			//  If isEncode and f.sidecarDirection is inbound, then we ignore it?
+
+			// Include a tag for the violation type
+			if isDecode {
+				if f.sidecarDirection == Outbound {
+					span.Tag("prose_violation_type", "data_sharing")
+				} else { // inbound sidecar within decode method
+					span.Tag("prose_violation_type", "purpose_of_use_direct")
+				}
+			} else { // encode method
+				if f.sidecarDirection == Outbound {
+					span.Tag("prose_violation_type", "purpose_of_use_indirect")
+				}
+				// we don't call this method (from EncodeData) if it's an inbound sidecar
+			}
+			// TODO: Actually drop the request if it is a violation
+			//  the OPA enable mode just decides whether to run OPA or not
+			//  instead, we actually need it to decide whether to
+			//  drop requests after a violation or not
+			//  Ideally, avoid having two opa flags (one for whether to run OPA or not
+			//  and another for whether to enforce its decision), as that can be confusing
 		}
+	} else {
+		span.Tag("prose_opa_status", "disable")
 	}
 	return nil
 }
