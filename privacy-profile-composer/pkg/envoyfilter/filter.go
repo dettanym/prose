@@ -80,6 +80,9 @@ func (f *Filter) DecodeHeaders(header api.RequestHeaderMap, endStream bool) api.
 }
 
 func (f *Filter) DecodeData(buffer api.BufferInstance, endStream bool) api.StatusType {
+	span := f.tracer.StartSpan("DecodeData", zipkin.Parent(f.parentSpanContext))
+	defer span.Finish()
+
 	log.Println(">>> DECODE DATA")
 	log.Println("  <<About to forward", buffer.Len(), "bytes of data to service>>")
 
@@ -106,7 +109,10 @@ func (f *Filter) DecodeData(buffer api.BufferInstance, endStream bool) api.Statu
 	}
 
 	if processBody {
-		err := f.processBody(buffer, true)
+		proseTags, err := f.processBody(buffer, true)
+		for k, v := range proseTags {
+			span.Tag(k, v)
+		}
 		if err != nil {
 			log.Println(err)
 		}
@@ -134,6 +140,9 @@ func (f *Filter) EncodeHeaders(header api.ResponseHeaderMap, endStream bool) api
 
 // Callbacks which are called in response path
 func (f *Filter) EncodeData(buffer api.BufferInstance, endStream bool) api.StatusType {
+	span := f.tracer.StartSpan("EncodeData", zipkin.Parent(f.parentSpanContext))
+	defer span.Finish()
+
 	log.Println("<<< ENCODE DATA")
 	log.Println("  <<About to forward", buffer.Len(), "bytes of data to client>>")
 
@@ -142,7 +151,10 @@ func (f *Filter) EncodeData(buffer api.BufferInstance, endStream bool) api.Statu
 	//  but it could also be data obtained from a third party. I.e. a kind of join violation.
 	//  Not sure if we'll run into those cases in the examples we look at.
 	if f.sidecarDirection == common.Outbound {
-		err := f.processBody(buffer, false)
+		proseTags, err := f.processBody(buffer, false)
+		for k, v := range proseTags {
+			span.Tag(k, v)
+		}
 		if err != nil {
 			log.Println(err)
 		}
@@ -164,16 +176,18 @@ func (f *Filter) OnDestroy(reason api.DestroyReason) {
 	f.opa.Stop(context.Background())
 }
 
-func (f *Filter) processBody(buffer api.BufferInstance, isDecode bool) error {
+func (f *Filter) processBody(buffer api.BufferInstance, isDecode bool) (map[string]string, error) {
 	jsonBody, err := common.GetJSONBody(f.headerMetadata, buffer)
 	if err != nil {
-		return err
+		return map[string]string{}, err
 	}
 
 	return f.runPresidioAndOPA(jsonBody, isDecode)
 }
 
-func (f *Filter) runPresidioAndOPA(jsonBody []byte, isDecode bool) error {
+func (f *Filter) runPresidioAndOPA(jsonBody []byte, isDecode bool) (map[string]string, error) {
+	proseTags := map[string]string{}
+
 	var decodeOrEncode string
 	if isDecode {
 		decodeOrEncode = "decode"
@@ -181,18 +195,17 @@ func (f *Filter) runPresidioAndOPA(jsonBody []byte, isDecode bool) error {
 		decodeOrEncode = "encode"
 	}
 
-	span := f.tracer.StartSpan(fmt.Sprintf("test span in %s body (in runPresidioAndOPA)", decodeOrEncode), zipkin.Parent(f.parentSpanContext))
+	span := f.tracer.StartSpan(fmt.Sprintf("test span in %s body (in runPresidioAndOPA)", decodeOrEncode))
 	defer span.Finish()
 
 	// Run Presidio and add tags for PII types or an error from Presidio
 	piiTypes, err := common.PiiAnalysis(f.config.presidioUrl, f.headerMetadata.SvcName, jsonBody)
 	if err != nil {
-		span.Tag(PROSE_PRESIDIO_ERROR, fmt.Sprintf("%s", err))
-		return err
+		proseTags[PROSE_PRESIDIO_ERROR] = fmt.Sprintf("%s", err)
+		return proseTags, err
 	}
-	span.Tag(PROSE_PII_TYPES, piiTypes)
-
-	span.Tag(PROSE_OPA_ENFORCE, strconv.FormatBool(f.config.opaEnforce))
+	proseTags[PROSE_PII_TYPES] = piiTypes
+	proseTags[PROSE_OPA_ENFORCE] = strconv.FormatBool(f.config.opaEnforce)
 
 	// get the named policy decision for the specified input
 	if result, err := f.opa.Decision(
@@ -211,17 +224,17 @@ func (f *Filter) runPresidioAndOPA(jsonBody []byte, isDecode bool) error {
 		},
 	); err != nil {
 		errStr := fmt.Sprintf("had an error evaluating the policy: %s", err)
-		span.Tag(PROSE_OPA_ERROR, errStr)
-		return fmt.Errorf("%s\n", errStr)
+		proseTags[PROSE_OPA_ERROR] = errStr
+		return proseTags, fmt.Errorf("%s\n", errStr)
 	} else if decision, ok := result.Result.(bool); !ok {
 		errStr := fmt.Sprintf("result: Result type: %v", decision)
-		span.Tag(PROSE_OPA_ERROR, errStr)
-		return fmt.Errorf("%s\n", errStr)
+		proseTags[PROSE_OPA_ERROR] = errStr
+		return proseTags, fmt.Errorf("%s\n", errStr)
 	} else if decision {
-		span.Tag(PROSE_OPA_DECISION, "accept")
+		proseTags[PROSE_OPA_DECISION] = "accept"
 		log.Printf("policy accepted the input data \n")
 	} else {
-		span.Tag(PROSE_OPA_DECISION, "deny")
+		proseTags[PROSE_OPA_DECISION] = "deny"
 		log.Printf("policy rejected the input data \n")
 
 		// Ideally, get the reason why it was rejected, e.g. which clause was violated
@@ -234,13 +247,13 @@ func (f *Filter) runPresidioAndOPA(jsonBody []byte, isDecode bool) error {
 		// Include a tag for the violation type
 		if isDecode {
 			if f.sidecarDirection == common.Outbound {
-				span.Tag(PROSE_VIOLATION_TYPE, DataSharing)
+				proseTags[PROSE_VIOLATION_TYPE] = DataSharing
 			} else { // inbound sidecar within decode method
-				span.Tag(PROSE_VIOLATION_TYPE, PurposeOfUseDirect)
+				proseTags[PROSE_VIOLATION_TYPE] = PurposeOfUseDirect
 			}
 		} else { // encode method
 			if f.sidecarDirection == common.Outbound {
-				span.Tag(PROSE_VIOLATION_TYPE, PurposeOfUseIndirect)
+				proseTags[PROSE_VIOLATION_TYPE] = PurposeOfUseIndirect
 			}
 			// we don't call this method (from EncodeData) if it's an inbound sidecar
 		}
@@ -253,7 +266,7 @@ func (f *Filter) runPresidioAndOPA(jsonBody []byte, isDecode bool) error {
 			// return api.LocalReply
 		}
 	}
-	return nil
+	return proseTags, nil
 }
 
 func (f *Filter) checkIfRequestToThirdParty() (string, error) {
