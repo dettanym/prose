@@ -68,7 +68,7 @@ func main() {
 	)
 	// TODO: Convert map value to []Spans
 	//  and then to map[SpanID]Span
-	traceIDToSpansMap := map[model.TraceID]api_v2.SpansResponseChunk{}
+	traceIDToSpansMap := map[model.TraceID][]model.Span{}
 	numberOfResponseChunksFound := 0
 	numberOfSpansFound := 0
 	for {
@@ -86,13 +86,9 @@ func main() {
 			numberOfSpansFound += 1
 			spansResponseChunkForTrace, sameTraceExistsBefore := traceIDToSpansMap[span.TraceID]
 			if sameTraceExistsBefore {
-				otherSpansInSameTrace := spansResponseChunkForTrace.GetSpans()
-				otherSpansInSameTrace = append(otherSpansInSameTrace, span)
-				traceIDToSpansMap[span.TraceID] = api_v2.SpansResponseChunk{
-					Spans: otherSpansInSameTrace,
-				}
+				traceIDToSpansMap[span.TraceID] = append(spansResponseChunkForTrace, span)
 			} else {
-				traceIDToSpansMap[span.TraceID] = *spansResponse
+				traceIDToSpansMap[span.TraceID] = spansResponse.GetSpans()
 			}
 
 			fmt.Printf("--> Span Operation name: %s\n", span.OperationName)
