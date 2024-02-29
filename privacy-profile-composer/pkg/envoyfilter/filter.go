@@ -237,7 +237,7 @@ func (f *Filter) runOPA(ctx context.Context, isDecode bool) (sendLocalReply bool
 	proseTags = map[string]string{}
 
 	// get the named policy decision for the specified input
-	if result, err := f.opa.Decision(
+	result, err := f.opa.Decision(
 		ctx,
 		sdk.DecisionOptions{
 			Path: "/authz/allow",
@@ -251,45 +251,52 @@ func (f *Filter) runOPA(ctx context.Context, isDecode bool) (sendLocalReply bool
 			Input:  map[string]interface{}{"hello": "world"},
 			Tracer: topdown.NewBufferTracer(),
 		},
-	); err != nil {
+	)
+
+	if err != nil {
 		errStr := fmt.Sprintf("had an error evaluating the policy: %s", err)
 		proseTags[PROSE_OPA_ERROR] = errStr
 		return false, fmt.Errorf("%s\n", errStr), proseTags
-	} else if decision, ok := result.Result.(bool); !ok {
+	}
+
+	decision, ok := result.Result.(bool)
+	if !ok {
 		errStr := fmt.Sprintf("result: Result type: %v", decision)
 		proseTags[PROSE_OPA_ERROR] = errStr
 		return false, fmt.Errorf("%s\n", errStr), proseTags
-	} else if decision {
+	}
+
+	if decision {
 		proseTags[PROSE_OPA_DECISION] = "accept"
 		log.Printf("policy accepted the input data \n")
 		return false, nil, proseTags
-	} else {
-		proseTags[PROSE_OPA_DECISION] = "deny"
-		log.Printf("policy rejected the input data \n")
-
-		// Ideally, get the reason why it was rejected, e.g. which clause was violated
-		//  the result.Provenance field includes version info, bundle info etc.
-		//  https://github.com/open-policy-agent/opa/pull/5460
-		//  but afaict the "explanation" is through a special tracer that they built-in to OPA
-		//  https://github.com/open-policy-agent/opa/pull/5447
-		//  can initialize it in the DecisionOptions above
-
-		// Include a tag for the violation type
-		if isDecode {
-			if f.sidecarDirection == common.Outbound {
-				proseTags[PROSE_VIOLATION_TYPE] = DataSharing
-			} else { // inbound sidecar within decode method
-				proseTags[PROSE_VIOLATION_TYPE] = PurposeOfUseDirect
-			}
-		} else { // encode method
-			if f.sidecarDirection == common.Outbound {
-				proseTags[PROSE_VIOLATION_TYPE] = PurposeOfUseIndirect
-			}
-			// we don't call this method (from EncodeData) if it's an inbound sidecar
-		}
-
-		return true, nil, proseTags
 	}
+
+	proseTags[PROSE_OPA_DECISION] = "deny"
+	log.Printf("policy rejected the input data \n")
+
+	// Ideally, get the reason why it was rejected, e.g. which clause was violated
+	//  the result.Provenance field includes version info, bundle info etc.
+	//  https://github.com/open-policy-agent/opa/pull/5460
+	//  but afaict the "explanation" is through a special tracer that they built-in to OPA
+	//  https://github.com/open-policy-agent/opa/pull/5447
+	//  can initialize it in the DecisionOptions above
+
+	// Include a tag for the violation type
+	if isDecode {
+		if f.sidecarDirection == common.Outbound {
+			proseTags[PROSE_VIOLATION_TYPE] = DataSharing
+		} else { // inbound sidecar within decode method
+			proseTags[PROSE_VIOLATION_TYPE] = PurposeOfUseDirect
+		}
+	} else { // encode method
+		if f.sidecarDirection == common.Outbound {
+			proseTags[PROSE_VIOLATION_TYPE] = PurposeOfUseIndirect
+		}
+		// we don't call this method (from EncodeData) if it's an inbound sidecar
+	}
+
+	return true, nil, proseTags
 }
 
 func (f *Filter) checkIfRequestToThirdParty() (string, error) {
