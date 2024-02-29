@@ -37,12 +37,12 @@ func (p *ConfigParser) Parse(any *anypb.Any, callbacks api.ConfigCallbackHandler
 	}
 
 	// decide whether to drop requests after a violation or not
-	if val, ok := configStruct["opa_enable"]; !ok {
+	if val, ok := configStruct["opa_enforce"]; !ok {
 		conf.opaEnforce = false // by default, don't drop requests (i.e. dev mode)
-	} else if opaEnable, ok := val.(bool); !ok {
-		return nil, fmt.Errorf("opa_enable: expect bool while got %T", opaEnable)
+	} else if opaEnforce, ok := val.(bool); !ok {
+		return nil, fmt.Errorf("opa_enforce: expect bool while got %T", opaEnforce)
 	} else {
-		conf.opaEnforce = opaEnable
+		conf.opaEnforce = opaEnforce
 	}
 
 	// opa_config should be a YAML inline string,
