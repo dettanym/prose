@@ -204,27 +204,16 @@ func (f *Filter) OnDestroy(reason api.DestroyReason) {
 	f.opa.Stop(context.Background())
 }
 
-func (f *Filter) processBody(ctx context.Context, buffer api.BufferInstance, isDecode bool) (bool, error, map[string]string) {
-	jsonBody, err := common.GetJSONBody(f.headerMetadata, buffer)
-	if err != nil {
-		return false, err, map[string]string{}
-	}
+func (f *Filter) processBody(ctx context.Context, buffer api.BufferInstance, isDecode bool) (sendLocalReply bool, err error, proseTags map[string]string) {
+	span, ctx := f.tracer.StartSpanFromContext(ctx, "processBody")
+	defer span.Finish()
 
-	return f.runPresidioAndOPA(ctx, jsonBody, isDecode)
-}
-
-func (f *Filter) runPresidioAndOPA(ctx context.Context, jsonBody []byte, isDecode bool) (sendLocalReply bool, err error, proseTags map[string]string) {
 	proseTags = map[string]string{}
 
-	var decodeOrEncode string
-	if isDecode {
-		decodeOrEncode = "decode"
-	} else {
-		decodeOrEncode = "encode"
+	jsonBody, err := common.GetJSONBody(f.headerMetadata, buffer)
+	if err != nil {
+		return false, err, proseTags
 	}
-
-	span, ctx := f.tracer.StartSpanFromContext(ctx, fmt.Sprintf("test span in %s body (in runPresidioAndOPA)", decodeOrEncode))
-	defer span.Finish()
 
 	// Run Presidio and add tags for PII types or an error from Presidio
 	piiTypes, err := common.PiiAnalysis(f.config.presidioUrl, f.headerMetadata.SvcName, jsonBody)
@@ -235,6 +224,17 @@ func (f *Filter) runPresidioAndOPA(ctx context.Context, jsonBody []byte, isDecod
 	proseTags[PROSE_PII_TYPES] = piiTypes
 
 	proseTags[PROSE_OPA_ENFORCE] = strconv.FormatBool(f.config.opaEnforce)
+
+	sendLocalReply, err, opaTags := f.runOPA(ctx, isDecode)
+	for k, v := range opaTags {
+		proseTags[k] = v
+	}
+
+	return sendLocalReply, err, proseTags
+}
+
+func (f *Filter) runOPA(ctx context.Context, isDecode bool) (sendLocalReply bool, err error, proseTags map[string]string) {
+	proseTags = map[string]string{}
 
 	// get the named policy decision for the specified input
 	if result, err := f.opa.Decision(
