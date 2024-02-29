@@ -9,6 +9,10 @@ func ConfigFactory(c interface{}) api.StreamFilterFactory {
 	}
 
 	return func(callbacks api.FilterCallbackHandler) api.StreamFilter {
-		return NewFilter(callbacks, conf)
+		filter, err := NewFilter(callbacks, conf)
+		if err != nil {
+			panic(err)
+		}
+		return filter
 	}
 }
