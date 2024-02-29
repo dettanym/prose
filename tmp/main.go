@@ -210,15 +210,6 @@ func parseSpan(spanID model.SpanID, spanStore map[model.SpanID]model.Span) error
 	// In all cases add PII types in tags in *own* span to the profile of the parent (which can be the caller or the callee)
 	if isInbound {
 		// parent is the callee SP
-		// get the caller by traversing up the call stack
-		callerSpanID, err := findAnAncestorCaller(parentSpan.SpanID, spanStore)
-		if err != nil {
-			return fmt.Errorf("could not find the caller of this span %s\n", parentSpanID)
-		}
-		callerServiceName := callerSpanID.GetProcess().GetServiceName()
-		callerOperationName := callerSpanID.GetOperationName()
-		fmt.Printf("%s %s\n", callerServiceName, callerOperationName)
-
 		if isDecode {
 			// PII types are sent in a direct request to the parent (callee)
 			// Could lead to a direct purpose of use violation
@@ -228,16 +219,6 @@ func parseSpan(spanID model.SpanID, spanStore map[model.SpanID]model.Span) error
 		}
 	} else { // OUTBOUND sidecar
 		// parent is the caller SP
-		// get the callee by traversing down the call stack
-		// afaict the Span object doesn't store references to own children so can't go down the call stack
-		// maybe whenever you find an ancestor caller using the inbound SP, mark it as such?
-		calleeSpanID, err := findAnAncestorCaller(parentSpan.SpanID, spanStore)
-		if err != nil {
-			return fmt.Errorf("could not find the callee of this span %s\n", parentSpanID)
-		}
-		calleeServiceName := calleeSpanID.GetProcess().GetServiceName()
-		calleeOperationName := calleeSpanID.GetOperationName()
-		fmt.Printf("%s %s\n", calleeServiceName, calleeOperationName)
 		if isDecode {
 			// PII types are sent in a request to a third party
 			// can cause a data sharing violation
@@ -250,18 +231,19 @@ func parseSpan(spanID model.SpanID, spanStore map[model.SpanID]model.Span) error
 	return nil
 }
 
-func findAnAncestorCaller(spanID model.SpanID, spansStore map[model.SpanID]model.Span) (model.Span, error) {
-	// go access the parent using the span.ParentSpanID(). Look it up in the spansStore. If the span's operation name includes the words "router * egress" then go to its parent
-	// e.g. for service2's checkstock span
-	// the parent would be the service1's "router service2 egress" span, which we know has been inserted by envoy
-	// so we skip it and get to its parent, ie service1's checkStock and return it
-	parentSpan, ok := spansStore[spanID]
-	if ok {
-		extraSpanInsertedByEnvoy := strings.Contains(parentSpan.GetOperationName(), "router") && strings.Contains(parentSpan.GetOperationName(), "egress")
-		if extraSpanInsertedByEnvoy {
-			return findAnAncestorCaller(parentSpan.ParentSpanID(), spansStore)
-		}
-		return spansStore[spanID], nil
-	}
-	return model.Span{}, fmt.Errorf("could not find a span with id %s\n", spanID)
-}
+//
+//func findAnAncestorCaller(spanID model.SpanID, spansStore map[model.SpanID]model.Span) (model.Span, error) {
+//	// go access the parent using the span.ParentSpanID(). Look it up in the spansStore. If the span's operation name includes the words "router * egress" then go to its parent
+//	// e.g. for service2's checkstock span
+//	// the parent would be the service1's "router service2 egress" span, which we know has been inserted by envoy
+//	// so we skip it and get to its parent, ie service1's checkStock and return it
+//	parentSpan, ok := spansStore[spanID]
+//	if ok {
+//		extraSpanInsertedByEnvoy := strings.Contains(parentSpan.GetOperationName(), "router") && strings.Contains(parentSpan.GetOperationName(), "egress")
+//		if extraSpanInsertedByEnvoy {
+//			return findAnAncestorCaller(parentSpan.ParentSpanID(), spansStore)
+//		}
+//		return spansStore[spanID], nil
+//	}
+//	return model.Span{}, fmt.Errorf("could not find a span with id %s\n", spanID)
+//}
