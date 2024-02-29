@@ -7,9 +7,12 @@ import (
 	xds "github.com/cncf/xds/go/xds/type/v3"
 	"github.com/envoyproxy/envoy/contrib/golang/common/go/api"
 	"google.golang.org/protobuf/types/known/anypb"
+
+	"privacy-profile-composer/pkg/envoyfilter/internal/common"
 )
 
 type config struct {
+	direction   common.SidecarDirection
 	zipkinUrl   string
 	opaEnforce  bool
 	opaConfig   string
@@ -27,6 +30,21 @@ func (p *ConfigParser) Parse(any *anypb.Any, callbacks api.ConfigCallbackHandler
 	}
 
 	conf := &config{}
+
+	if val, ok := configStruct["direction"]; !ok {
+		return nil, errors.New("missing direction")
+	} else if str, ok := val.(string); !ok {
+		return nil, fmt.Errorf("direction: expect string while got %T", str)
+	} else {
+		switch str {
+		case "SIDECAR_INBOUND":
+			conf.direction = common.Inbound
+		case "SIDECAR_OUTBOUND":
+			conf.direction = common.Outbound
+		default:
+			return nil, fmt.Errorf("direction: expected either `SIDECAR_INBOUND` or `SIDECAR_OUTBOUND`, but got `%v`", str)
+		}
+	}
 
 	if zipkinUrl, ok := configStruct["zipkin_url"]; !ok {
 		return nil, errors.New("missing zipkin_url")
@@ -71,6 +89,8 @@ func (p *ConfigParser) Merge(parent interface{}, child interface{}) interface{} 
 
 	// copy one, do not update parentConfig directly.
 	newConfig := *parentConfig
+
+	newConfig.direction = childConfig.direction
 
 	if childConfig.zipkinUrl != "" {
 		newConfig.zipkinUrl = childConfig.zipkinUrl

@@ -17,11 +17,6 @@ import (
 )
 
 func NewFilter(callbacks api.FilterCallbackHandler, config *config) (api.StreamFilter, error) {
-	sidecarDirection, err := common.GetDirection(callbacks)
-	if err != nil {
-		return nil, err
-	}
-
 	tracer, err := common.NewZipkinTracer(config.zipkinUrl)
 	if err != nil {
 		return nil, fmt.Errorf("unable to create tracer: %+v\n", err)
@@ -38,22 +33,20 @@ func NewFilter(callbacks api.FilterCallbackHandler, config *config) (api.StreamF
 	}
 
 	return &Filter{
-		callbacks:        callbacks,
-		config:           config,
-		tracer:           tracer,
-		sidecarDirection: sidecarDirection,
-		opa:              opaObj,
+		callbacks: callbacks,
+		config:    config,
+		tracer:    tracer,
+		opa:       opaObj,
 	}, nil
 }
 
 type Filter struct {
 	api.PassThroughStreamFilter
 
-	callbacks        api.FilterCallbackHandler
-	config           *config
-	tracer           *common.ZipkinTracer
-	opa              *sdk.OPA
-	sidecarDirection common.SidecarDirection
+	callbacks api.FilterCallbackHandler
+	config    *config
+	tracer    *common.ZipkinTracer
+	opa       *sdk.OPA
 
 	// Runtime state of the filter
 	parentSpanContext model.SpanContext
@@ -93,13 +86,13 @@ func (f *Filter) DecodeData(buffer api.BufferInstance, endStream bool) api.Statu
 	processBody := false
 	// If it is an inbound sidecar, then do process the body
 	// run PII Analysis + OPA directly
-	if f.sidecarDirection == common.Inbound {
+	if f.config.direction == common.Inbound {
 		processBody = true
 	}
 
 	//  If it is an outbound sidecar, then check if it's a request to a third party
 	//  and only process the body in this case
-	if f.sidecarDirection == common.Outbound {
+	if f.config.direction == common.Outbound {
 		thirdPartyURL, err := f.checkIfRequestToThirdParty()
 		if err != nil {
 			log.Println(err)
@@ -169,7 +162,7 @@ func (f *Filter) EncodeData(buffer api.BufferInstance, endStream bool) api.Statu
 	// TODO: This is usually data obtained from another service
 	//  but it could also be data obtained from a third party. I.e. a kind of join violation.
 	//  Not sure if we'll run into those cases in the examples we look at.
-	if f.sidecarDirection == common.Outbound {
+	if f.config.direction == common.Outbound {
 		sendLocalReply, err, proseTags := f.processBody(ctx, buffer, false)
 		for k, v := range proseTags {
 			span.Tag(k, v)
@@ -210,7 +203,7 @@ func (f *Filter) processBody(ctx context.Context, buffer api.BufferInstance, isD
 
 	proseTags = map[string]string{}
 
-	proseTags[PROSE_SIDECAR_DIRECTION] = string(f.sidecarDirection)
+	proseTags[PROSE_SIDECAR_DIRECTION] = string(f.config.direction)
 
 	jsonBody, err := common.GetJSONBody(f.headerMetadata, buffer)
 	if err != nil {
@@ -286,13 +279,13 @@ func (f *Filter) runOPA(ctx context.Context, isDecode bool) (sendLocalReply bool
 
 	// Include a tag for the violation type
 	if isDecode {
-		if f.sidecarDirection == common.Outbound {
+		if f.config.direction == common.Outbound {
 			proseTags[PROSE_VIOLATION_TYPE] = DataSharing
 		} else { // inbound sidecar within decode method
 			proseTags[PROSE_VIOLATION_TYPE] = PurposeOfUseDirect
 		}
 	} else { // encode method
-		if f.sidecarDirection == common.Outbound {
+		if f.config.direction == common.Outbound {
 			proseTags[PROSE_VIOLATION_TYPE] = PurposeOfUseIndirect
 		}
 		// we don't call this method (from EncodeData) if it's an inbound sidecar

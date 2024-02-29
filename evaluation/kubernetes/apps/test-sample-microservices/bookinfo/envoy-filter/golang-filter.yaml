@@ -34,7 +34,7 @@ spec:
                   split_spans_for_request: true
     - applyTo: HTTP_FILTER
       match:
-        context: SIDECAR_INBOUND
+        context: &direction SIDECAR_INBOUND
         listener:
           portNumber: 9080
           filterChain:
@@ -54,6 +54,7 @@ spec:
             plugin_config:
               "@type": type.googleapis.com/xds.type.v3.TypedStruct
               value:
+                direction: *direction
                 presidio_url: http://presidio.prose-system.svc.cluster.local:3000/batchanalyze
                 zipkin_url: http://zipkin.prose-system.svc.cluster.local:9411/api/v2/spans
                 opa_enforce: false
@@ -106,7 +107,7 @@ spec:
                   split_spans_for_request: true
     - applyTo: HTTP_FILTER
       match:
-        context: SIDECAR_OUTBOUND
+        context: &direction SIDECAR_OUTBOUND
         listener:
           filterChain:
             filter:
@@ -125,6 +126,7 @@ spec:
             plugin_config:
               "@type": type.googleapis.com/xds.type.v3.TypedStruct
               value:
+                direction: *direction
                 presidio_url: http://presidio.prose-system.svc.cluster.local:3000/batchanalyze
                 zipkin_url: http://zipkin.prose-system.svc.cluster.local:9411/api/v2/spans
                 opa_enforce: false
