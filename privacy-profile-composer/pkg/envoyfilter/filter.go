@@ -113,12 +113,23 @@ func (f *Filter) DecodeData(buffer api.BufferInstance, endStream bool) api.Statu
 	}
 
 	if processBody {
-		proseTags, err := f.processBody(ctx, buffer, true)
+		sendLocalReply, err, proseTags := f.processBody(ctx, buffer, true)
+		// Some of these tags may include error info,
+		// so need to add them irrespective of the error
 		for k, v := range proseTags {
 			span.Tag(k, v)
 		}
 		if err != nil {
 			log.Println(err)
+			return api.Continue
+		}
+
+		// If OPA is configured to an enforce mode (for production),
+		// then actually drop the request when it violates the policy
+		if sendLocalReply && f.config.opaEnforce {
+			body := "OPA target policy rejected the input data"
+			f.callbacks.SendLocalReply(403, body, nil, 0, "")
+			return api.LocalReply
 		}
 	}
 
@@ -159,12 +170,21 @@ func (f *Filter) EncodeData(buffer api.BufferInstance, endStream bool) api.Statu
 	//  but it could also be data obtained from a third party. I.e. a kind of join violation.
 	//  Not sure if we'll run into those cases in the examples we look at.
 	if f.sidecarDirection == common.Outbound {
-		proseTags, err := f.processBody(ctx, buffer, false)
+		sendLocalReply, err, proseTags := f.processBody(ctx, buffer, false)
 		for k, v := range proseTags {
 			span.Tag(k, v)
 		}
 		if err != nil {
 			log.Println(err)
+			return api.Continue
+		}
+
+		// If OPA is configured to an enforce mode (for production),
+		// then actually drop the request when it violates the policy
+		if sendLocalReply && f.config.opaEnforce {
+			body := "OPA target policy rejected the input data"
+			f.callbacks.SendLocalReply(403, body, nil, 0, "")
+			return api.LocalReply
 		}
 	}
 
@@ -184,17 +204,17 @@ func (f *Filter) OnDestroy(reason api.DestroyReason) {
 	f.opa.Stop(context.Background())
 }
 
-func (f *Filter) processBody(ctx context.Context, buffer api.BufferInstance, isDecode bool) (map[string]string, error) {
+func (f *Filter) processBody(ctx context.Context, buffer api.BufferInstance, isDecode bool) (bool, error, map[string]string) {
 	jsonBody, err := common.GetJSONBody(f.headerMetadata, buffer)
 	if err != nil {
-		return map[string]string{}, err
+		return false, err, map[string]string{}
 	}
 
 	return f.runPresidioAndOPA(ctx, jsonBody, isDecode)
 }
 
-func (f *Filter) runPresidioAndOPA(ctx context.Context, jsonBody []byte, isDecode bool) (map[string]string, error) {
-	proseTags := map[string]string{}
+func (f *Filter) runPresidioAndOPA(ctx context.Context, jsonBody []byte, isDecode bool) (sendLocalReply bool, err error, proseTags map[string]string) {
+	proseTags = map[string]string{}
 
 	var decodeOrEncode string
 	if isDecode {
@@ -210,9 +230,10 @@ func (f *Filter) runPresidioAndOPA(ctx context.Context, jsonBody []byte, isDecod
 	piiTypes, err := common.PiiAnalysis(f.config.presidioUrl, f.headerMetadata.SvcName, jsonBody)
 	if err != nil {
 		proseTags[PROSE_PRESIDIO_ERROR] = fmt.Sprintf("%s", err)
-		return proseTags, err
+		return false, err, proseTags
 	}
 	proseTags[PROSE_PII_TYPES] = piiTypes
+
 	proseTags[PROSE_OPA_ENFORCE] = strconv.FormatBool(f.config.opaEnforce)
 
 	// get the named policy decision for the specified input
@@ -233,14 +254,15 @@ func (f *Filter) runPresidioAndOPA(ctx context.Context, jsonBody []byte, isDecod
 	); err != nil {
 		errStr := fmt.Sprintf("had an error evaluating the policy: %s", err)
 		proseTags[PROSE_OPA_ERROR] = errStr
-		return proseTags, fmt.Errorf("%s\n", errStr)
+		return false, fmt.Errorf("%s\n", errStr), proseTags
 	} else if decision, ok := result.Result.(bool); !ok {
 		errStr := fmt.Sprintf("result: Result type: %v", decision)
 		proseTags[PROSE_OPA_ERROR] = errStr
-		return proseTags, fmt.Errorf("%s\n", errStr)
+		return false, fmt.Errorf("%s\n", errStr), proseTags
 	} else if decision {
 		proseTags[PROSE_OPA_DECISION] = "accept"
 		log.Printf("policy accepted the input data \n")
+		return false, nil, proseTags
 	} else {
 		proseTags[PROSE_OPA_DECISION] = "deny"
 		log.Printf("policy rejected the input data \n")
@@ -266,15 +288,8 @@ func (f *Filter) runPresidioAndOPA(ctx context.Context, jsonBody []byte, isDecod
 			// we don't call this method (from EncodeData) if it's an inbound sidecar
 		}
 
-		// If OPA is configured to an enforce mode (for production),
-		// then actually drop the request when it violates the policy
-		if f.config.opaEnforce {
-			body := "OPA target policy rejected the input data"
-			f.callbacks.SendLocalReply(403, body, nil, 0, "")
-			// return api.LocalReply
-		}
+		return true, nil, proseTags
 	}
-	return proseTags, nil
 }
 
 func (f *Filter) checkIfRequestToThirdParty() (string, error) {
