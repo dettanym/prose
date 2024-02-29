@@ -127,13 +127,13 @@ func GetDirection(callbacks api.FilterCallbackHandler) (SidecarDirection, error)
 		"check the Envoy docs for the range of values for this key", directionInt)
 }
 
-func GetJSONBody(headerMetadata HeaderMetadata, buffer api.BufferInstance) ([]byte, error) {
+func GetJSONBody(headerMetadata HeaderMetadata, body string) ([]byte, error) {
 	var jsonBody []byte
 
 	if headerMetadata.ContentType == nil {
 		return nil, fmt.Errorf("ContentType header is not set. Cannot analyze body")
 	} else if *headerMetadata.ContentType == "application/x-www-form-urlencoded" {
-		query, err := url.ParseQuery(buffer.String())
+		query, err := url.ParseQuery(body)
 		if err != nil {
 			return nil, fmt.Errorf("Failed to start decoding JSON data")
 		}
@@ -143,7 +143,7 @@ func GetJSONBody(headerMetadata HeaderMetadata, buffer api.BufferInstance) ([]by
 			return nil, fmt.Errorf("Could not transform URL encoded data to JSON to pass to Presidio")
 		}
 	} else if *headerMetadata.ContentType == "application/json" {
-		jsonBody = buffer.Bytes()
+		jsonBody = []byte(body)
 	} else {
 		return nil, fmt.Errorf("Cannot analyze a body with contentType '%s'\n", *headerMetadata.ContentType)
 	}

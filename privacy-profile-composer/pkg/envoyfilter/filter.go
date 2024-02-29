@@ -51,6 +51,8 @@ type Filter struct {
 	// Runtime state of the filter
 	parentSpanContext model.SpanContext
 	headerMetadata    common.HeaderMetadata
+	decodeDataBuffer  string
+	encodeDataBuffer  string
 }
 
 // Callbacks which are called in request path
@@ -69,10 +71,25 @@ func (f *Filter) DecodeHeaders(header api.RequestHeaderMap, endStream bool) api.
 
 	common.LogDecodeHeaderData(header)
 
-	return api.Continue
+	// when `endStream` is true, we have a header-only request
+	if !endStream {
+		return api.StopAndBuffer
+	} else {
+		return api.Continue
+	}
 }
 
 func (f *Filter) DecodeData(buffer api.BufferInstance, endStream bool) api.StatusType {
+	if !endStream {
+		// TODO: we might need to be careful about collecting the data from all
+		//  of these buffers. Maybe go has some builtin methods to work with it,
+		//  instead of us collecting the entire body using string concat.
+		// https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/buffer_filter
+		// https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/file_system_buffer_filter
+		f.decodeDataBuffer += buffer.String()
+		return api.StopAndBuffer
+	}
+
 	span, ctx := f.tracer.StartSpanFromContext(
 		context.Background(),
 		"DecodeData",
@@ -81,7 +98,9 @@ func (f *Filter) DecodeData(buffer api.BufferInstance, endStream bool) api.Statu
 	defer span.Finish()
 
 	log.Println(">>> DECODE DATA")
-	log.Println("  <<About to forward", buffer.Len(), "bytes of data to service>>")
+	log.Println("  <<About to forward", len(f.decodeDataBuffer), "bytes of data to service>>")
+
+	span.Tag("buffer-value", f.decodeDataBuffer)
 
 	processBody := false
 	// If it is an inbound sidecar, then do process the body
@@ -106,7 +125,7 @@ func (f *Filter) DecodeData(buffer api.BufferInstance, endStream bool) api.Statu
 	}
 
 	if processBody {
-		sendLocalReply, err, proseTags := f.processBody(ctx, buffer, true)
+		sendLocalReply, err, proseTags := f.processBody(ctx, f.decodeDataBuffer, true)
 		// Some of these tags may include error info,
 		// so need to add them irrespective of the error
 		for k, v := range proseTags {
@@ -143,11 +162,25 @@ func (f *Filter) EncodeHeaders(header api.ResponseHeaderMap, endStream bool) api
 	span := f.tracer.StartSpan("test span in encode headers", zipkin.Parent(f.parentSpanContext))
 	defer span.Finish()
 
-	return api.Continue
+	if !endStream {
+		return api.StopAndBuffer
+	} else {
+		return api.Continue
+	}
 }
 
 // Callbacks which are called in response path
 func (f *Filter) EncodeData(buffer api.BufferInstance, endStream bool) api.StatusType {
+	if !endStream {
+		// TODO: we might need to be careful about collecting the data from all
+		//  of these buffers. Maybe go has some builtin methods to work with it,
+		//  instead of us collecting the entire body using string concat.
+		// https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/buffer_filter
+		// https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/file_system_buffer_filter
+		f.encodeDataBuffer += buffer.String()
+		return api.StopAndBuffer
+	}
+
 	span, ctx := f.tracer.StartSpanFromContext(
 		context.Background(),
 		"EncodeData",
@@ -156,14 +189,16 @@ func (f *Filter) EncodeData(buffer api.BufferInstance, endStream bool) api.Statu
 	defer span.Finish()
 
 	log.Println("<<< ENCODE DATA")
-	log.Println("  <<About to forward", buffer.Len(), "bytes of data to client>>")
+	log.Println("  <<About to forward", len(f.encodeDataBuffer), "bytes of data to client>>")
+
+	span.Tag("buffer-value", f.encodeDataBuffer)
 
 	// if outbound then indirect purpose of use violation
 	// TODO: This is usually data obtained from another service
 	//  but it could also be data obtained from a third party. I.e. a kind of join violation.
 	//  Not sure if we'll run into those cases in the examples we look at.
 	if f.config.direction == common.Outbound {
-		sendLocalReply, err, proseTags := f.processBody(ctx, buffer, false)
+		sendLocalReply, err, proseTags := f.processBody(ctx, f.encodeDataBuffer, false)
 		for k, v := range proseTags {
 			span.Tag(k, v)
 		}
@@ -197,7 +232,7 @@ func (f *Filter) OnDestroy(reason api.DestroyReason) {
 	f.opa.Stop(context.Background())
 }
 
-func (f *Filter) processBody(ctx context.Context, buffer api.BufferInstance, isDecode bool) (sendLocalReply bool, err error, proseTags map[string]string) {
+func (f *Filter) processBody(ctx context.Context, body string, isDecode bool) (sendLocalReply bool, err error, proseTags map[string]string) {
 	span, ctx := f.tracer.StartSpanFromContext(ctx, "processBody")
 	defer span.Finish()
 
@@ -205,7 +240,7 @@ func (f *Filter) processBody(ctx context.Context, buffer api.BufferInstance, isD
 
 	proseTags[PROSE_SIDECAR_DIRECTION] = string(f.config.direction)
 
-	jsonBody, err := common.GetJSONBody(f.headerMetadata, buffer)
+	jsonBody, err := common.GetJSONBody(f.headerMetadata, body)
 	if err != nil {
 		return false, err, proseTags
 	}
