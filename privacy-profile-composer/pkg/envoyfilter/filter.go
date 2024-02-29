@@ -210,6 +210,8 @@ func (f *Filter) processBody(ctx context.Context, buffer api.BufferInstance, isD
 
 	proseTags = map[string]string{}
 
+	proseTags[PROSE_SIDECAR_DIRECTION] = string(f.sidecarDirection)
+
 	jsonBody, err := common.GetJSONBody(f.headerMetadata, buffer)
 	if err != nil {
 		return false, err, proseTags
