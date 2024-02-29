@@ -68,8 +68,10 @@ func main() {
 			},
 		},
 	)
-	// TODO: Convert map value to []Spans
-	//  and then to map[SpanID]Span
+	// TODO: Convert []model.Span{} to map[SpanID]Span
+	//  This is actually non-trivial since some spans have duplicated span IDs.
+	//  Can we still ensure that their parent information is legitimate and use it somehow?
+	//  Look at Jaeger query API and how it sets these span IDs to 00..0x
 	traceIDToSpansMap := map[model.TraceID][]model.Span{}
 	numberOfResponseChunksFound := 0
 	numberOfSpansFound := 0
@@ -188,6 +190,9 @@ func parseSpan(spanID model.SpanID, spanStore map[model.SpanID]model.Span) error
 	isInbound := strings.Contains(strings.ToLower(inboundOutbound.GetVStr()), "inbound")
 	isDecode := strings.Contains(strings.ToLower(span.GetOperationName()), "decode")
 
+	// TODO: This is actually *a* sibling whose:
+	//  start time is closest to the current span if we are a decode span
+	//  end time is closest to the current span if we are an encode span
 	// get the parent of the golang-filter span
 	parentSpanID := span.ParentSpanID()
 	parentSpan, ok := spanStore[parentSpanID]
