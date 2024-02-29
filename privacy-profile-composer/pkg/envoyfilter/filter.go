@@ -16,15 +16,15 @@ import (
 	"privacy-profile-composer/pkg/envoyfilter/internal/common"
 )
 
-func NewFilter(callbacks api.FilterCallbackHandler, config *config) api.StreamFilter {
+func NewFilter(callbacks api.FilterCallbackHandler, config *config) (api.StreamFilter, error) {
 	sidecarDirection, err := common.GetDirection(callbacks)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
 	tracer, err := common.NewZipkinTracer(config.zipkinUrl)
 	if err != nil {
-		log.Fatalf("unable to create tracer: %+v\n", err)
+		return nil, fmt.Errorf("unable to create tracer: %+v\n", err)
 	}
 
 	opaObj, err := sdk.New(context.Background(), sdk.Options{
@@ -33,7 +33,7 @@ func NewFilter(callbacks api.FilterCallbackHandler, config *config) api.StreamFi
 	})
 
 	if err != nil {
-		log.Fatalf("could not initialize an OPA object --- "+
+		return nil, fmt.Errorf("could not initialize an OPA object --- "+
 			"this means that the data plane cannot evaluate the target privacy policy ----- %+v\n", err)
 	}
 
@@ -43,7 +43,7 @@ func NewFilter(callbacks api.FilterCallbackHandler, config *config) api.StreamFi
 		tracer:           tracer,
 		sidecarDirection: sidecarDirection,
 		opa:              opaObj,
-	}
+	}, nil
 }
 
 type Filter struct {
