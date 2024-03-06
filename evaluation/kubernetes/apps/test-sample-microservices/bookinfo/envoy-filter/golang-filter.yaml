@@ -7,7 +7,7 @@ spec:
   configPatches:
     - applyTo: NETWORK_FILTER
       match:
-        context: SIDECAR_INBOUND
+        context: &direction SIDECAR_INBOUND
         listener:
           filterChain:
             filter:
@@ -34,7 +34,7 @@ spec:
                   split_spans_for_request: true
     - applyTo: HTTP_FILTER
       match:
-        context: &direction SIDECAR_INBOUND
+        context: *direction
         listener:
           portNumber: 9080
           filterChain:
@@ -45,7 +45,7 @@ spec:
       patch:
         operation: INSERT_BEFORE
         value:
-          name: golangfilter-inbound
+          name: &golang-filter-name golangfilter-inbound
           typed_config:
             "@type": type.googleapis.com/envoy.extensions.filters.http.golang.v3alpha.Config
             library_id: simple
@@ -70,6 +70,22 @@ spec:
                         max_delay_seconds: 3600
                   decision_logs:
                     console: true
+    - applyTo: HTTP_FILTER
+      match:
+        context: *direction
+        listener:
+          filterChain:
+            filter:
+              name: "envoy.filters.network.http_connection_manager"
+              subFilter:
+                name: *golang-filter-name
+      patch:
+        operation: INSERT_BEFORE
+        value:
+          name: buffer-filter
+          typed_config:
+            "@type": type.googleapis.com/envoy.extensions.filters.http.buffer.v3.Buffer
+            max_request_bytes: 5242880
 ---
 apiVersion: networking.istio.io/v1alpha3
 kind: EnvoyFilter
@@ -80,7 +96,7 @@ spec:
   configPatches:
     - applyTo: NETWORK_FILTER
       match:
-        context: SIDECAR_OUTBOUND
+        context: &direction SIDECAR_OUTBOUND
         listener:
           filterChain:
             filter:
@@ -107,7 +123,7 @@ spec:
                   split_spans_for_request: true
     - applyTo: HTTP_FILTER
       match:
-        context: &direction SIDECAR_OUTBOUND
+        context: *direction
         listener:
           filterChain:
             filter:
@@ -117,7 +133,7 @@ spec:
       patch:
         operation: INSERT_BEFORE
         value:
-          name: golangfilter-outbound
+          name: &golang-filter-name golangfilter-outbound
           typed_config:
             "@type": type.googleapis.com/envoy.extensions.filters.http.golang.v3alpha.Config
             library_id: simple
@@ -142,3 +158,19 @@ spec:
                         max_delay_seconds: 3600
                   decision_logs:
                     console: true
+    - applyTo: HTTP_FILTER
+      match:
+        context: *direction
+        listener:
+          filterChain:
+            filter:
+              name: "envoy.filters.network.http_connection_manager"
+              subFilter:
+                name: *golang-filter-name
+      patch:
+        operation: INSERT_BEFORE
+        value:
+          name: buffer-filter
+          typed_config:
+            "@type": type.googleapis.com/envoy.extensions.filters.http.buffer.v3.Buffer
+            max_request_bytes: 5242880
