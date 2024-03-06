@@ -1,7 +1,6 @@
 package envoyfilter
 
 import (
-	"errors"
 	"fmt"
 	"net"
 
@@ -34,7 +33,7 @@ func (p *ConfigParser) Parse(any *anypb.Any, callbacks api.ConfigCallbackHandler
 	conf := &config{}
 
 	if val, ok := configStruct["direction"]; !ok {
-		return nil, errors.New("missing direction")
+		return nil, fmt.Errorf("missing direction")
 	} else if str, ok := val.(string); !ok {
 		return nil, fmt.Errorf("direction: expect string while got %T", str)
 	} else {
@@ -49,7 +48,7 @@ func (p *ConfigParser) Parse(any *anypb.Any, callbacks api.ConfigCallbackHandler
 	}
 
 	if zipkinUrl, ok := configStruct["zipkin_url"]; !ok {
-		return nil, errors.New("missing zipkin_url")
+		return nil, fmt.Errorf("missing zipkin_url")
 	} else if str, ok := zipkinUrl.(string); !ok {
 		return nil, fmt.Errorf("zipkin_url: expect string while got %T", zipkinUrl)
 	} else {
@@ -68,7 +67,7 @@ func (p *ConfigParser) Parse(any *anypb.Any, callbacks api.ConfigCallbackHandler
 	// opa_config should be a YAML inline string,
 	// following this example: https://www.openpolicyagent.org/docs/latest/configuration/#example
 	if parsedStr, ok := configStruct["opa_config"]; !ok {
-		return nil, errors.New("missing opa_config")
+		return nil, fmt.Errorf("missing opa_config")
 	} else if opaConfig, ok := parsedStr.(string); !ok {
 		return nil, fmt.Errorf("opa_config: expect (YAML inline) string while got %T", opaConfig)
 	} else {
@@ -76,7 +75,7 @@ func (p *ConfigParser) Parse(any *anypb.Any, callbacks api.ConfigCallbackHandler
 	}
 
 	if parsedStr, ok := configStruct["presidio_url"]; !ok {
-		return nil, errors.New("missing presidio_url")
+		return nil, fmt.Errorf("missing presidio_url")
 	} else if presidioUrl, ok := parsedStr.(string); !ok {
 		return nil, fmt.Errorf("presidio_url: expect string while got %T", presidioUrl)
 	} else {
@@ -88,7 +87,7 @@ func (p *ConfigParser) Parse(any *anypb.Any, callbacks api.ConfigCallbackHandler
 	// `kubectl cluster-info dump | grep -m 1 cluster-cidr` and
 	// `kubectl cluster-info dump | grep -m 1 service-cluster-ip-range`
 	if internalCidrsExist, ok := configStruct["internal_cidrs"]; !ok {
-		return nil, errors.New("missing internal_cidrs")
+		return nil, fmt.Errorf("missing internal_cidrs")
 	} else if internalCidrs, ok := internalCidrsExist.([]string); !ok {
 		return nil, fmt.Errorf("internal_cidrs: expect a list of strings while got %T", internalCidrs)
 	} else {
