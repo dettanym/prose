@@ -2,6 +2,7 @@ package envoyfilter
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net"
@@ -54,7 +55,33 @@ func (f *Filter) DecodeHeaders(header api.RequestHeaderMap, endStream bool) api.
 
 	//_ = common.InjectParentcontextIntoRequestHeaders(&header, span.Context())
 
+	span.Tag("opa-enforce", fmt.Sprint(f.config.opaEnforce))
+	span.Tag("sidecar-direction", fmt.Sprint(f.config.direction))
+
 	f.headerMetadata = common.ExtractHeaderData(header)
+
+	span.Tag("method", f.headerMetadata.Method)
+	span.Tag("host", f.headerMetadata.Host)
+	span.Tag("path", f.headerMetadata.Path)
+	span.Tag("svc-name", f.headerMetadata.SvcName)
+	span.Tag("purpose", f.headerMetadata.Purpose)
+	// TODO: it seems this metadata is only set on OUTBOUND sidecar directions
+	//  but INBOUND sidecar directions do not have it set.
+	if f.headerMetadata.EnvoyPeerMetadata != nil {
+		encoded, err := json.Marshal(f.headerMetadata.EnvoyPeerMetadata)
+		if err != nil {
+			span.Tag("envoy-peer-metadata-error", fmt.Sprint(err))
+		} else {
+			span.Tag("envoy-peer-metadata", string(encoded))
+		}
+	}
+
+	// TODO: should these two be added to `f.headerMetadata`?
+	span.Tag("protocol", header.Protocol())
+	span.Tag("scheme", header.Scheme())
+
+	// TODO: Insert it into OpenTelemetry baggage for tracing?
+	header.Add("x-prose-purpose", f.headerMetadata.Purpose) // For OPA
 
 	// common.LogDecodeHeaderData(header)
 
@@ -74,15 +101,21 @@ func (f *Filter) DecodeHeaders(header api.RequestHeaderMap, endStream bool) api.
 		// and only process the body in this case
 		destinationAddress, err := f.callbacks.GetProperty("destination.address")
 		if err != nil {
-			log.Println(err)
+			span.Tag("error", "true")
+			span.Tag("error-msg", fmt.Sprint(err))
 			return api.Continue
 		}
 
+		span.Tag("destination-address", destinationAddress)
+
 		isInternalDestination, err := f.checkInternalAddress(destinationAddress)
 		if err != nil {
-			log.Println(err)
+			span.Tag("error", "true")
+			span.Tag("error-msg", fmt.Sprint(err))
 			return api.Continue
 		}
+
+		span.Tag("is-internal-destination", fmt.Sprint(isInternalDestination))
 
 		if isInternalDestination {
 			// log.Printf("outbound sidecar processed a request to another sidecar in the mesh" +
@@ -97,6 +130,8 @@ func (f *Filter) DecodeHeaders(header api.RequestHeaderMap, endStream bool) api.
 		log.Printf("unexpected filter direction: %s\n", f.config.direction)
 		return api.Continue
 	}
+
+	span.Tag("process-decode-body", fmt.Sprint(f.processDecodeBody))
 
 	return api.StopAndBuffer
 }
