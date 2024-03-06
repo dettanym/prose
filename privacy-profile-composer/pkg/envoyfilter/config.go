@@ -3,6 +3,7 @@ package envoyfilter
 import (
 	"errors"
 	"fmt"
+	"net"
 
 	xds "github.com/cncf/xds/go/xds/type/v3"
 	"github.com/envoyproxy/envoy/contrib/golang/common/go/api"
@@ -12,11 +13,12 @@ import (
 )
 
 type config struct {
-	direction   common.SidecarDirection
-	zipkinUrl   string
-	opaEnforce  bool
-	opaConfig   string
-	presidioUrl string
+	direction     common.SidecarDirection
+	zipkinUrl     string
+	opaEnforce    bool
+	opaConfig     string
+	presidioUrl   string
+	internalCidrs []net.IPNet
 }
 
 type ConfigParser struct {
@@ -80,6 +82,24 @@ func (p *ConfigParser) Parse(any *anypb.Any, callbacks api.ConfigCallbackHandler
 	} else {
 		conf.presidioUrl = presidioUrl
 	}
+
+	// Values for this field are usually cluster settings set at creation time.
+	// One possible way to find these can be using these grep commands:
+	// `kubectl cluster-info dump | grep -m 1 cluster-cidr` and
+	// `kubectl cluster-info dump | grep -m 1 service-cluster-ip-range`
+	if internalCidrsExist, ok := configStruct["internal_cidrs"]; !ok {
+		return nil, errors.New("missing internal_cidrs")
+	} else if internalCidrs, ok := internalCidrsExist.([]string); !ok {
+		return nil, fmt.Errorf("internal_cidrs: expect a list of strings while got %T", internalCidrs)
+	} else {
+		parsedCidrs, err := parseCIDRs(internalCidrs)
+		if err != nil {
+			return nil, err
+		}
+
+		conf.internalCidrs = parsedCidrs
+	}
+
 	return conf, nil
 }
 
@@ -105,6 +125,7 @@ func (p *ConfigParser) Merge(parent interface{}, child interface{}) interface{} 
 	}
 
 	newConfig.opaEnforce = childConfig.opaEnforce
+	newConfig.internalCidrs = childConfig.internalCidrs
 
 	return &newConfig
 }
@@ -117,4 +138,21 @@ func unmarshalConfig(any *anypb.Any) (map[string]interface{}, error) {
 	}
 
 	return configStruct.Value.AsMap(), nil
+}
+
+func parseCIDRs(cidrStrs []string) ([]net.IPNet, error) {
+	if cidrStrs == nil {
+		return []net.IPNet{}, nil
+	}
+
+	cidrs := make([]net.IPNet, 0, len(cidrStrs))
+	for i, cidrStr := range cidrStrs {
+		_, cidr, err := net.ParseCIDR(cidrStr)
+		if err != nil {
+			return nil, fmt.Errorf("invalid CIDR[%d]: %v (%v)", i, cidr, err)
+		}
+		cidrs = append(cidrs, *cidr)
+	}
+
+	return cidrs, nil
 }

@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net"
 	"strconv"
 
 	"github.com/envoyproxy/envoy/contrib/golang/common/go/api"
@@ -102,6 +103,7 @@ func (f *Filter) DecodeData(buffer api.BufferInstance, endStream bool) api.Statu
 
 	span.Tag("buffer-value", f.decodeDataBuffer)
 
+	// TODO: move the entire decision to process body or not into DecodeHeaders/EncodeHeaders
 	processBody := false
 	// If it is an inbound sidecar, then do process the body
 	// run PII Analysis + OPA directly
@@ -112,15 +114,26 @@ func (f *Filter) DecodeData(buffer api.BufferInstance, endStream bool) api.Statu
 	//  If it is an outbound sidecar, then check if it's a request to a third party
 	//  and only process the body in this case
 	if f.config.direction == common.Outbound {
-		thirdPartyURL, err := f.checkIfRequestToThirdParty()
+		destinationAddress, err := f.callbacks.GetProperty("destination.address")
 		if err != nil {
 			log.Println(err)
 			return api.Continue
-		} else if thirdPartyURL == "" {
+		}
+
+		isInternalDestination, err := f.checkInternalAddress(destinationAddress)
+		if err != nil {
+			log.Println(err)
+			return api.Continue
+		}
+
+		if isInternalDestination {
 			log.Printf("outbound sidecar processed a request to another sidecar in the mesh" +
 				"Prose will process it through the inbound decode function\n")
 			return api.Continue
 		}
+
+		// this can be obtained in DecodeHeader()
+		// thirdPartyURL := header.Host()
 		processBody = true
 	}
 
@@ -329,8 +342,23 @@ func (f *Filter) runOPA(ctx context.Context, isDecode bool) (sendLocalReply bool
 	return true, nil, proseTags
 }
 
-func (f *Filter) checkIfRequestToThirdParty() (string, error) {
-	// use f.callbacks
-	// use f.headerMetadata
-	return "", nil
+func (f *Filter) checkInternalAddress(destinationAddress string) (bool, error) {
+
+	hostIpStr, _, err := net.SplitHostPort(destinationAddress)
+	if err != nil {
+		return false, err
+	}
+
+	hostIp := net.ParseIP(hostIpStr)
+	if hostIp == nil {
+		return false, fmt.Errorf("invalid IP address: %s", hostIpStr)
+	}
+
+	for _, cidr := range f.config.internalCidrs {
+		if cidr.Contains(hostIp) {
+			return true, nil
+		}
+	}
+
+	return false, nil
 }
