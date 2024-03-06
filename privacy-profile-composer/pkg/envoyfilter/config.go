@@ -88,15 +88,20 @@ func (p *ConfigParser) Parse(any *anypb.Any, callbacks api.ConfigCallbackHandler
 	// `kubectl cluster-info dump | grep -m 1 service-cluster-ip-range`
 	if internalCidrsExist, ok := configStruct["internal_cidrs"]; !ok {
 		return nil, fmt.Errorf("missing internal_cidrs")
-	} else if internalCidrs, ok := internalCidrsExist.([]string); !ok {
-		return nil, fmt.Errorf("internal_cidrs: expect a list of strings while got %T", internalCidrs)
+	} else if internalCidrList, ok := internalCidrsExist.([]interface{}); !ok {
+		return nil, fmt.Errorf("internal_cidrs: expect a list of strings while got %T", internalCidrsExist)
 	} else {
-		parsedCidrs, err := parseCIDRs(internalCidrs)
-		if err != nil {
-			return nil, err
-		}
+		conf.internalCidrs = make([]net.IPNet, 0, len(internalCidrList))
 
-		conf.internalCidrs = parsedCidrs
+		for i, v := range internalCidrList {
+			if internalCidrStr, ok := v.(string); !ok {
+				return nil, fmt.Errorf("internal_cidrs[%d]: expected a string while got %T", i, v)
+			} else if _, cidr, err := net.ParseCIDR(internalCidrStr); err != nil {
+				return nil, fmt.Errorf("invalid internal_cidrs[%d]: %v (%v)", i, cidr, err)
+			} else {
+				conf.internalCidrs = append(conf.internalCidrs, *cidr)
+			}
+		}
 	}
 
 	return conf, nil
@@ -137,21 +142,4 @@ func unmarshalConfig(any *anypb.Any) (map[string]interface{}, error) {
 	}
 
 	return configStruct.Value.AsMap(), nil
-}
-
-func parseCIDRs(cidrStrs []string) ([]net.IPNet, error) {
-	if cidrStrs == nil {
-		return []net.IPNet{}, nil
-	}
-
-	cidrs := make([]net.IPNet, 0, len(cidrStrs))
-	for i, cidrStr := range cidrStrs {
-		_, cidr, err := net.ParseCIDR(cidrStr)
-		if err != nil {
-			return nil, fmt.Errorf("invalid CIDR[%d]: %v (%v)", i, cidr, err)
-		}
-		cidrs = append(cidrs, *cidr)
-	}
-
-	return cidrs, nil
 }
