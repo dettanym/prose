@@ -118,13 +118,16 @@ func (f *Filter) DecodeHeaders(header api.RequestHeaderMap, endStream bool) api.
 }
 
 func (f *Filter) DecodeData(buffer api.BufferInstance, endStream bool) api.StatusType {
+	// TODO: we might need to be careful about collecting the data from all
+	//  of these buffers. Maybe go has some builtin methods to work with it,
+	//  instead of us collecting the entire body using string concat.
+	// https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/buffer_filter
+	// https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/file_system_buffer_filter
+	// There might be data in `buffer` regardless of the `endStream` flag, so
+	// it always needs to be collected.
+	f.decodeDataBuffer += buffer.String()
+
 	if !endStream {
-		// TODO: we might need to be careful about collecting the data from all
-		//  of these buffers. Maybe go has some builtin methods to work with it,
-		//  instead of us collecting the entire body using string concat.
-		// https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/buffer_filter
-		// https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/file_system_buffer_filter
-		f.decodeDataBuffer += buffer.String()
 		return api.StopAndBuffer
 	}
 
