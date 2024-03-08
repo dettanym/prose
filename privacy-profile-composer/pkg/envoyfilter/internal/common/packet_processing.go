@@ -127,26 +127,28 @@ func GetDirection(callbacks api.FilterCallbackHandler) (SidecarDirection, error)
 		"check the Envoy docs for the range of values for this key", directionInt)
 }
 
-func GetJSONBody(headerMetadata HeaderMetadata, body string) ([]byte, error) {
+func GetJSONBody(headerMetadata HeaderMetadata, body string) (interface{}, error) {
 	if headerMetadata.ContentType == nil {
 		return nil, fmt.Errorf("cannot analyze body, since 'ContentType' header is not set")
 	}
 
 	switch *headerMetadata.ContentType {
 	case "application/json":
-		return []byte(body), nil
+		var data interface{}
+
+		err := json.Unmarshal([]byte(body), data)
+		if err != nil {
+			return nil, fmt.Errorf("failed to unmarshal json body: %w", err)
+		}
+
+		return data, nil
 	case "application/x-www-form-urlencoded":
 		query, err := url.ParseQuery(body)
 		if err != nil {
 			return nil, fmt.Errorf("failed to decode urlencoded form: %w", err)
 		}
 
-		jsonBody, err := json.Marshal(query)
-		if err != nil {
-			return nil, fmt.Errorf("could not marshall decoded urlencoded form into json: %w", err)
-		}
-
-		return jsonBody, nil
+		return query, nil
 	default:
 		return nil, fmt.Errorf("cannot analyze a body with ContentType '%s'", *headerMetadata.ContentType)
 	}
