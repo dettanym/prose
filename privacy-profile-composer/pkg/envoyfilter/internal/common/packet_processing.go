@@ -128,24 +128,26 @@ func GetDirection(callbacks api.FilterCallbackHandler) (SidecarDirection, error)
 }
 
 func GetJSONBody(headerMetadata HeaderMetadata, body string) ([]byte, error) {
-	var jsonBody []byte
-
 	if headerMetadata.ContentType == nil {
-		return nil, fmt.Errorf("ContentType header is not set. Cannot analyze body")
-	} else if *headerMetadata.ContentType == "application/x-www-form-urlencoded" {
+		return nil, fmt.Errorf("cannot analyze body, since 'ContentType' header is not set")
+	}
+
+	switch *headerMetadata.ContentType {
+	case "application/json":
+		return []byte(body), nil
+	case "application/x-www-form-urlencoded":
 		query, err := url.ParseQuery(body)
 		if err != nil {
-			return nil, fmt.Errorf("Failed to start decoding JSON data")
+			return nil, fmt.Errorf("failed to decode urlencoded form: %w", err)
 		}
-		log.Println("  <<decoded x-www-form-urlencoded data: ", query)
-		jsonBody, err = json.Marshal(query)
+
+		jsonBody, err := json.Marshal(query)
 		if err != nil {
-			return nil, fmt.Errorf("Could not transform URL encoded data to JSON to pass to Presidio")
+			return nil, fmt.Errorf("could not marshall decoded urlencoded form into json: %w", err)
 		}
-	} else if *headerMetadata.ContentType == "application/json" {
-		jsonBody = []byte(body)
-	} else {
-		return nil, fmt.Errorf("Cannot analyze a body with contentType '%s'\n", *headerMetadata.ContentType)
+
+		return jsonBody, nil
+	default:
+		return nil, fmt.Errorf("cannot analyze a body with ContentType '%s'", *headerMetadata.ContentType)
 	}
-	return jsonBody, nil
 }
