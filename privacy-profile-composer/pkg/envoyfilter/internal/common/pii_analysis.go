@@ -8,22 +8,23 @@ import (
 	"net/http"
 )
 
-func PiiAnalysis(presidioSvcURL string, svcName string, bufferBytes []byte) (string, error) {
-	svcNameBuf, err := json.Marshal(svcName)
+type PresidioDataFormat struct {
+	JsonToAnalyze interface{} `json:"json_to_analyze"`
+	DerivePurpose string      `json:"derive_purpose,omitempty"`
+}
+
+func PiiAnalysis(presidioSvcURL string, svcName string, bufferBytes interface{}) (string, error) {
+	msgString, err := json.Marshal(
+		PresidioDataFormat{
+			JsonToAnalyze: bufferBytes,
+			DerivePurpose: svcName,
+		},
+	)
 	if err != nil {
-		return "", fmt.Errorf("could not marshal service name string into a valid JSON string: %w", err)
+		return "", fmt.Errorf("could not convert data for presidio into json: %w", err)
 	}
 
-	msgString := fmt.Sprintf(
-		`{
-			"json_to_analyze": %s,
-			"derive_purpose": %s
-		}`,
-		bufferBytes,
-		svcNameBuf,
-	)
-
-	resp, err := http.Post(presidioSvcURL, "application/json", bytes.NewBufferString(msgString))
+	resp, err := http.Post(presidioSvcURL, "application/json", bytes.NewBuffer(msgString))
 	if err != nil {
 		return "", fmt.Errorf("presidio post error: %w", err)
 	}
