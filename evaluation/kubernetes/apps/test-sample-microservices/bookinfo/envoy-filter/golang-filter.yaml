@@ -67,8 +67,9 @@ spec:
                   services:
                     bundle_server:
                       url:  http://prose-server.prose-system.svc.cluster.local:8080
-                  bundle_server:
-                    default:
+                  bundles:
+                    prose_opa_bundle:
+                      service: bundle_server
                       resource: /bundle.tar.gz
                       polling:
                         min_delay_seconds: 120
@@ -160,8 +161,9 @@ spec:
                   services:
                     bundle_server:
                       url:  http://prose-server.prose-system.svc.cluster.local:8080
-                  bundle_server:
-                    default:
+                  bundles:
+                    prose_opa_bundle:
+                      service: bundle_server
                       resource: /bundle.tar.gz
                       polling:
                         min_delay_seconds: 120
