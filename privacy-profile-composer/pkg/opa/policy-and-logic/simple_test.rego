@@ -1,4 +1,4 @@
-   package authz
+   package prose
     import future.keywords
 
     test_invalid_purpose if {

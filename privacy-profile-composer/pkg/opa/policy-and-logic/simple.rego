@@ -1,4 +1,4 @@
-   package authz
+   package prose
     import input.parsed_body
     import input.parsed_path
     import input.attributes.request.http
