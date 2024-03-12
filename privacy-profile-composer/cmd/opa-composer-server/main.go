@@ -57,7 +57,7 @@ func prepareOpaServer() error {
 func registerOpaServer() *http.ServeMux {
 	s := http.NewServeMux()
 
-	s.HandleFunc("/bundle.tar.gz", func(w http.ResponseWriter, r *http.Request) {
+	s.HandleFunc("/bundles/bundle.tar.gz", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, *compiled_bundle)
 	})
 
