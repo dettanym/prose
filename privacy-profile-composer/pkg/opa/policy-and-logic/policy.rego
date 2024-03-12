@@ -1,4 +1,4 @@
-package istio.authz
+package authz
 
 import future.keywords
 
