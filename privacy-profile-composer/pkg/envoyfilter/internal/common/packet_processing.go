@@ -35,19 +35,19 @@ const (
 
 func LogDecodeHeaderData(header api.RequestHeaderMap) {
 	log.Printf("%v (%v) %v://%v%v\n", header.Method(), header.Protocol(), header.Scheme(), header.Host(), header.Path())
-	header.Range(func(key, value string) bool {
-		log.Printf("  \"%v\": %v\n", key, value)
-		return true
-	})
+	//header.Range(func(key, value string) bool {
+	//	log.Printf("  \"%v\": %v\n", key, value)
+	//	return true
+	//})
 }
 
 func LogEncodeHeaderData(header api.ResponseHeaderMap) {
 	status, statusWasSet := header.Status()
 	log.Printf("Status was set (%v) to %v with response headers:\n", statusWasSet, status)
-	header.Range(func(key, value string) bool {
-		log.Printf("  \"%v\": %v\n", key, value)
-		return true
-	})
+	//header.Range(func(key, value string) bool {
+	//	log.Printf("  \"%v\": %v\n", key, value)
+	//	return true
+	//})
 }
 
 func ExtractHeaderData(header api.RequestHeaderMap) HeaderMetadata {
