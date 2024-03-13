@@ -13,7 +13,7 @@ spec:
     spec:
       containers:
       - name: presidio
-        image: ghcr.io/dettanym/prose-presidio:latest@sha256:e6edccd14911bc1ee85193362224a4b925341d4d2a33cbd7b66bd62770fe0d61
+        image: ghcr.io/dettanym/prose-presidio:main
         resources:
           limits:
             memory: "1Gi"
