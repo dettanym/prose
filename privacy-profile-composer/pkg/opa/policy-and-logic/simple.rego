@@ -1,42 +1,26 @@
-   package prose
-    import input.parsed_body
-    import input.parsed_path
-    import input.attributes.request.http
+    package prose
     import future.keywords
+
+    import input.purpose_of_use
+    import input.data_items
+    import input.external_domain
 
     default allow := false
 
     allow if {
-        parsed_path[0] == "health"
-        http_request.method == "GET"
-    }
-
-    allow if {
-        #print(purpose_is_valid, purpose_is_allowed, processing_is_allowed)
         purpose_is_valid
         purpose_is_allowed
         processing_is_allowed
     }
 
-    #TODO: parsed header "PURPOSE"
-    given_purpose_of_use := http.headers.x-prose-purpose
-    given_pii_types := http.headers.x-prose-pii-types
-
-    paths := input.parsed_path
-    #TODO: maybe Golang filter can include directionality of traffic,
-    #    so we only check path for truly outgoing requests?
+    given_purpose_of_use := input.purpose_of_use
+    given_pii_types := input.data_items
+    external_domain := input.external_domain
 
     purpose_is_valid if valid_purposes[given_purpose_of_use]
 
     valid_purposes contains given_purpose_of_use if {
         given_purpose_of_use in purposes_of_use_set
-    }
-
-    purposes_of_use_set := {
-         "advertising",
-         "authentication",
-         "shipping",
-         "payment"
     }
 
     purpose_is_allowed if allowed_purposes[given_purpose_of_use]
@@ -49,7 +33,6 @@
     #Get the list of allowed processing for that purpose of use.
     allowed_processing contains processing if {
         purpose_is_allowed
-        print(given_purpose_of_use)
         processing := target_policy[given_purpose_of_use]
     }
 
@@ -58,15 +41,25 @@
         #For each item in that list,
         every pii_type in given_pii_types {
             some allowed in allowed_processing
-            processing.data_item in data_items_set
-            processing.data_item == allowed.data_item
-#            every third_party in processing.third_parties {
-#                third_party in allowed.third_parties
-#            }
-            #processing.third_parties in allowed_processing[i].third_parties
-            #msg := sprintf("Allowed processing for your purpose of use: %v", [allowed_processing])
-            #msg := sprintf("Allowed processing: %v. This processing item is not allowed: %v", [allowed_processing, processing])
+
+            allowed_pii_type := pii_type == allowed.data_item
+            valid_pii_type := pii_type in data_items_set
+            valid_external_domain := external_domain in allowed.third_parties
+
+            print("Allowed processing for your purpose of use:", [allowed_processing])
+            print("Your values: should all be true. IN REALITY: ", allowed_pii_type, valid_pii_type, valid_external_domain)
+
+            allowed_pii_type
+            valid_pii_type
+            valid_external_domain
         }
+    }
+
+    purposes_of_use_set := {
+         "advertising",
+         "authentication",
+         "shipping",
+         "payment"
     }
 
     data_items_set := {
@@ -90,23 +83,22 @@
 
     target_policy = {
         "advertising": [
-            {"data_item": "device_id", "third_parties": ["google.com"]},
-            {"data_item": "location", "third_parties": []}
+            {"data_item": "DATE_TIME", "third_parties": ["google.com"]},
+            {"data_item": "LOCATION", "third_parties": []}
         ],
         "authentication": [
-            {"data_item": "email", "third_parties": []},
-            {"data_item": "password", "third_parties": []},
-            {"data_item": "username", "third_parties": []},
-            {"data_item": "ip_address", "third_parties": []}
+            {"data_item": "EMAIL_ADDRESS", "third_parties": []},
+            {"data_item": "PERSON", "third_parties": []},
+            {"data_item": "IP_ADDRESS", "third_parties": []}
         ],
         "shipping": [
-            {"data_item": "name", "third_parties": []},
-            {"data_item": "address", "third_parties": ["canadapost-postescanada.ca"] },
-            {"data_item": "email", "third_parties": ["canadapost-postescanada.ca"]},
-            {"data_item": "phone_number", "third_parties": ["canadapost-postescanada.ca"]}
+            {"data_item": "PERSON", "third_parties": []},
+            {"data_item": "LOCATION", "third_parties": ["canadapost-postescanada.ca"] },
+            {"data_item": "EMAIL_ADDRESS", "third_parties": ["canadapost-postescanada.ca"]},
+            {"data_item": "PHONE_NUMBER", "third_parties": ["canadapost-postescanada.ca"]}
         ],
         "payment": [
-            {"data_item": "name", "third_parties": []},
+            {"data_item": "PERSON", "third_parties": []},
         ]
     }
 
