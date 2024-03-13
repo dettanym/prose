@@ -331,6 +331,8 @@ func (f *Filter) runOPA(ctx context.Context, isDecode bool, dataItems []string) 
 
 	proseTags = map[string]string{}
 
+	log.Printf("direction: '%v'; isDecode: '%v', host: '%v', thirdPartyUrl: '%v'", f.config.direction, isDecode, f.headerMetadata.Host, f.thirdPartyURL)
+
 	// get the named policy decision for the specified input
 	result, err := common.GlobalAuthAgent.Decision(
 		ctx,
