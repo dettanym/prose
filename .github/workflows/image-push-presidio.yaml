@@ -4,6 +4,10 @@ on:
   push:
     tags:
       - presidio/v**
+    branches:
+      - 'main'
+    paths:
+      - 'presidio/**'
 
 jobs:
   push_opa_to_registry:
@@ -29,6 +33,9 @@ jobs:
           images: ghcr.io/dettanym/prose-presidio
           tags: |
             type=match,pattern=presidio/(v\d.\d.\d),group=1
+            type=schedule
+            type=ref,event=branch
+            type=ref,event=pr
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
