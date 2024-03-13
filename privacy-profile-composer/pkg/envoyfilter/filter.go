@@ -300,7 +300,7 @@ func (f *Filter) runOPA(ctx context.Context, isDecode bool) (sendLocalReply bool
 	result, err := f.opa.Decision(
 		ctx,
 		sdk.DecisionOptions{
-			Path: "/prose/allow_all/allow",
+			Path: "/prose/authz_logic/allow",
 			// TODO: Pass in the purpose of use,
 			//  the PII types and optionally, the third parties
 			//  (if isDecode is true and f.sidecarDirection is outbound)
