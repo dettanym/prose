@@ -69,9 +69,6 @@ func (f *Filter) DecodeHeaders(header api.RequestHeaderMap, endStream bool) api.
 
 	f.headerMetadata = common.ExtractHeaderData(header)
 
-	// TODO: Insert it into OpenTelemetry baggage for tracing?
-	header.Add("x-prose-purpose", f.headerMetadata.Purpose) // For OPA
-
 	common.LogDecodeHeaderData(header)
 
 	if endStream {
