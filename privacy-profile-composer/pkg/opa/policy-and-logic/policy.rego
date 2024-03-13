@@ -1,5 +1,6 @@
     package prose
-    import future.keywords
+
+    import rego.v1
 
     import input.purpose_of_use
     import input.data_items

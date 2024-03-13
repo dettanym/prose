@@ -1,6 +1,6 @@
 package prose
 
-import future.keywords
+import rego.v1
 
 import input.attributes.request.http as http_request
 import input.parsed_path

@@ -1,5 +1,7 @@
 package prose
 
+import rego.v1
+
 purposes_of_use_set := {
     "advertising",
     "authentication",

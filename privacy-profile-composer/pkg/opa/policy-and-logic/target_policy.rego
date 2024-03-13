@@ -1,5 +1,7 @@
 package prose
 
+import rego.v1
+
 target_policy = {
     "advertising": [
         {"data_item": "DATE_TIME", "third_parties": ["google.com"]},
