@@ -11,8 +11,7 @@ FROM debian:12-slim
 WORKDIR /app
 
 COPY --from=builder /app/bin/opa-composer-server /app/bin/opa-composer-server
-COPY --from=builder /app/pkg/opa/policy-and-logic/ /app/policy-and-logic/
-COPY --from=builder /app/pkg/opa/allow-all-policy/ /app/allow-all-policy/
+COPY --from=builder /app/resources/opa_bundle/ /app/bundle/
 
 RUN mkdir -p /app/tmp \
     && chmod 755 /app/tmp \
@@ -25,6 +24,6 @@ USER nobody:nogroup
 
 CMD [ \
     "/app/bin/opa-composer-server", \
-    "--policy_file", "/app/allow-all-policy/policy.rego", \
+    "--policy_bundle_dir", "/app/bundle", \
     "--compiled_bundle", "/app/tmp/bundle.tar.gz" \
 ]

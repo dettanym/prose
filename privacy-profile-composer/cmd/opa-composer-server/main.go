@@ -13,10 +13,10 @@ import (
 )
 
 var (
-	opa_port        = flag.Int("opa_port", 8080, "The OPA server port")
-	composer_port   = flag.Int("composer_port", 50051, "The composer server port")
-	policy_file     = flag.String("policy_file", "./policy.rego", "Location of the policy file")
-	compiled_bundle = flag.String("compiled_bundle", "./bundle.tar.gz", "Location of the compiled bundle")
+	opa_port          = flag.Int("opa_port", 8080, "The OPA server port")
+	composer_port     = flag.Int("composer_port", 50051, "The composer server port")
+	policy_bundle_dir = flag.String("policy_bundle_dir", "./bundle", "Location of bundle folder with all policies and data")
+	compiled_bundle   = flag.String("compiled_bundle", "./bundle.tar.gz", "Location of the compiled bundle")
 )
 
 func main() {
@@ -51,7 +51,7 @@ func main() {
 }
 
 func prepareOpaServer() error {
-	return opa.CompileOPABundle(*policy_file, *compiled_bundle)
+	return opa.CompileOPABundle(*policy_bundle_dir, *compiled_bundle)
 }
 
 func registerOpaServer() *http.ServeMux {

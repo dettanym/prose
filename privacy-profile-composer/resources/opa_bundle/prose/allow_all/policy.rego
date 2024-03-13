@@ -1,4 +1,4 @@
-package prose
+package prose.allow_all
 
 import rego.v1
 

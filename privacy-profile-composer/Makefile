@@ -1,3 +1,3 @@
 run-server:
 	go generate ./...
-	go run ./cmd/opa-composer-server --policy_file ./pkg/opa/allow-all-policy/policy.rego
+	go run ./cmd/opa-composer-server --policy_bundle_dir ./resources/opa_bundle

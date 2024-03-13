@@ -1,4 +1,4 @@
-package prose
+package prose.authz_logic
 
 import rego.v1
 
