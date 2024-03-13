@@ -7,6 +7,7 @@ import (
 	"log"
 	"net"
 	"strconv"
+	"strings"
 
 	"github.com/envoyproxy/envoy/contrib/golang/common/go/api"
 	"github.com/open-policy-agent/opa/sdk"
@@ -280,7 +281,7 @@ func (f *Filter) processBody(ctx context.Context, body string, isDecode bool) (s
 		proseTags[PROSE_PRESIDIO_ERROR] = fmt.Sprintf("%s", err)
 		return false, err, proseTags
 	}
-	proseTags[PROSE_PII_TYPES] = piiTypes
+	proseTags[PROSE_PII_TYPES] = strings.Join(piiTypes, ",")
 
 	proseTags[PROSE_OPA_ENFORCE] = strconv.FormatBool(f.config.opaEnforce)
 
