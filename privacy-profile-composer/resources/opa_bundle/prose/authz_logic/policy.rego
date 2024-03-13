@@ -2,6 +2,12 @@
 
     import rego.v1
 
+    import data.all_data_items as data_items_set
+    import data.policy_and_purposes
+
+    purposes_of_use_set := policy_and_purposes.purposes_of_use
+    target_policy := policy_and_purposes.target_policy
+
     import input.purpose_of_use
     import input.data_items
     import input.external_domain
