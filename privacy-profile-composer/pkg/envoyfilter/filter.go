@@ -53,6 +53,7 @@ type Filter struct {
 	// Runtime state of the filter
 	parentSpanContext model.SpanContext
 	headerMetadata    common.HeaderMetadata
+	thirdPartyURL     string
 	processDecodeBody bool
 	decodeDataBuffer  string
 	processEncodeBody bool
@@ -104,7 +105,7 @@ func (f *Filter) DecodeHeaders(header api.RequestHeaderMap, endStream bool) api.
 			return api.Continue
 		}
 
-		//thirdPartyURL := header.Host()
+		f.thirdPartyURL = f.headerMetadata.Host
 		f.processDecodeBody = true
 
 	default:
@@ -285,7 +286,7 @@ func (f *Filter) processBody(ctx context.Context, body string, isDecode bool) (s
 
 	proseTags[PROSE_OPA_ENFORCE] = strconv.FormatBool(f.config.opaEnforce)
 
-	sendLocalReply, err, opaTags := f.runOPA(ctx, isDecode)
+	sendLocalReply, err, opaTags := f.runOPA(ctx, isDecode, piiTypes)
 	for k, v := range opaTags {
 		proseTags[k] = v
 	}
@@ -293,7 +294,7 @@ func (f *Filter) processBody(ctx context.Context, body string, isDecode bool) (s
 	return sendLocalReply, err, proseTags
 }
 
-func (f *Filter) runOPA(ctx context.Context, isDecode bool) (sendLocalReply bool, err error, proseTags map[string]string) {
+func (f *Filter) runOPA(ctx context.Context, isDecode bool, dataItems []string) (sendLocalReply bool, err error, proseTags map[string]string) {
 	proseTags = map[string]string{}
 
 	// get the named policy decision for the specified input
@@ -308,7 +309,12 @@ func (f *Filter) runOPA(ctx context.Context, isDecode bool) (sendLocalReply bool
 			//  note that those test-cases are potentially out of date wrt simple.rego
 			//  as simple.rego expects PII type & purpose to be passed as headers
 			//  (i.e. as if we had an OPA sidecar)
-			Input:  map[string]interface{}{"hello": "world"},
+			Input: map[string]interface{}{
+				"purpose_of_use": f.headerMetadata.Purpose,
+				"data_items":     dataItems,
+				// todo double check that this is non-null only in outbound and decode mode
+				"external_domain": f.thirdPartyURL, // path or null
+			},
 			Tracer: topdown.NewBufferTracer(),
 		},
 	)
