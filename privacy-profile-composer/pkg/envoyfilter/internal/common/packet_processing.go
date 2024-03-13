@@ -72,11 +72,13 @@ func ExtractHeaderData(header api.RequestHeaderMap) HeaderMetadata {
 	}
 
 	xEnvoyPeerMetadata, exists := header.Get("x-envoy-peer-metadata")
+	log.Printf("header 'x-envoy-peer-metadata' exists: '%v'", exists)
 	if exists {
 		parsedHeader, err := DecodeXEnvoyPeerMetadataHeader(xEnvoyPeerMetadata)
 		if err != nil {
 			log.Printf("Error decoding x-envoy-peer-metadata header: %s", err)
 		} else {
+			log.Printf("parsed envoy peer metadata:\n%v\n", parsedHeader)
 			metadata.EnvoyPeerMetadata = &parsedHeader
 		}
 	}
