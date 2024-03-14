@@ -317,7 +317,7 @@ func (f *Filter) runOPA(ctx context.Context, isDecode bool, dataItems []string) 
 			//  as simple.rego expects PII type & purpose to be passed as headers
 			//  (i.e. as if we had an OPA sidecar)
 			Input: map[string]interface{}{
-				"purpose_of_use": f.headerMetadata.Purpose,
+				"purpose_of_use": f.config.purpose,
 				"data_items":     dataItems,
 				// todo double check that this is non-null only in outbound and decode mode
 				"external_domain": f.thirdPartyURL, // path or null

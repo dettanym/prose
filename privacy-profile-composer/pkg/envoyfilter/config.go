@@ -18,6 +18,7 @@ type config struct {
 	opaConfig     string
 	presidioUrl   string
 	internalCidrs []net.IPNet
+	purpose       string
 }
 
 type ConfigParser struct {
@@ -104,6 +105,14 @@ func (p *ConfigParser) Parse(any *anypb.Any, callbacks api.ConfigCallbackHandler
 		}
 	}
 
+	if purpose, ok := configStruct["purpose"]; !ok {
+		return nil, fmt.Errorf("missing purpose")
+	} else if str, ok := purpose.(string); !ok {
+		return nil, fmt.Errorf("purpose: expect string while got %T", purpose)
+	} else {
+		conf.purpose = str
+	}
+
 	return conf, nil
 }
 
@@ -130,6 +139,7 @@ func (p *ConfigParser) Merge(parent interface{}, child interface{}) interface{} 
 
 	newConfig.opaEnforce = childConfig.opaEnforce
 	newConfig.internalCidrs = childConfig.internalCidrs
+	newConfig.purpose = childConfig.purpose
 
 	return &newConfig
 }

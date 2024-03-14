@@ -1,9 +1,12 @@
 apiVersion: networking.istio.io/v1alpha3
 kind: EnvoyFilter
 metadata:
-  name: golang-inbound
+  name: "golang-inbound-${app}"
   namespace: bookinfo
 spec:
+  workloadSelector:
+    labels:
+      app: "${app}"
   configPatches:
     - applyTo: NETWORK_FILTER
       match:
@@ -55,6 +58,7 @@ spec:
               "@type": type.googleapis.com/xds.type.v3.TypedStruct
               value:
                 direction: *direction
+                purpose: "${app}"
                 internal_cidrs:
                   - # pod range
                     10.244.0.0/16
@@ -96,9 +100,12 @@ spec:
 apiVersion: networking.istio.io/v1alpha3
 kind: EnvoyFilter
 metadata:
-  name: golang-outbound
+  name: "golang-outbound-${app}"
   namespace: istio-system
 spec:
+  workloadSelector:
+    labels:
+      app: "${app}"
   configPatches:
     - applyTo: NETWORK_FILTER
       match:
@@ -149,6 +156,7 @@ spec:
               "@type": type.googleapis.com/xds.type.v3.TypedStruct
               value:
                 direction: *direction
+                purpose: "${app}"
                 internal_cidrs:
                   - # pod range
                     10.244.0.0/16
