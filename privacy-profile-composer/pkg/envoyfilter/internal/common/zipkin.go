@@ -1,6 +1,7 @@
 package common
 
 import (
+	"context"
 	"fmt"
 	"log"
 
@@ -88,3 +89,18 @@ func (t ZipkinTracer) Extract(h envoyapi.HeaderMap) model.SpanContext {
 	})
 
 }
+
+func TracerFromContext(ctx context.Context) *ZipkinTracer {
+	if t, ok := ctx.Value(tracerKey).(*ZipkinTracer); ok {
+		return t
+	}
+	return nil
+}
+
+func AddTracerToContext(ctx context.Context, tracer *ZipkinTracer) context.Context {
+	return context.WithValue(ctx, tracerKey, tracer)
+}
+
+type tracerCtxKey struct{}
+
+var tracerKey = tracerCtxKey{}

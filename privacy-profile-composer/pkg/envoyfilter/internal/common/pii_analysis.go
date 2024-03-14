@@ -2,6 +2,7 @@ package common
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -13,7 +14,10 @@ type PresidioDataFormat struct {
 	DerivePurpose string      `json:"derive_purpose,omitempty"`
 }
 
-func PiiAnalysis(presidioSvcURL string, svcName string, bufferBytes interface{}) ([]string, error) {
+func PiiAnalysis(ctx context.Context, presidioSvcURL string, svcName string, bufferBytes interface{}) ([]string, error) {
+	span, ctx := TracerFromContext(ctx).StartSpanFromContext(ctx, "PiiAnalysis")
+	defer span.Finish()
+
 	empty := []string{}
 
 	msgString, err := json.Marshal(

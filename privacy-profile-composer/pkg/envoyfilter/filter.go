@@ -130,8 +130,10 @@ func (f *Filter) DecodeData(buffer api.BufferInstance, endStream bool) api.Statu
 		return api.StopAndBuffer
 	}
 
+	ctx := common.AddTracerToContext(context.Background(), f.tracer)
+
 	span, ctx := f.tracer.StartSpanFromContext(
-		context.Background(),
+		ctx,
 		"DecodeData",
 		zipkin.Parent(f.parentSpanContext),
 	)
@@ -218,8 +220,10 @@ func (f *Filter) EncodeData(buffer api.BufferInstance, endStream bool) api.Statu
 		return api.StopAndBuffer
 	}
 
+	ctx := common.AddTracerToContext(context.Background(), f.tracer)
+
 	span, ctx := f.tracer.StartSpanFromContext(
-		context.Background(),
+		ctx,
 		"EncodeData",
 		zipkin.Parent(f.parentSpanContext),
 	)
@@ -271,13 +275,13 @@ func (f *Filter) processBody(ctx context.Context, body string, isDecode bool) (s
 
 	proseTags[PROSE_SIDECAR_DIRECTION] = string(f.config.direction)
 
-	jsonBody, err := common.GetJSONBody(f.headerMetadata, body)
+	jsonBody, err := common.GetJSONBody(ctx, f.headerMetadata, body)
 	if err != nil {
 		return false, err, proseTags
 	}
 
 	// Run Presidio and add tags for PII types or an error from Presidio
-	piiTypes, err := common.PiiAnalysis(f.config.presidioUrl, f.headerMetadata.SvcName, jsonBody)
+	piiTypes, err := common.PiiAnalysis(ctx, f.config.presidioUrl, f.headerMetadata.SvcName, jsonBody)
 	if err != nil {
 		proseTags[PROSE_PRESIDIO_ERROR] = fmt.Sprintf("%s", err)
 		return false, err, proseTags
@@ -295,6 +299,9 @@ func (f *Filter) processBody(ctx context.Context, body string, isDecode bool) (s
 }
 
 func (f *Filter) runOPA(ctx context.Context, isDecode bool, dataItems []string) (sendLocalReply bool, err error, proseTags map[string]string) {
+	span, ctx := f.tracer.StartSpanFromContext(ctx, "runOPA")
+	defer span.Finish()
+
 	proseTags = map[string]string{}
 
 	// get the named policy decision for the specified input
