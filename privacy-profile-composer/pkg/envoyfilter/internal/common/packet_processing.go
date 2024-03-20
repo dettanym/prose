@@ -1,6 +1,7 @@
 package common
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -127,7 +128,10 @@ func GetDirection(callbacks api.FilterCallbackHandler) (SidecarDirection, error)
 		"check the Envoy docs for the range of values for this key", directionInt)
 }
 
-func GetJSONBody(headerMetadata HeaderMetadata, body string) (interface{}, error) {
+func GetJSONBody(ctx context.Context, headerMetadata HeaderMetadata, body string) (interface{}, error) {
+	span, ctx := TracerFromContext(ctx).StartSpanFromContext(ctx, "getJSONBody")
+	defer span.Finish()
+
 	if headerMetadata.ContentType == nil {
 		return nil, fmt.Errorf("cannot analyze body, since 'ContentType' header is not set")
 	}

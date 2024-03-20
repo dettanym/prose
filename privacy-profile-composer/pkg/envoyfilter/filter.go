@@ -7,6 +7,7 @@ import (
 	"log"
 	"net"
 	"strconv"
+	"strings"
 
 	"github.com/envoyproxy/envoy/contrib/golang/common/go/api"
 	"github.com/open-policy-agent/opa/sdk"
@@ -52,6 +53,7 @@ type Filter struct {
 	// Runtime state of the filter
 	parentSpanContext model.SpanContext
 	headerMetadata    common.HeaderMetadata
+	thirdPartyURL     string
 	processDecodeBody bool
 	decodeDataBuffer  string
 	processEncodeBody bool
@@ -103,7 +105,7 @@ func (f *Filter) DecodeHeaders(header api.RequestHeaderMap, endStream bool) api.
 			return api.Continue
 		}
 
-		//thirdPartyURL := header.Host()
+		f.thirdPartyURL = f.headerMetadata.Host
 		f.processDecodeBody = true
 
 	default:
@@ -128,8 +130,10 @@ func (f *Filter) DecodeData(buffer api.BufferInstance, endStream bool) api.Statu
 		return api.StopAndBuffer
 	}
 
+	ctx := common.AddTracerToContext(context.Background(), f.tracer)
+
 	span, ctx := f.tracer.StartSpanFromContext(
-		context.Background(),
+		ctx,
 		"DecodeData",
 		zipkin.Parent(f.parentSpanContext),
 	)
@@ -216,8 +220,10 @@ func (f *Filter) EncodeData(buffer api.BufferInstance, endStream bool) api.Statu
 		return api.StopAndBuffer
 	}
 
+	ctx := common.AddTracerToContext(context.Background(), f.tracer)
+
 	span, ctx := f.tracer.StartSpanFromContext(
-		context.Background(),
+		ctx,
 		"EncodeData",
 		zipkin.Parent(f.parentSpanContext),
 	)
@@ -269,22 +275,22 @@ func (f *Filter) processBody(ctx context.Context, body string, isDecode bool) (s
 
 	proseTags[PROSE_SIDECAR_DIRECTION] = string(f.config.direction)
 
-	jsonBody, err := common.GetJSONBody(f.headerMetadata, body)
+	jsonBody, err := common.GetJSONBody(ctx, f.headerMetadata, body)
 	if err != nil {
 		return false, err, proseTags
 	}
 
 	// Run Presidio and add tags for PII types or an error from Presidio
-	piiTypes, err := common.PiiAnalysis(f.config.presidioUrl, f.headerMetadata.SvcName, jsonBody)
+	piiTypes, err := common.PiiAnalysis(ctx, f.config.presidioUrl, f.headerMetadata.SvcName, jsonBody)
 	if err != nil {
 		proseTags[PROSE_PRESIDIO_ERROR] = fmt.Sprintf("%s", err)
 		return false, err, proseTags
 	}
-	proseTags[PROSE_PII_TYPES] = piiTypes
+	proseTags[PROSE_PII_TYPES] = strings.Join(piiTypes, ",")
 
 	proseTags[PROSE_OPA_ENFORCE] = strconv.FormatBool(f.config.opaEnforce)
 
-	sendLocalReply, err, opaTags := f.runOPA(ctx, isDecode)
+	sendLocalReply, err, opaTags := f.runOPA(ctx, isDecode, piiTypes)
 	for k, v := range opaTags {
 		proseTags[k] = v
 	}
@@ -292,14 +298,17 @@ func (f *Filter) processBody(ctx context.Context, body string, isDecode bool) (s
 	return sendLocalReply, err, proseTags
 }
 
-func (f *Filter) runOPA(ctx context.Context, isDecode bool) (sendLocalReply bool, err error, proseTags map[string]string) {
+func (f *Filter) runOPA(ctx context.Context, isDecode bool, dataItems []string) (sendLocalReply bool, err error, proseTags map[string]string) {
+	span, ctx := f.tracer.StartSpanFromContext(ctx, "runOPA")
+	defer span.Finish()
+
 	proseTags = map[string]string{}
 
 	// get the named policy decision for the specified input
 	result, err := f.opa.Decision(
 		ctx,
 		sdk.DecisionOptions{
-			Path: "/prose/allow_all/allow",
+			Path: "/prose/authz_logic/allow",
 			// TODO: Pass in the purpose of use,
 			//  the PII types and optionally, the third parties
 			//  (if isDecode is true and f.sidecarDirection is outbound)
@@ -307,7 +316,12 @@ func (f *Filter) runOPA(ctx context.Context, isDecode bool) (sendLocalReply bool
 			//  note that those test-cases are potentially out of date wrt simple.rego
 			//  as simple.rego expects PII type & purpose to be passed as headers
 			//  (i.e. as if we had an OPA sidecar)
-			Input:  map[string]interface{}{"hello": "world"},
+			Input: map[string]interface{}{
+				"purpose_of_use": f.headerMetadata.Purpose,
+				"data_items":     dataItems,
+				// todo double check that this is non-null only in outbound and decode mode
+				"external_domain": f.thirdPartyURL, // path or null
+			},
 			Tracer: topdown.NewBufferTracer(),
 		},
 	)
