@@ -70,7 +70,7 @@ spec:
                   bundles:
                     prose_opa_bundle:
                       service: bundle_server
-                      resource: /bundle.tar.gz
+                      resource: /bundles/bundle.tar.gz
                       polling:
                         min_delay_seconds: 120
                         max_delay_seconds: 3600
@@ -164,7 +164,7 @@ spec:
                   bundles:
                     prose_opa_bundle:
                       service: bundle_server
-                      resource: /bundle.tar.gz
+                      resource: /bundles/bundle.tar.gz
                       polling:
                         min_delay_seconds: 120
                         max_delay_seconds: 3600

@@ -7,7 +7,7 @@ import (
 	"github.com/open-policy-agent/opa/compile"
 )
 
-func CompileOPABundle(policy_file string, bundle string) error {
+func CompileOPABundle(policyBundleDir string, bundle string) error {
 	f, err := os.Create(bundle)
 	if err != nil {
 		return err
@@ -18,7 +18,7 @@ func CompileOPABundle(policy_file string, bundle string) error {
 	compiler := compile.New()
 
 	err = compiler.
-		WithPaths(policy_file).
+		WithPaths(policyBundleDir).
 		WithOutput(f).
 		Build(ctx)
 
