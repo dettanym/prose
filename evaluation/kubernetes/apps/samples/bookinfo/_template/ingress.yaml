@@ -1,16 +1,16 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
+  name: bookinfo
   labels:
     app.kubernetes.io/instance: bookinfo
     app.kubernetes.io/name: bookinfo
   annotations:
     nginx.ingress.kubernetes.io/enable-opentracing: "true"
-  name: bookinfo
 spec:
   ingressClassName: nginx
   rules:
-    - host: &host "bookinfo.${SECRET_DOMAIN}"
+    - host: &host "${ingress_name}.${SECRET_DOMAIN}"
       http:
         paths:
           - backend:

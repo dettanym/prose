@@ -2,7 +2,6 @@ apiVersion: networking.istio.io/v1alpha3
 kind: EnvoyFilter
 metadata:
   name: "golang-inbound-${app}"
-  namespace: bookinfo
 spec:
   workloadSelector:
     labels:
@@ -101,7 +100,6 @@ apiVersion: networking.istio.io/v1alpha3
 kind: EnvoyFilter
 metadata:
   name: "golang-outbound-${app}"
-  namespace: istio-system
 spec:
   workloadSelector:
     labels:
