@@ -19,6 +19,7 @@ args=(
   "--ignore-environment"
   "--keep" "KUBECONFIG"
   "--keep" "HOME"
+  "--keep" "USER"
   "--command" "bash"
 )
 
