@@ -3,6 +3,9 @@
 
 set -euo pipefail
 
+DURATION='300s'
+RATE='10'
+
 INGRESS_IP="192.168.49.21"
 
 bookinfo_variants=(
@@ -15,9 +18,10 @@ PRJ_ROOT="$(/usr/bin/git rev-parse --show-toplevel)"
 mkdir -p "${PRJ_ROOT}/evaluation/vegeta/bookinfo"
 
 timestamp=$(date -Iseconds)
+hostname=$(hostname)
 
 test_replicas=""
-case "$(hostname)" in
+case "${hostname}" in
   click1|clack1)
     test_replicas="10"
   ;;
@@ -59,18 +63,39 @@ for variant in "${bookinfo_variants[@]}"; do
     deployments --all
 
   printf "Testing '%s' variant\n" "${variant}"
-  jq -ncM \
+  jq -nM \
+    --arg timestamp "${timestamp}" \
     --arg INGRESS_IP "${INGRESS_IP}" \
     --arg variant "${variant}" \
+    --arg duration "${DURATION}" \
+    --arg rate "${RATE}" \
+    --arg hostname "${hostname}" \
+    --arg test_replicas "${test_replicas}" \
+    --arg ns "${ns}" \
     '{
-      method:"GET",
-      url: ("https://" + $INGRESS_IP + "/productpage?u=test"),
-      header: {
-        Host: ["bookinfo-" + $variant + ".my-example.com"]
-      }
+      timestamp: $timestamp,
+      req: {
+        method: "GET",
+        url: ("https://" + $INGRESS_IP + "/productpage?u=test"),
+        header: {
+          Host: ["bookinfo-" + $variant + ".my-example.com"]
+        },
+      },
+      testOptions: {
+        duration: $duration,
+        rate: $rate,
+      },
+      workloadInfo: {
+        variant: $variant,
+        namespace: ("bookinfo-" + $ns + $variant),
+        hostname: $hostname,
+        test_replicas: $test_replicas,
+      },
     }' \
-    | vegeta attack -format=json -insecure -duration=10s \
-    | tee "${PRJ_ROOT}/evaluation/vegeta/bookinfo/${timestamp}_$(hostname)_${variant}.results.bin" \
+    | tee "${PRJ_ROOT}/evaluation/vegeta/bookinfo/${timestamp}_${hostname}_${variant}.metadata.json" \
+    | jq -cM '.req' \
+    | vegeta attack -format=json -insecure "-duration=${DURATION}" "-rate=${RATE}" \
+    | tee "${PRJ_ROOT}/evaluation/vegeta/bookinfo/${timestamp}_${hostname}_${variant}.results.bin" \
     | vegeta report
 
   printf "Scaling down deployments for '%s' variant\n" "${variant}"
