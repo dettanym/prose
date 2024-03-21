@@ -1,11 +1,35 @@
 #!/usr/bin/env -S sh -c '"$(dirname $(readlink -f "$0"))/env.sh" "$0" "$@"'
 # shellcheck disable=SC2096
 
-ENABLE_METALLB="TRUE"
+ENABLE_METALLB="true"
+IN_RIPPLE="false"
 
-minikube start --driver docker --cpus=4 --memory=8G --subnet='192.168.49.0/24'
+case "$(hostname)" in
+  click1|clack1)
+		IN_RIPPLE="true"
+    export MINIKUBE_HOME="/usr/local/home/$USER/.minikube"
+		;;
+	*);;
+esac
 
-if [[ "${ENABLE_METALLB}" == "TRUE" ]]; then
+if [[ "${IN_RIPPLE}" == "true" ]]; then
+  echo "creating minikube in ripple"
+  minikube start \
+    --driver=docker \
+    --cpus=60 \
+    --memory=450g \
+    --subnet='192.168.49.0/24' \
+    --disk-size=50g
+else
+  echo "creating minikube outside of ripple"
+  minikube start \
+    --driver docker \
+    --cpus=4 \
+    --memory=8G \
+    --subnet='192.168.49.0/24'
+fi
+
+if [[ "${ENABLE_METALLB}" == "true" ]]; then
   minikube addons enable metallb
 	cat <<-EOF | kubectl apply -f-
 		apiVersion: v1
