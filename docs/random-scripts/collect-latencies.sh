@@ -22,7 +22,7 @@ case "$(hostname)" in
     test_replicas="10"
   ;;
   *)
-    test_replicas="2"
+    test_replicas="1"
   ;;
 esac
 
@@ -69,8 +69,7 @@ for variant in "${bookinfo_variants[@]}"; do
         Host: ["bookinfo-" + $variant + ".my-example.com"]
       }
     }' \
-    | vegeta attack -format=json -insecure -duration=10s \
-    | tee "${PRJ_ROOT}/evaluation/vegeta/bookinfo/${timestamp}_$(hostname)_${variant}.results.bin" \
+    | vegeta attack -format=json -insecure -duration=60s -rate=10 \
     | vegeta report
 
   printf "Scaling down deployments for '%s' variant\n" "${variant}"
