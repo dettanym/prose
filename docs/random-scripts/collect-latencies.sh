@@ -29,6 +29,6 @@ for variant in "${bookinfo_variants[@]}"; do
       }
     }' \
     | vegeta attack -format=json -insecure -duration=60s \
-    | tee "${PRJ_ROOT}/evaluation/vegeta/bookinfo/${timestamp}_${variant}.results.bin" \
+    | tee "${PRJ_ROOT}/evaluation/vegeta/bookinfo/${timestamp}_$(hostname)_${variant}.results.bin" \
     | vegeta report
 done
