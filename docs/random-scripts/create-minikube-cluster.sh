@@ -1,7 +1,7 @@
 #!/usr/bin/env -S sh -c '"$(dirname $(readlink -f "$0"))/env.sh" "$0" "$@"'
 # shellcheck disable=SC2096
 
-ENABLE_METALLB="true"
+ENABLE_METALLB="false"
 IN_RIPPLE="false"
 
 case "$(hostname)" in
