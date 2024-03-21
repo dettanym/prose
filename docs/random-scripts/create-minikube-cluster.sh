@@ -6,20 +6,20 @@ IN_RIPPLE="false"
 
 case "$(hostname)" in
   click1|clack1)
-		IN_RIPPLE="true"
+    IN_RIPPLE="true"
     export MINIKUBE_HOME="/usr/local/home/$USER/.minikube"
-		;;
-	*);;
+    ;;
+  *);;
 esac
 
 if [[ "${IN_RIPPLE}" == "true" ]]; then
   echo "creating minikube in ripple"
   minikube start \
     --driver=docker \
-    --cpus=60 \
-    --memory=450g \
-    --subnet='192.168.49.0/24' \
-    --disk-size=50g
+    --nodes=5 \
+    --cpus=12 \
+    --memory=90g \
+    --subnet='192.168.49.0/24'
 else
   echo "creating minikube outside of ripple"
   minikube start \
