@@ -16,6 +16,16 @@ mkdir -p "${PRJ_ROOT}/evaluation/vegeta/bookinfo"
 
 timestamp=$(date -Iseconds)
 
+test_replicas=""
+case "$(hostname)" in
+  click1|clack1)
+    test_replicas="10"
+  ;;
+  *)
+    test_replicas="2"
+  ;;
+esac
+
 echo "clean everything up before the test"
 for variant in "${bookinfo_variants[@]}"; do
   ns=""
@@ -39,7 +49,7 @@ for variant in "${bookinfo_variants[@]}"; do
   fi
 
   printf "Scaling up deployments for '%s' variant\n" "${variant}"
-  kubectl scale --replicas 10 \
+  kubectl scale --replicas "${test_replicas}" \
     -n "bookinfo-${ns}${variant}"\
     deployments --all
 
