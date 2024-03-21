@@ -29,6 +29,10 @@ for variant in "${bookinfo_variants[@]}"; do
 done
 
 for variant in "${bookinfo_variants[@]}"; do
+  if [[ "${variant}" != "filter" ]]; then
+    continue
+  fi
+
   ns=""
   if [[ "${variant}" != "plain" ]]; then
     ns="with-"
@@ -55,7 +59,7 @@ for variant in "${bookinfo_variants[@]}"; do
         Host: ["bookinfo-" + $variant + ".my-example.com"]
       }
     }' \
-    | vegeta attack -format=json -insecure -duration=60s \
+    | vegeta attack -format=json -insecure -duration=10s \
     | tee "${PRJ_ROOT}/evaluation/vegeta/bookinfo/${timestamp}_$(hostname)_${variant}.results.bin" \
     | vegeta report
 
