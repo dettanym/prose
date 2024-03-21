@@ -39,8 +39,13 @@ spec:
       ingressClassResource:
         default: true
       config:
-        enable-opentracing: true
-        zipkin-collector-host: zipkin.prose-system.svc.cluster.local
+        generate-request-id: true
+        enable-opentelemetry: true
+        otlp-collector-host: otlp.prose-system.svc.cluster.local
+        opentelemetry-operation-name: "HTTP $request_method $uri"
+        otel-sampler-ratio: 1
+        otel-schedule-delay-millis: 5000
+        otel-max-export-batch-size: 1000
         client-header-timeout: 120
         client-body-buffer-size: "100M"
         client-body-timeout: 120
@@ -65,6 +70,8 @@ spec:
           "http_user_agent": "$http_user_agent"}
       metrics:
         enabled: false
+      opentelemetry:
+        enabled: true
       podAnnotations:
         configmap.reloader.stakater.com/reload: cloudflare-networks
       resources:

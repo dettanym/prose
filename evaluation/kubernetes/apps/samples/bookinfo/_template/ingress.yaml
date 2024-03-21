@@ -5,8 +5,6 @@ metadata:
   labels:
     app.kubernetes.io/instance: bookinfo
     app.kubernetes.io/name: bookinfo
-  annotations:
-    nginx.ingress.kubernetes.io/enable-opentracing: "true"
 spec:
   ingressClassName: nginx
   rules:
