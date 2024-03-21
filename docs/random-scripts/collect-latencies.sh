@@ -5,16 +5,16 @@ set -euo pipefail
 
 INGRESS_IP="192.168.49.21"
 
-PRJ_ROOT="$(/usr/bin/git rev-parse --show-toplevel)"
-mkdir -p "${PRJ_ROOT}/evaluation/vegeta/bookinfo"
-
-timestamp=$(date -Iseconds)
-
 bookinfo_variants=(
   "plain"
   "envoy"
   "filter"
 )
+
+PRJ_ROOT="$(/usr/bin/git rev-parse --show-toplevel)"
+mkdir -p "${PRJ_ROOT}/evaluation/vegeta/bookinfo"
+
+timestamp=$(date -Iseconds)
 
 echo "clean everything up before the test"
 for variant in "${bookinfo_variants[@]}"; do
