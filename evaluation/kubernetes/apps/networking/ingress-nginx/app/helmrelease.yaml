@@ -72,6 +72,9 @@ spec:
         enabled: false
       opentelemetry:
         enabled: true
+      autoscaling:
+        enabled: true
+        minReplicas: 3
       podAnnotations:
         configmap.reloader.stakater.com/reload: cloudflare-networks
       resources:
