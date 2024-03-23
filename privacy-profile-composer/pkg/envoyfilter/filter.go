@@ -19,11 +19,6 @@ import (
 )
 
 func NewFilter(callbacks api.FilterCallbackHandler, config *config) (api.StreamFilter, error) {
-	tracer, err := common.NewZipkinTracer(config.zipkinUrl)
-	if err != nil {
-		return nil, fmt.Errorf("unable to create tracer: %+v\n", err)
-	}
-
 	opaObj, err := sdk.New(context.Background(), sdk.Options{
 		ID:     "golang-filter-opa",
 		Config: bytes.NewReader([]byte(config.opaConfig)),
@@ -37,7 +32,6 @@ func NewFilter(callbacks api.FilterCallbackHandler, config *config) (api.StreamF
 	return &Filter{
 		callbacks: callbacks,
 		config:    config,
-		tracer:    tracer,
 		opa:       opaObj,
 	}, nil
 }
@@ -47,7 +41,6 @@ type Filter struct {
 
 	callbacks api.FilterCallbackHandler
 	config    *config
-	tracer    *common.ZipkinTracer
 	opa       *sdk.OPA
 
 	// Runtime state of the filter
@@ -64,9 +57,9 @@ type Filter struct {
 func (f *Filter) DecodeHeaders(header api.RequestHeaderMap, endStream bool) api.StatusType {
 	log.Println(">>> DECODE HEADERS")
 
-	f.parentSpanContext = f.tracer.Extract(header)
+	f.parentSpanContext = common.GlobalTracer.Extract(header)
 
-	span := f.tracer.StartSpan("test span in decode headers", zipkin.Parent(f.parentSpanContext))
+	span := common.GlobalTracer.StartSpan("test span in decode headers", zipkin.Parent(f.parentSpanContext))
 	defer span.Finish()
 
 	span.Tag("SIDECAR_DIRECTION", string(f.config.direction))
@@ -133,10 +126,8 @@ func (f *Filter) DecodeData(buffer api.BufferInstance, endStream bool) api.Statu
 		return api.StopAndBuffer
 	}
 
-	ctx := common.AddTracerToContext(context.Background(), f.tracer)
-
-	span, ctx := f.tracer.StartSpanFromContext(
-		ctx,
+	span, ctx := common.GlobalTracer.StartSpanFromContext(
+		context.Background(),
 		"DecodeData",
 		zipkin.Parent(f.parentSpanContext),
 	)
@@ -185,7 +176,7 @@ func (f *Filter) EncodeHeaders(header api.ResponseHeaderMap, endStream bool) api
 
 	common.LogEncodeHeaderData(header)
 
-	span := f.tracer.StartSpan("test span in encode headers", zipkin.Parent(f.parentSpanContext))
+	span := common.GlobalTracer.StartSpan("test span in encode headers", zipkin.Parent(f.parentSpanContext))
 	defer span.Finish()
 
 	span.Tag("SIDECAR_DIRECTION", string(f.config.direction))
@@ -229,10 +220,8 @@ func (f *Filter) EncodeData(buffer api.BufferInstance, endStream bool) api.Statu
 		return api.StopAndBuffer
 	}
 
-	ctx := common.AddTracerToContext(context.Background(), f.tracer)
-
-	span, ctx := f.tracer.StartSpanFromContext(
-		ctx,
+	span, ctx := common.GlobalTracer.StartSpanFromContext(
+		context.Background(),
 		"EncodeData",
 		zipkin.Parent(f.parentSpanContext),
 	)
@@ -275,12 +264,11 @@ func (f *Filter) EncodeTrailers(trailers api.ResponseTrailerMap) api.StatusType 
 }
 
 func (f *Filter) OnDestroy(reason api.DestroyReason) {
-	f.tracer.Close()
 	f.opa.Stop(context.Background())
 }
 
 func (f *Filter) processBody(ctx context.Context, body string, isDecode bool) (sendLocalReply bool, err error, proseTags map[string]string) {
-	span, ctx := f.tracer.StartSpanFromContext(ctx, "processBody")
+	span, ctx := common.GlobalTracer.StartSpanFromContext(ctx, "processBody")
 	defer span.Finish()
 
 	proseTags = map[string]string{}
@@ -311,7 +299,7 @@ func (f *Filter) processBody(ctx context.Context, body string, isDecode bool) (s
 }
 
 func (f *Filter) runOPA(ctx context.Context, isDecode bool, dataItems []string) (sendLocalReply bool, err error, proseTags map[string]string) {
-	span, ctx := f.tracer.StartSpanFromContext(ctx, "runOPA")
+	span, ctx := common.GlobalTracer.StartSpanFromContext(ctx, "runOPA")
 	defer span.Finish()
 
 	proseTags = map[string]string{}

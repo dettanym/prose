@@ -1,9 +1,7 @@
 package common
 
 import (
-	"context"
 	"fmt"
-	"log"
 
 	envoyapi "github.com/envoyproxy/envoy/contrib/golang/common/go/api"
 	"github.com/openzipkin/zipkin-go"
@@ -13,8 +11,39 @@ import (
 	httpreporter "github.com/openzipkin/zipkin-go/reporter/http"
 )
 
+var GlobalTracer *ZipkinTracer
+
+func init() {
+	tracer, err := NewZipkinTracer("")
+	if err != nil {
+		panic(err)
+	}
+
+	GlobalTracer = tracer
+}
+
+func UpdateTracer(url string) (*ZipkinTracer, error) {
+	if GlobalTracer.Url != url {
+		tracer, err := NewZipkinTracer(url)
+		if err != nil {
+			return nil, err
+		}
+
+		err = GlobalTracer.Close()
+		if err != nil {
+			return nil, err
+		}
+
+		GlobalTracer = tracer
+	}
+
+	return GlobalTracer, nil
+}
+
 type ZipkinTracer struct {
 	*zipkin.Tracer
+
+	Url string
 
 	endpoint *model.Endpoint
 	reporter reporter.Reporter
@@ -23,33 +52,40 @@ type ZipkinTracer struct {
 // NewZipkinTracer creates a wrapped instance of Tracer from zipkin-go package
 // It requires full url to be passed, including `/api/v2/spans`.
 func NewZipkinTracer(url string) (*ZipkinTracer, error) {
-	// batch size 0 forces sending spans right away
-	httpReporter := httpreporter.NewReporter(url, httpreporter.BatchSize(0))
+	var tracerOptions []zipkin.TracerOption
+
+	var rep reporter.Reporter
+	if url == "" {
+		rep = reporter.NewNoopReporter()
+		tracerOptions = append(tracerOptions, zipkin.WithNoopTracer(true))
+	} else {
+		rep = httpreporter.NewReporter(url)
+	}
 
 	endpoint, err := zipkin.NewEndpoint("golang-filter", "")
 	if err != nil {
-		_ = httpReporter.Close()
+		_ = rep.Close()
 		return nil, fmt.Errorf("unable to create local endpoint: %w", err)
 	}
 
-	tracer, err := zipkin.NewTracer(httpReporter, zipkin.WithLocalEndpoint(endpoint))
+	tracerOptions = append(tracerOptions, zipkin.WithLocalEndpoint(endpoint))
+
+	tracer, err := zipkin.NewTracer(rep, tracerOptions...)
 	if err != nil {
-		_ = httpReporter.Close()
+		_ = rep.Close()
 		return nil, fmt.Errorf("unable to create tracer: %w", err)
 	}
 
 	return &ZipkinTracer{
 		Tracer:   tracer,
+		Url:      url,
 		endpoint: endpoint,
-		reporter: httpReporter,
+		reporter: rep,
 	}, nil
 }
 
-func (t ZipkinTracer) Close() {
-	err := t.reporter.Close()
-	if err != nil {
-		log.Fatalf("unable to close zipkin reporter: %+v", err)
-	}
+func (t ZipkinTracer) Close() error {
+	return t.reporter.Close()
 }
 
 func (t ZipkinTracer) Extract(h envoyapi.HeaderMap) model.SpanContext {
@@ -89,18 +125,3 @@ func (t ZipkinTracer) Extract(h envoyapi.HeaderMap) model.SpanContext {
 	})
 
 }
-
-func TracerFromContext(ctx context.Context) *ZipkinTracer {
-	if t, ok := ctx.Value(tracerKey).(*ZipkinTracer); ok {
-		return t
-	}
-	return nil
-}
-
-func AddTracerToContext(ctx context.Context, tracer *ZipkinTracer) context.Context {
-	return context.WithValue(ctx, tracerKey, tracer)
-}
-
-type tracerCtxKey struct{}
-
-var tracerKey = tracerCtxKey{}

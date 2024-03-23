@@ -15,7 +15,7 @@ type PresidioDataFormat struct {
 }
 
 func PiiAnalysis(ctx context.Context, presidioSvcURL string, svcName string, bufferBytes interface{}) ([]string, error) {
-	span, ctx := TracerFromContext(ctx).StartSpanFromContext(ctx, "PiiAnalysis")
+	span, ctx := GlobalTracer.StartSpanFromContext(ctx, "PiiAnalysis")
 	defer span.Finish()
 
 	empty := []string{}

@@ -129,7 +129,7 @@ func GetDirection(callbacks api.FilterCallbackHandler) (SidecarDirection, error)
 }
 
 func GetJSONBody(ctx context.Context, headerMetadata HeaderMetadata, body string) (interface{}, error) {
-	span, ctx := TracerFromContext(ctx).StartSpanFromContext(ctx, "getJSONBody")
+	span, ctx := GlobalTracer.StartSpanFromContext(ctx, "getJSONBody")
 	defer span.Finish()
 
 	if headerMetadata.ContentType == nil {
