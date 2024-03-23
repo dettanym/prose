@@ -75,3 +75,10 @@
    3. e.g. the SHA found at step 3 is `bd2cc6e71a9416bd87673ffc79b3245492825d97`, so the command should have `%SHA%` replaced with this value.
 6. The version of golang compiler used by envoy has to match the golang version in our golang filter.
    1. At the commit from previous step, see `go.mod` file and find the version of go compiler in use. In that case it is `1.20`.
+
+### resource watcher script
+
+```bash
+watch -d -n1 'kubectl get nodes -o wide && echo "" && kubectl get -A deploy,sts,daemonset,cronjob,job'
+```
+
