@@ -74,6 +74,7 @@ for variant in "${bookinfo_variants[@]}"; do
     --arg ns "${ns}" \
     '{
       timestamp: $timestamp,
+      resultsFile: ($timestamp + "_" + $hostname + "_" + $variant + ".results.json"),
       req: {
         method: "GET",
         url: ("https://" + $INGRESS_IP + "/productpage?u=test"),
