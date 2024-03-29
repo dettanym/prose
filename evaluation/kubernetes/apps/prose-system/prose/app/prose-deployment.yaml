@@ -33,9 +33,11 @@ spec:
             path: /health
             port: http
         resources:
+          requests:
+            cpu: 10m
+            memory: 500Mi
           limits:
-            memory: 1Gi
-            cpu: "500m"
+            memory: 3Gi
       volumes:
         - name: compiled-bundle
           emptyDir:

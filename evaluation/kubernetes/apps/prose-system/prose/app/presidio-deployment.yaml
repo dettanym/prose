@@ -15,9 +15,11 @@ spec:
       - name: presidio
         image: ghcr.io/dettanym/prose-presidio:main
         resources:
+          requests:
+            cpu: 10m
+            memory: 500Mi
           limits:
-            memory: "1Gi"
-            cpu: "500m"
+            memory: 3Gi
         ports:
         - name: http
           containerPort: 3000

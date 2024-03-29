@@ -5,3 +5,107 @@ resources:
   - https://raw.githubusercontent.com/istio/istio/1.20.3/samples/bookinfo/platform/kube/bookinfo.yaml
   - ./ingress.yaml
 #  - https://raw.githubusercontent.com/istio/istio/1.20.3/samples/bookinfo/networking/bookinfo-gateway.yaml
+
+patches:
+  - patch: |-
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: details-v1
+      spec:
+        template:
+          spec:
+            containers:
+              - name: details
+                resources:
+                  requests:
+                    cpu: 100m
+                    memory: 100Mi
+                  limits:
+                    cpu: "1"
+                    memory: 2Gi
+  - patch: |-
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: ratings-v1
+      spec:
+        template:
+          spec:
+            containers:
+              - name: ratings
+                resources:
+                  requests:
+                    cpu: 100m
+                    memory: 100Mi
+                  limits:
+                    cpu: "1"
+                    memory: 2Gi
+  - patch: |-
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: reviews-v1
+      spec:
+        template:
+          spec:
+            containers:
+              - name: reviews
+                resources:
+                  requests:
+                    cpu: 100m
+                    memory: 100Mi
+                  limits:
+                    cpu: "1"
+                    memory: 2Gi
+  - patch: |-
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: reviews-v2
+      spec:
+        template:
+          spec:
+            containers:
+              - name: reviews
+                resources:
+                  requests:
+                    cpu: 100m
+                    memory: 100Mi
+                  limits:
+                    cpu: "1"
+                    memory: 2Gi
+  - patch: |-
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: reviews-v3
+      spec:
+        template:
+          spec:
+            containers:
+              - name: reviews
+                resources:
+                  requests:
+                    cpu: 100m
+                    memory: 100Mi
+                  limits:
+                    cpu: "1"
+                    memory: 2Gi
+  - patch: |-
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: productpage-v1
+      spec:
+        template:
+          spec:
+            containers:
+              - name: productpage
+                resources:
+                  requests:
+                    cpu: 100m
+                    memory: 100Mi
+                  limits:
+                    cpu: "1"
+                    memory: 2Gi
