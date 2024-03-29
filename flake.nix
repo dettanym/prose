@@ -38,6 +38,10 @@
         zstd
       ];
 
+      shellHook = ''
+        alias v='ls -alhF --color'
+        alias kc='kubectl'
+      '';
     };
 
   };
