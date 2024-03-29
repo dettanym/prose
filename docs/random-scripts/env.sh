@@ -25,7 +25,7 @@ args=(
 
 if [[ -n "${IN_NIX_SHELL+x}" ]]; then
   echo 'already within nix'
-  exec "${args[@]}" "$@"
+  exec /usr/bin/env bash "$@"
 elif command -v nix &>/dev/null; then
   echo 'using nix'
   exec "${args[@]}" "$@"
