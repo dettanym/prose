@@ -95,7 +95,8 @@ for variant in "${bookinfo_variants[@]}"; do
     | tee "${PRJ_ROOT}/evaluation/vegeta/bookinfo/${timestamp}_${hostname}_${variant}.metadata.json" \
     | jq -cM '.req' \
     | vegeta attack -format=json -insecure "-duration=${DURATION}" "-rate=${RATE}" \
-    | tee "${PRJ_ROOT}/evaluation/vegeta/bookinfo/${timestamp}_${hostname}_${variant}.results.bin" \
+    | vegeta encode --to json \
+    | tee "${PRJ_ROOT}/evaluation/vegeta/bookinfo/${timestamp}_${hostname}_${variant}.results.json" \
     | vegeta report
 
   printf "Scaling down deployments for '%s' variant\n" "${variant}"
