@@ -34,6 +34,7 @@
         ripgrep
         vegeta
         yq-go
+        zstd
       ];
 
     };

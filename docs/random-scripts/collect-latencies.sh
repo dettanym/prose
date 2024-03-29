@@ -74,7 +74,7 @@ for variant in "${bookinfo_variants[@]}"; do
     --arg ns "${ns}" \
     '{
       timestamp: $timestamp,
-      resultsFile: ($timestamp + "_" + $hostname + "_" + $variant + ".results.json"),
+      resultsFile: ($timestamp + "_" + $hostname + "_" + $variant + ".results.json.zst"),
       req: {
         method: "GET",
         url: ("https://" + $INGRESS_IP + "/productpage?u=test"),
@@ -97,7 +97,10 @@ for variant in "${bookinfo_variants[@]}"; do
     | jq -cM '.req' \
     | vegeta attack -format=json -insecure "-duration=${DURATION}" "-rate=${RATE}" \
     | vegeta encode --to json \
-    | tee "${PRJ_ROOT}/evaluation/vegeta/bookinfo/${timestamp}_${hostname}_${variant}.results.json" \
+    | zstd -c -T0 --ultra -20 - >"${PRJ_ROOT}/evaluation/vegeta/bookinfo/${timestamp}_${hostname}_${variant}.results.json.zst"
+
+  printf "report for '%s' variant\n" "${variant}"
+  zstd -c -d "${PRJ_ROOT}/evaluation/vegeta/bookinfo/${timestamp}_${hostname}_${variant}.results.json.zst" \
     | vegeta report
 
   printf "Scaling down deployments for '%s' variant\n" "${variant}"
