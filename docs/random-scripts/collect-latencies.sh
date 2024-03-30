@@ -31,6 +31,19 @@ case "${hostname}" in
   ;;
 esac
 
+echo "suspend everything before the test"
+for variant in "${bookinfo_variants[@]}"; do
+  ns=""
+  if [[ "${variant}" != "plain" ]]; then
+    ns="with-"
+  fi
+
+  flux suspend kustomization "bookinfo-${ns}${variant}"
+  kubectl scale --replicas 0 \
+    -n "bookinfo-${ns}${variant}" \
+    deployments --all >/dev/null
+done
+
 echo "create metadata files"
 for variant in "${bookinfo_variants[@]}"; do
   ns=""
@@ -73,18 +86,6 @@ done
 run_tests () {
   test_run_index="$1"
 
-  echo "clean everything up before the test"
-  for variant in "${bookinfo_variants[@]}"; do
-    ns=""
-    if [[ "${variant}" != "plain" ]]; then
-      ns="with-"
-    fi
-
-    kubectl scale --replicas 0 \
-      -n "bookinfo-${ns}${variant}"\
-      deployments --all >/dev/null
-  done
-
   for variant in "${bookinfo_variants[@]}"; do
     ns=""
     if [[ "${variant}" != "plain" ]]; then
@@ -120,3 +121,16 @@ run_tests () {
 }
 
 run_tests 1
+
+echo "resume everything after the test"
+for variant in "${bookinfo_variants[@]}"; do
+  ns=""
+  if [[ "${variant}" != "plain" ]]; then
+    ns="with-"
+  fi
+
+  kubectl scale --replicas 1 \
+    -n "bookinfo-${ns}${variant}" \
+    deployments --all >/dev/null
+  flux resume kustomization --wait=false "bookinfo-${ns}${variant}"
+done
