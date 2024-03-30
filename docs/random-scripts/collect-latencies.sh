@@ -15,10 +15,11 @@ bookinfo_variants=(
 )
 
 PRJ_ROOT="$(/usr/bin/git rev-parse --show-toplevel)"
-mkdir -p "${PRJ_ROOT}/evaluation/vegeta/bookinfo"
-
 timestamp=$(date -Iseconds)
 hostname=$(hostname)
+
+test_results_dir="${PRJ_ROOT}/evaluation/vegeta/bookinfo/${hostname}/${timestamp}"
+mkdir -p "${test_results_dir}"
 
 test_replicas=""
 case "${hostname}" in
@@ -66,7 +67,7 @@ for variant in "${bookinfo_variants[@]}"; do
         hostname: $hostname,
         test_replicas: $test_replicas,
       },
-    }' >"${PRJ_ROOT}/evaluation/vegeta/bookinfo/${timestamp}_${hostname}_${variant}.metadata.json"
+    }' >"${test_results_dir}/${variant}.metadata.json"
 done
 
 echo "clean everything up before the test"
@@ -98,15 +99,15 @@ for variant in "${bookinfo_variants[@]}"; do
     deployments --all >/dev/null
 
   printf "Testing '%s' variant\n" "${variant}"
-  jq -cM '.req' <"${PRJ_ROOT}/evaluation/vegeta/bookinfo/${timestamp}_${hostname}_${variant}.metadata.json" \
+  jq -cM '.req' <"${test_results_dir}/${variant}.metadata.json" \
     | vegeta attack -format=json -insecure "-duration=${DURATION}" "-rate=${RATE}" \
     | vegeta encode --to json \
-    | zstd -c -T0 --ultra -20 - >"${PRJ_ROOT}/evaluation/vegeta/bookinfo/${timestamp}_${hostname}_${variant}.results.json.zst"
+    | zstd -c -T0 --ultra -20 - >"${test_results_dir}/${variant}.results.json.zst"
 
   printf "report for '%s' variant\n" "${variant}"
-  zstd -c -d "${PRJ_ROOT}/evaluation/vegeta/bookinfo/${timestamp}_${hostname}_${variant}.results.json.zst" \
+  zstd -c -d "${test_results_dir}/${variant}.results.json.zst" \
     | vegeta report -type json \
-    | jq -M >"${PRJ_ROOT}/evaluation/vegeta/bookinfo/${timestamp}_${hostname}_${variant}.summary.json"
+    | jq -M >"${test_results_dir}/${variant}.summary.json"
 
   printf "Scaling down deployments for '%s' variant\n" "${variant}"
   kubectl scale --replicas 0 \
