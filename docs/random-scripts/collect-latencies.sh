@@ -55,12 +55,12 @@ for variant in "${bookinfo_variants[@]}"; do
   printf "Scaling up deployments for '%s' variant\n" "${variant}"
   kubectl scale --replicas "${test_replicas}" \
     -n "bookinfo-${ns}${variant}"\
-    deployments --all
+    deployments --all >/dev/null
 
   printf "Waiting until ready\n"
   kubectl wait --for condition=available --timeout 5m \
     -n "bookinfo-${ns}${variant}" \
-    deployments --all
+    deployments --all >/dev/null
 
   printf "Testing '%s' variant\n" "${variant}"
   jq -nM \
@@ -106,5 +106,5 @@ for variant in "${bookinfo_variants[@]}"; do
   printf "Scaling down deployments for '%s' variant\n" "${variant}"
   kubectl scale --replicas 0 \
     -n "bookinfo-${ns}${variant}"\
-    deployments --all
+    deployments --all >/dev/null
 done
