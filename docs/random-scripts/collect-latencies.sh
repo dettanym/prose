@@ -30,6 +30,45 @@ case "${hostname}" in
   ;;
 esac
 
+echo "create metadata files"
+for variant in "${bookinfo_variants[@]}"; do
+  ns=""
+  if [[ "${variant}" != "plain" ]]; then
+    ns="with-"
+  fi
+
+  jq -nM \
+    --arg timestamp "${timestamp}" \
+    --arg INGRESS_IP "${INGRESS_IP}" \
+    --arg variant "${variant}" \
+    --arg duration "${DURATION}" \
+    --arg rate "${RATE}" \
+    --arg hostname "${hostname}" \
+    --arg test_replicas "${test_replicas}" \
+    --arg ns "${ns}" \
+    '{
+      timestamp: $timestamp,
+      resultsFileSuffix: ".results.json.zst",
+      req: {
+        method: "GET",
+        url: ("https://" + $INGRESS_IP + "/productpage?u=test"),
+        header: {
+          Host: ["bookinfo-" + $variant + ".my-example.com"],
+        },
+      },
+      testOptions: {
+        duration: $duration,
+        rate: $rate,
+      },
+      workloadInfo: {
+        variant: $variant,
+        namespace: ("bookinfo-" + $ns + $variant),
+        hostname: $hostname,
+        test_replicas: $test_replicas,
+      },
+    }' >"${PRJ_ROOT}/evaluation/vegeta/bookinfo/${timestamp}_${hostname}_${variant}.metadata.json"
+done
+
 echo "clean everything up before the test"
 for variant in "${bookinfo_variants[@]}"; do
   ns=""
@@ -59,45 +98,15 @@ for variant in "${bookinfo_variants[@]}"; do
     deployments --all >/dev/null
 
   printf "Testing '%s' variant\n" "${variant}"
-  jq -nM \
-    --arg timestamp "${timestamp}" \
-    --arg INGRESS_IP "${INGRESS_IP}" \
-    --arg variant "${variant}" \
-    --arg duration "${DURATION}" \
-    --arg rate "${RATE}" \
-    --arg hostname "${hostname}" \
-    --arg test_replicas "${test_replicas}" \
-    --arg ns "${ns}" \
-    '{
-      timestamp: $timestamp,
-      resultsFile: ($timestamp + "_" + $hostname + "_" + $variant + ".results.json.zst"),
-      req: {
-        method: "GET",
-        url: ("https://" + $INGRESS_IP + "/productpage?u=test"),
-        header: {
-          Host: ["bookinfo-" + $variant + ".my-example.com"]
-        },
-      },
-      testOptions: {
-        duration: $duration,
-        rate: $rate,
-      },
-      workloadInfo: {
-        variant: $variant,
-        namespace: ("bookinfo-" + $ns + $variant),
-        hostname: $hostname,
-        test_replicas: $test_replicas,
-      },
-    }' \
-    | tee "${PRJ_ROOT}/evaluation/vegeta/bookinfo/${timestamp}_${hostname}_${variant}.metadata.json" \
-    | jq -cM '.req' \
+  jq -cM '.req' <"${PRJ_ROOT}/evaluation/vegeta/bookinfo/${timestamp}_${hostname}_${variant}.metadata.json" \
     | vegeta attack -format=json -insecure "-duration=${DURATION}" "-rate=${RATE}" \
     | vegeta encode --to json \
     | zstd -c -T0 --ultra -20 - >"${PRJ_ROOT}/evaluation/vegeta/bookinfo/${timestamp}_${hostname}_${variant}.results.json.zst"
 
   printf "report for '%s' variant\n" "${variant}"
   zstd -c -d "${PRJ_ROOT}/evaluation/vegeta/bookinfo/${timestamp}_${hostname}_${variant}.results.json.zst" \
-    | vegeta report
+    | vegeta report -type json \
+    | jq -M >"${PRJ_ROOT}/evaluation/vegeta/bookinfo/${timestamp}_${hostname}_${variant}.summary.json"
 
   printf "Scaling down deployments for '%s' variant\n" "${variant}"
   kubectl scale --replicas 0 \
