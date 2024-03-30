@@ -2,34 +2,39 @@
 # shellcheck disable=SC2096
 
 ENABLE_METALLB="false"
-IN_RIPPLE="false"
 
 PRJ_ROOT="$(git rev-parse --show-toplevel)"
 
-case "$(hostname)" in
-  click1|clack1|shiver)
-    IN_RIPPLE="true"
-    export MINIKUBE_HOME="/usr/local/home/$USER/.minikube"
-    ;;
-  *);;
-esac
+minikube_start=(
+  "minikube"
+  "start"
+  "--driver=docker"
+  "--subnet='192.168.49.0/24'"
+)
 
-if [[ "${IN_RIPPLE}" == "true" ]]; then
-  echo "creating minikube in ripple"
-  minikube start \
-    --driver=docker \
-    --nodes=5 \
-    --cpus=12 \
-    --memory=90g \
-    --subnet='192.168.49.0/24'
-else
-  echo "creating minikube outside of ripple"
-  minikube start \
-    --driver docker \
-    --cpus=4 \
-    --memory=8G \
-    --subnet='192.168.49.0/24'
-fi
+ripple_settings() {
+  export MINIKUBE_HOME="/usr/local/home/$USER/.minikube"
+}
+
+case "$(hostname)" in
+  click1|clack1)
+    ripple_settings
+    echo "creating minikube in ripple"
+    eval "${minikube_start[@]}" \
+      --nodes=5 --cpus=12 --memory=90g
+    ;;
+  shiver)
+    ripple_settings
+    echo "creating minikube in ripple"
+    eval "${minikube_start[@]}" \
+      --nodes=3 --cpus=10 --memory=100g
+    ;;
+  *)
+    echo "creating minikube outside of ripple"
+    eval "${minikube_start[@]}" \
+      --nodes=1 --cpus=4 --memory=8G
+    ;;
+esac
 
 if [[ "${ENABLE_METALLB}" == "true" ]]; then
   minikube addons enable metallb
