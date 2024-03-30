@@ -4,6 +4,8 @@
 ENABLE_METALLB="false"
 IN_RIPPLE="false"
 
+PRJ_ROOT="$(git rev-parse --show-toplevel)"
+
 case "$(hostname)" in
   click1|clack1)
     IN_RIPPLE="true"
@@ -46,3 +48,7 @@ if [[ "${ENABLE_METALLB}" == "true" ]]; then
 		      - 192.168.49.20-192.168.49.50
 	EOF
 fi
+
+kubectl apply --kustomize "${PRJ_ROOT}/evaluation/kubernetes/bootstrap"
+kubectl apply --kustomize "${PRJ_ROOT}/evaluation/kubernetes/flux/vars"
+kubectl apply --kustomize "${PRJ_ROOT}/evaluation/kubernetes/flux/config"
