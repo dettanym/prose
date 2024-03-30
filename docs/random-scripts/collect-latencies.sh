@@ -31,7 +31,7 @@ case "${hostname}" in
   ;;
 esac
 
-echo "suspend everything before the test"
+echo "* suspend everything before the test"
 for variant in "${bookinfo_variants[@]}"; do
   ns=""
   if [[ "${variant}" != "plain" ]]; then
@@ -44,7 +44,7 @@ for variant in "${bookinfo_variants[@]}"; do
     deployments --all >/dev/null
 done
 
-echo "create metadata files"
+echo "* create metadata files"
 for variant in "${bookinfo_variants[@]}"; do
   ns=""
   if [[ "${variant}" != "plain" ]]; then
@@ -92,39 +92,40 @@ run_tests () {
       ns="with-"
     fi
 
-    printf "Scaling up deployments for '%s' variant\n" "${variant}"
+    printf "  - Scaling up deployments for '%s' variant\n" "${variant}"
     kubectl scale --replicas "${test_replicas}" \
-      -n "bookinfo-${ns}${variant}"\
+      -n "bookinfo-${ns}${variant}" \
       deployments --all >/dev/null
 
-    printf "Waiting until ready\n"
+    printf "  - Waiting until ready\n"
     kubectl wait --for condition=available --timeout 5m \
       -n "bookinfo-${ns}${variant}" \
       deployments --all >/dev/null
 
-    printf "Testing '%s' variant\n" "${variant}"
+    printf "  - Testing '%s' variant\n" "${variant}"
     jq -cM '.req' <"${test_results_dir}/${variant}.metadata.json" \
       | vegeta attack -format=json -insecure "-duration=${DURATION}" "-rate=${RATE}" \
       | vegeta encode --to json \
       | zstd -c -T0 --ultra -20 - >"${test_results_dir}/${variant}_${test_run_index}.results.json.zst"
 
-    printf "report for '%s' variant\n" "${variant}"
+    printf "  - report for '%s' variant\n" "${variant}"
     zstd -c -d "${test_results_dir}/${variant}_${test_run_index}.results.json.zst" \
       | vegeta report -type json \
       | jq -M >"${test_results_dir}/${variant}_${test_run_index}.summary.json"
 
-    printf "Scaling down deployments for '%s' variant\n" "${variant}"
+    printf "  - Scaling down deployments for '%s' variant\n" "${variant}"
     kubectl scale --replicas 0 \
-      -n "bookinfo-${ns}${variant}"\
+      -n "bookinfo-${ns}${variant}" \
       deployments --all >/dev/null
   done
 }
 
 for i in $(seq 1 100); do
+  printf "* run test '%s'\n" "${i}"
   run_tests "$i"
 done
 
-echo "resume everything after the test"
+echo "* resume everything after the test"
 for variant in "${bookinfo_variants[@]}"; do
   ns=""
   if [[ "${variant}" != "plain" ]]; then
