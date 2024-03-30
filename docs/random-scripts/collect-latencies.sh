@@ -120,7 +120,9 @@ run_tests () {
   done
 }
 
-run_tests 1
+for i in $(seq 1 100); do
+  run_tests "$i"
+done
 
 echo "resume everything after the test"
 for variant in "${bookinfo_variants[@]}"; do
