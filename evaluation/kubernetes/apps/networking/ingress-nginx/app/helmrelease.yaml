@@ -74,7 +74,7 @@ spec:
         enabled: true
       autoscaling:
         enabled: true
-        minReplicas: 3
+        minReplicas: 5
       podAnnotations:
         configmap.reloader.stakater.com/reload: cloudflare-networks
       resources:
