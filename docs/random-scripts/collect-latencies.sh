@@ -3,8 +3,8 @@
 
 set -euo pipefail
 
-DURATION='300s'
-RATE='10'
+DURATION='10s'
+RATE='1000'
 
 INGRESS_IP="192.168.49.21"
 
@@ -43,10 +43,6 @@ for variant in "${bookinfo_variants[@]}"; do
 done
 
 for variant in "${bookinfo_variants[@]}"; do
-  if [[ "${variant}" != "filter" ]]; then
-    continue
-  fi
-
   ns=""
   if [[ "${variant}" != "plain" ]]; then
     ns="with-"
