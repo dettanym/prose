@@ -7,7 +7,7 @@ IN_RIPPLE="false"
 PRJ_ROOT="$(git rev-parse --show-toplevel)"
 
 case "$(hostname)" in
-  click1|clack1)
+  click1|clack1|shiver)
     IN_RIPPLE="true"
     export MINIKUBE_HOME="/usr/local/home/$USER/.minikube"
     ;;

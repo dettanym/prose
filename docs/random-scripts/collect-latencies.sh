@@ -22,7 +22,7 @@ hostname=$(hostname)
 
 test_replicas=""
 case "${hostname}" in
-  click1|clack1)
+  click1|clack1|shiver)
     test_replicas="10"
   ;;
   *)
