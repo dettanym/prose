@@ -32,6 +32,10 @@
         protobuf_25
         protoc-gen-go
         protoc-gen-go-grpc
+        (python3.withPackages (ps: [
+          ps.matplotlib
+          ps.numpy
+        ]))
         ripgrep
         vegeta
         yq-go
