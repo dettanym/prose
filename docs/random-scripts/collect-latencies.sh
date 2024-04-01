@@ -4,7 +4,14 @@
 set -euo pipefail
 
 DURATION='10s'
-RATE='1000'
+rates=(
+  "100"
+  "200"
+  "400"
+  "600"
+  "800"
+  "1000"
+)
 
 INGRESS_IP="192.168.49.21"
 
@@ -15,11 +22,7 @@ bookinfo_variants=(
 )
 
 PRJ_ROOT="$(/usr/bin/git rev-parse --show-toplevel)"
-timestamp=$(date -Iseconds)
 hostname=$(hostname)
-
-test_results_dir="${PRJ_ROOT}/evaluation/vegeta/bookinfo/${hostname}/${timestamp}"
-mkdir -p "${test_results_dir}"
 
 test_replicas=""
 case "${hostname}" in
@@ -42,46 +45,6 @@ for variant in "${bookinfo_variants[@]}"; do
   kubectl scale --replicas 0 \
     -n "bookinfo-${ns}${variant}" \
     deployments --all >/dev/null
-done
-
-echo "* create metadata files"
-for variant in "${bookinfo_variants[@]}"; do
-  ns=""
-  if [[ "${variant}" != "plain" ]]; then
-    ns="with-"
-  fi
-
-  jq -nM \
-    --arg timestamp "${timestamp}" \
-    --arg INGRESS_IP "${INGRESS_IP}" \
-    --arg variant "${variant}" \
-    --arg duration "${DURATION}" \
-    --arg rate "${RATE}" \
-    --arg hostname "${hostname}" \
-    --arg test_replicas "${test_replicas}" \
-    --arg ns "${ns}" \
-    '{
-      timestamp: $timestamp,
-      resultsFileSuffix: ".results.json.zst",
-      summaryFileSuffix: ".summary.json",
-      req: {
-        method: "GET",
-        url: ("https://" + $INGRESS_IP + "/productpage?u=test"),
-        header: {
-          Host: ["bookinfo-" + $variant + ".my-example.com"],
-        },
-      },
-      testOptions: {
-        duration: $duration,
-        rate: $rate,
-      },
-      workloadInfo: {
-        variant: $variant,
-        namespace: ("bookinfo-" + $ns + $variant),
-        hostname: $hostname,
-        test_replicas: $test_replicas,
-      },
-    }' >"${test_results_dir}/${variant}.metadata.json"
 done
 
 run_tests () {
@@ -121,9 +84,57 @@ run_tests () {
   done
 }
 
-for i in $(seq 1 100); do
-  printf "* run test '%s'\n" "${i}"
-  run_tests "$i"
+# TODO: this rate loop should be inner most loop:
+#  inside run_tests and inside bookinfo_variants
+for RATE in "${rates[@]}"; do
+  timestamp=$(date -Iseconds)
+  test_results_dir="${PRJ_ROOT}/evaluation/vegeta/bookinfo/${hostname}/${timestamp}"
+  mkdir -p "${test_results_dir}"
+
+  echo "* create metadata files"
+  for variant in "${bookinfo_variants[@]}"; do
+    ns=""
+    if [[ "${variant}" != "plain" ]]; then
+      ns="with-"
+    fi
+
+    jq -nM \
+      --arg timestamp "${timestamp}" \
+      --arg INGRESS_IP "${INGRESS_IP}" \
+      --arg variant "${variant}" \
+      --arg duration "${DURATION}" \
+      --arg rate "${RATE}" \
+      --arg hostname "${hostname}" \
+      --arg test_replicas "${test_replicas}" \
+      --arg ns "${ns}" \
+      '{
+        timestamp: $timestamp,
+        resultsFileSuffix: ".results.json.zst",
+        summaryFileSuffix: ".summary.json",
+        req: {
+          method: "GET",
+          url: ("https://" + $INGRESS_IP + "/productpage?u=test"),
+          header: {
+            Host: ["bookinfo-" + $variant + ".my-example.com"],
+          },
+        },
+        testOptions: {
+          duration: $duration,
+          rate: $rate,
+        },
+        workloadInfo: {
+          variant: $variant,
+          namespace: ("bookinfo-" + $ns + $variant),
+          hostname: $hostname,
+          test_replicas: $test_replicas,
+        },
+      }' >"${test_results_dir}/${variant}.metadata.json"
+  done
+
+  for i in $(seq 1 100); do
+    printf "* run test '%s'\n" "${i}"
+    run_tests "$i"
+  done
 done
 
 echo "* resume everything after the test"
