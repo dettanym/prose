@@ -18,6 +18,17 @@ Metadata = Dict[str, Any]
 Summary = Dict[str, Any]
 ResultsPath = str
 
+colors = {
+    "plain": "blue",
+    "envoy": "orange",
+    "filter": "green",
+}
+labels = {
+    "plain": "K8s",
+    "envoy": "K8s + Istio",
+    "filter": "K8s + Istio + Prose",
+}
+
 ns_to_s = 1000 * 1000 * 1000  # milliseconds in nanoseconds
 
 PRJ_ROOT = (
@@ -108,7 +119,11 @@ for variant in bookinfo_variants:
     means = np.mean(y, axis=1) / ns_to_s
     stds = np.std(y, axis=1) / ns_to_s
 
-    plt.errorbar(x, means, yerr=stds, label=variant)
+    plt.errorbar(x, means, yerr=stds, label=labels[variant], color=colors[variant])
+
+plt.ylabel("Mean response latency (s)")
+plt.xlabel("Load (req/s)")
+plt.legend(title="Variants")
 
 plt.savefig("foo.svg")
 plt.close(fig)
