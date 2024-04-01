@@ -18,6 +18,8 @@ Metadata = Dict[str, Any]
 Summary = Dict[str, Any]
 ResultsPath = str
 
+ns_to_s = 1000 * 1000 * 1000  # milliseconds in nanoseconds
+
 PRJ_ROOT = (
     subprocess.run(["git", "rev-parse", "--show-toplevel"], stdout=subprocess.PIPE)
     .stdout.decode("utf-8")
@@ -79,3 +81,34 @@ for timestamp in listdir(data_location):
 
         variant_results[rate] = (metadata, summaries)
         all_results[variant] = variant_results
+
+fig = plt.figure()
+
+for variant in bookinfo_variants:
+    if variant not in all_results:
+        continue
+
+    variant_results = all_results[variant]
+
+    x = np.empty(shape=0, dtype=np.int32)
+    y = None
+
+    for rate, (metadata, summaries) in variant_results.items():
+        rate_int = int(rate)
+        summary_means = np.asarray(
+            [summary["latencies"]["mean"] for summary in summaries]
+        )
+
+        if y is None:
+            y = np.empty(shape=(0, summary_means.size), dtype=np.int64)
+
+        x = np.append(x, rate_int)
+        y = np.append(y, [summary_means], axis=0)
+
+    means = np.mean(y, axis=1) / ns_to_s
+    stds = np.std(y, axis=1) / ns_to_s
+
+    plt.errorbar(x, means, yerr=stds, label=variant)
+
+plt.savefig("foo.svg")
+plt.close(fig)
