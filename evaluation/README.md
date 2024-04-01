@@ -76,6 +76,13 @@
 6. The version of golang compiler used by envoy has to match the golang version in our golang filter.
    1. At the commit from previous step, see `go.mod` file and find the version of go compiler in use. In that case it is `1.20`.
 
+### format python source files
+
+```bash
+isort --profile black ./path/to/file.py
+black ./path/to/file.py
+```
+
 ### resource watcher script
 
 ```bash

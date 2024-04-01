@@ -27,6 +27,7 @@
       devShells.x86_64-linux.default = nixpkgs.legacyPackages.x86_64-linux.mkShell {
 
         packages = with nixpkgs.legacyPackages.x86_64-linux; [
+          black
           curl
           docker
           envsubst
@@ -36,6 +37,7 @@
           go
           go-task
           hostname
+          isort
           istioctl
           jq
           kubectl
