@@ -119,6 +119,12 @@ for variant in bookinfo_variants:
     means = np.mean(y, axis=1) / ns_to_s
     stds = np.std(y, axis=1) / ns_to_s
 
+    # based on https://stackoverflow.com/a/43612676
+    shape = x.argsort(axis=None).reshape(x.shape)
+    x = x.ravel()[shape]
+    means = means.ravel()[shape]
+    stds = stds.ravel()[shape]
+
     plt.errorbar(x, means, yerr=stds, label=labels[variant], color=colors[variant])
 
 plt.ylabel("Mean response latency (s)")
