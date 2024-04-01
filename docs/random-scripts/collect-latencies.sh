@@ -63,6 +63,7 @@ for variant in "${bookinfo_variants[@]}"; do
     '{
       timestamp: $timestamp,
       resultsFileSuffix: ".results.json.zst",
+      summaryFileSuffix: ".summary.json",
       req: {
         method: "GET",
         url: ("https://" + $INGRESS_IP + "/productpage?u=test"),
