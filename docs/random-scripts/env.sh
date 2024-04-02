@@ -13,6 +13,50 @@
 
 set -euo pipefail
 
+function usage() {
+  # TODO: fill in usage details
+  #  now if `--` is present in the list of parameters to this script, this env.sh
+  #  parses the list to find the program that is being executed and to change
+  #  to the folder containing the script. This is needed for npm/pnpm commands
+  #  which search folders for `package.json` and `node_modules/`.
+  cat <<-EOF
+		Usage:
+	EOF
+}
+
+# based on https://stackoverflow.com/a/39376824
+OPTS=$(getopt -o "-h" --long "help" -n "env.sh" -- "$@")
+if [[ $? != 0 ]]; then
+  echo "Error in command line arguments." >&2
+  exit 1
+fi
+
+declare -a COMMAND
+
+eval set -- "$OPTS"
+while true; do
+  case "$1" in
+    -h | --help ) usage; exit; ;;
+    -- ) shift; break ;;
+    * ) COMMAND+=( "$1" ); shift ;;
+  esac
+done
+
+ORIGINAL_PWD="$(pwd)"
+ENV_DIR="$(dirname "$0")"
+
+if [[ "$#" -gt 0 && ("$1" == "./"* || "$1" == "../"* ) ]]; then
+  PROGRAM="$1"
+  shift
+
+  RELATIVE=$(realpath -s --relative-to="$ENV_DIR" "$ORIGINAL_PWD/$PROGRAM")
+
+  cd "$ENV_DIR"
+  COMMAND+=("$RELATIVE" "$ORIGINAL_PWD")
+fi
+
+COMMAND+=("$@")
+
 args=(
   "nix"
   "develop"
@@ -23,16 +67,21 @@ args=(
   "--command"
 )
 
+if [[ "${#COMMAND[@]}" -eq 0 ]]; then
+  usage
+  exit
+fi
+
 if [[ -n "${IN_NIX_SHELL+x}" ]]; then
   echo 'already within nix'
-  exec /usr/bin/env "$@"
+  exec /usr/bin/env "${COMMAND[@]}"
 elif command -v nix &>/dev/null; then
   echo 'using nix'
-  exec "${args[@]}" "$@"
+  exec "${args[@]}" "${COMMAND[@]}"
 elif command -v nix-portable &>/dev/null; then
   echo 'using nix-portable'
-  exec nix-portable "${args[@]}" "$@"
+  exec nix-portable "${args[@]}" "${COMMAND[@]}"
 else
   echo 'trying to run script without nix'
-  exec /usr/bin/env "$@"
+  exec /usr/bin/env "${COMMAND[@]}"
 fi
