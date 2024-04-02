@@ -34,6 +34,8 @@
           kubectl
           minikube
           neovim
+          nodejs
+          nodePackages.pnpm
           nodePackages.prettier
           open-policy-agent
           protobuf_25
