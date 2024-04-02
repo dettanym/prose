@@ -1,0 +1,9 @@
+{
+  "extends": ["@tsconfig/node20", "@tsconfig/strictest"],
+  "compilerOptions": {
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "noEmit": true
+  },
+  "include": ["./**/*.ts", "./**/*.mts"]
+}
