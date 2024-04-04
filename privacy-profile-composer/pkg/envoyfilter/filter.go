@@ -55,7 +55,7 @@ type Filter struct {
 
 // Callbacks which are called in request path
 func (f *Filter) DecodeHeaders(header api.RequestHeaderMap, endStream bool) api.StatusType {
-	log.Println(">>> DECODE HEADERS")
+	// log.Println(">>> DECODE HEADERS")
 
 	f.parentSpanContext = common.GlobalTracer.Extract(header)
 
@@ -67,7 +67,7 @@ func (f *Filter) DecodeHeaders(header api.RequestHeaderMap, endStream bool) api.
 
 	f.headerMetadata = common.ExtractHeaderData(header)
 
-	common.LogDecodeHeaderData(header)
+	// common.LogDecodeHeaderData(header)
 
 	if endStream {
 		// here we have a header-only request
@@ -96,8 +96,8 @@ func (f *Filter) DecodeHeaders(header api.RequestHeaderMap, endStream bool) api.
 		}
 
 		if isInternalDestination {
-			log.Printf("outbound sidecar processed a request to another sidecar in the mesh" +
-				"Prose will process it through the inbound decode function\n")
+			// log.Printf("outbound sidecar processed a request to another sidecar in the mesh" +
+			// 	"Prose will process it through the inbound decode function\n")
 			return api.Continue
 		}
 
@@ -136,8 +136,8 @@ func (f *Filter) DecodeData(buffer api.BufferInstance, endStream bool) api.Statu
 	span.Tag("SIDECAR_DIRECTION", string(f.config.direction))
 	span.Tag("DATA_FLOW", "DECODE_DATA")
 
-	log.Println(">>> DECODE DATA")
-	log.Println("  <<About to forward", len(f.decodeDataBuffer), "bytes of data to service>>")
+	// log.Println(">>> DECODE DATA")
+	// log.Println("  <<About to forward", len(f.decodeDataBuffer), "bytes of data to service>>")
 
 	span.Tag("buffer-value", f.decodeDataBuffer)
 
@@ -149,7 +149,7 @@ func (f *Filter) DecodeData(buffer api.BufferInstance, endStream bool) api.Statu
 			span.Tag(k, v)
 		}
 		if err != nil {
-			log.Println(err)
+			// log.Println(err)
 			return api.Continue
 		}
 
@@ -166,15 +166,15 @@ func (f *Filter) DecodeData(buffer api.BufferInstance, endStream bool) api.Statu
 }
 
 func (f *Filter) DecodeTrailers(trailers api.RequestTrailerMap) api.StatusType {
-	log.Println(">>> DECODE TRAILERS")
-	log.Printf("%+v", trailers)
+	// log.Println(">>> DECODE TRAILERS")
+	// log.Printf("%+v", trailers)
 	return api.Continue
 }
 
 func (f *Filter) EncodeHeaders(header api.ResponseHeaderMap, endStream bool) api.StatusType {
-	log.Println("<<< ENCODE HEADERS")
+	// log.Println("<<< ENCODE HEADERS")
 
-	common.LogEncodeHeaderData(header)
+	// common.LogEncodeHeaderData(header)
 
 	span := common.GlobalTracer.StartSpan("test span in encode headers", zipkin.Parent(f.parentSpanContext))
 	defer span.Finish()
@@ -230,8 +230,8 @@ func (f *Filter) EncodeData(buffer api.BufferInstance, endStream bool) api.Statu
 	span.Tag("SIDECAR_DIRECTION", string(f.config.direction))
 	span.Tag("DATA_FLOW", "ENCODE_DATA")
 
-	log.Println("<<< ENCODE DATA")
-	log.Println("  <<About to forward", len(f.encodeDataBuffer), "bytes of data to client>>")
+	// log.Println("<<< ENCODE DATA")
+	// log.Println("  <<About to forward", len(f.encodeDataBuffer), "bytes of data to client>>")
 
 	span.Tag("buffer-value", f.encodeDataBuffer)
 
@@ -241,7 +241,7 @@ func (f *Filter) EncodeData(buffer api.BufferInstance, endStream bool) api.Statu
 			span.Tag(k, v)
 		}
 		if err != nil {
-			log.Println(err)
+			// log.Println(err)
 			return api.Continue
 		}
 
@@ -258,8 +258,8 @@ func (f *Filter) EncodeData(buffer api.BufferInstance, endStream bool) api.Statu
 }
 
 func (f *Filter) EncodeTrailers(trailers api.ResponseTrailerMap) api.StatusType {
-	log.Println("<<< ENCODE TRAILERS")
-	log.Printf("%+v", trailers)
+	// log.Println("<<< ENCODE TRAILERS")
+	// log.Printf("%+v", trailers)
 	return api.Continue
 }
 
@@ -341,12 +341,12 @@ func (f *Filter) runOPA(ctx context.Context, isDecode bool, dataItems []string) 
 
 	if decision {
 		proseTags[PROSE_OPA_DECISION] = "accept"
-		log.Printf("policy accepted the input data \n")
+		// log.Printf("policy accepted the input data \n")
 		return false, nil, proseTags
 	}
 
 	proseTags[PROSE_OPA_DECISION] = "deny"
-	log.Printf("policy rejected the input data \n")
+	// log.Printf("policy rejected the input data \n")
 
 	// Ideally, get the reason why it was rejected, e.g. which clause was violated
 	//  the result.Provenance field includes version info, bundle info etc.
