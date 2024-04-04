@@ -39,59 +39,76 @@ PRJ_ROOT = (
 
 data_location = join(PRJ_ROOT, "evaluation/vegeta/bookinfo/shiver")
 
+graphs_data = [
+    # "2024-03-30T16:28:22-04:00",
+    # "2024-03-31T18:54:37-04:00",
+    "2024-03-31T22:39:07-04:00",
+    "2024-04-01T01:52:20-04:00",
+    # "2024-04-01T04:31:25-04:00",
+    # "2024-04-01T10:44:36-04:00",
+    "2024-04-01T23:46:58-04:00",
+]
+
 all_results: Dict[
     Bookinfo_Variants,
     Dict[RequestRate, Tuple[Metadata, List[Summary]]],
 ] = dict()
 
-for timestamp in listdir(data_location):
+for timestamp in graphs_data:
     results_dir = join(data_location, timestamp)
     if not isdir(results_dir):
-        continue
+        raise ValueError("Timestamp '" + timestamp + "' is not present among results.")
 
-    run_files = [f for f in listdir(results_dir) if isfile(join(results_dir, f))]
+    rates = [f for f in listdir(results_dir) if isdir(join(results_dir, f))]
+    for rate in rates:
+        for variant in bookinfo_variants:
+            run_results_dir = join(results_dir, rate, variant)
 
-    for variant in bookinfo_variants:
-        metadata_path = join(results_dir, variant + ".metadata.json")
-
-        # no metadata file present for this variant, so we are not considering this variant
-        if not isfile(metadata_path):
-            continue
-
-        with open(metadata_path, "r") as metadata_file:
-            metadata = json.load(metadata_file)
-
-        rate = metadata["testOptions"]["rate"]
-        results_suffix = metadata["resultsFileSuffix"]
-        summary_suffix = metadata.get("summaryFileSuffix", ".summary.json")
-
-        variant_results = all_results.get(variant, dict())
-
-        if rate in variant_results:
-            raise KeyError(
-                "Variant: '"
-                + variant
-                + "' has more than one set of data for the same rate value: '"
-                + rate
-                + "'"
-            )
-
-        summaries: List[Summary] = []
-        for run_results in run_files:
-            if not (
-                run_results.startswith(variant) and run_results.endswith(results_suffix)
-            ):
+            metadata_path = join(run_results_dir, "metadata.json")
+            if not isfile(metadata_path):
                 continue
 
-            run_summary_file = run_results.removesuffix(results_suffix) + summary_suffix
+            with open(metadata_path, "r") as metadata_file:
+                metadata = json.load(metadata_file)
 
-            with open(join(results_dir, run_summary_file), "r") as summary_file_content:
-                summary = json.load(summary_file_content)
+            loaded_rate = metadata["testOptions"]["rate"]
+            summary_suffix = metadata.get("summaryFileSuffix", ".summary.json")
 
-            summaries.append(summary)
+            if loaded_rate != rate:
+                raise ValueError(
+                    "Rate in metadata file '"
+                    + loaded_rate
+                    + "' does not match the rate from file path '"
+                    + rate
+                    + "'"
+                )
 
-        variant_results[rate] = (metadata, summaries)
-        all_results[variant] = variant_results
+            variant_results = all_results.get(variant, dict())
+
+            if rate in variant_results:
+                raise KeyError(
+                    "Variant: '"
+                    + variant
+                    + "' has more than one set of data for the same rate value: '"
+                    + rate
+                    + "'"
+                )
+
+            summaries: List[Summary] = []
+            for run_file in listdir(run_results_dir):
+                if not (
+                    isfile(join(run_results_dir, run_file))
+                    and run_file.endswith(summary_suffix)
+                ):
+                    continue
+
+                with open(join(run_results_dir, run_file), "r") as summary_file_content:
+                    summary = json.load(summary_file_content)
+
+                summaries.append(summary)
+
+            variant_results[rate] = (metadata, summaries)
+            all_results[variant] = variant_results
 
 fig = plt.figure()
 
@@ -127,7 +144,9 @@ for variant in bookinfo_variants:
 
     plt.errorbar(x, means, yerr=stds, label=labels[variant], color=colors[variant])
 
+# plt.yscale("log")
 plt.ylabel("Mean response latency (s)")
+# plt.xscale("log")
 plt.xlabel("Load (req/s)")
 plt.legend(title="Variants")
 
