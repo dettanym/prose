@@ -34,6 +34,13 @@ spec:
         image: ghcr.io/dettanym/prose-istio-proxyv2:main
       proxy:
         image: ghcr.io/dettanym/prose-istio-proxyv2:main
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 2000m
+            memory: 4Gi
     meshConfig:
       defaultProviders:
         tracing:
