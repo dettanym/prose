@@ -4,6 +4,7 @@
 set -euo pipefail
 
 DURATION='10s'
+warmup_rate="100"
 rates=(
   "10"
   "20"
@@ -53,11 +54,19 @@ function main() {
     done
   done
 
+  echo "* run a few warmup tests"
+  for i in $(seq 1 3); do
+    for VARIANT in "${bookinfo_variants[@]}"; do
+      printf "* Running warmup #%s against variant '%s' with rate '%s'\n" "$i" "$VARIANT" "$warmup_rate"
+      run_test "$i" "${test_results_dir}/${warmup_rate}/${VARIANT}" "FALSE"
+    done
+  done
+
   for i in $(seq 1 100); do
     for RATE in "${rates[@]}"; do
       for VARIANT in "${bookinfo_variants[@]}"; do
         printf "* Running test #%s against variant '%s' with rate '%s'\n" "$i" "$VARIANT" "$RATE"
-        run_test "$i" "${test_results_dir}/${RATE}/${VARIANT}"
+        run_test "$i" "${test_results_dir}/${RATE}/${VARIANT}" "TRUE"
       done
     done
   done
@@ -101,6 +110,7 @@ function write_metadata_file() {
         },
       },
       testOptions: {
+        includesWarmup: true,
         duration: $duration,
         rate: $rate,
       },
@@ -116,6 +126,7 @@ function write_metadata_file() {
 function run_test() {
   local test_run_index="$1"
   local test_results_dir="$2"
+  local record_results="$3"
 
   local metadata
   metadata=$(cat "$test_results_dir/metadata.json")
@@ -146,16 +157,23 @@ function run_test() {
   printf "  - Waiting until ready\n"
   wait_until_ready "${name}"
 
-  printf "  - Testing '%s' variant\n" "${variant}"
-  echo "$req" \
-    | vegeta attack -format=json -insecure "-duration=${duration}" "-rate=${rate}" \
-    | vegeta encode --to json \
-    | zstd -c -T0 --ultra -20 - >"${results_file}"
+  if [[ "$record_results" == "TRUE" ]]; then
+    printf "  - Testing '%s' variant\n" "${variant}"
+    echo "$req" \
+      | vegeta attack -format=json -insecure "-duration=${duration}" "-rate=${rate}" \
+      | vegeta encode --to json \
+      | zstd -c -T0 --ultra -20 - >"${results_file}"
 
-  printf "  - report for '%s' variant\n" "${variant}"
-  zstd -c -d "${results_file}" \
-    | vegeta report -type json \
-    | jq -M >"${summary_file}"
+    printf "  - report for '%s' variant\n" "${variant}"
+    zstd -c -d "${results_file}" \
+      | vegeta report -type json \
+      | jq -M >"${summary_file}"
+  elif [[ "$record_results" == "FALSE" ]]; then
+    printf "  - Report for '%s' variant\n" "${variant}"
+    echo "$req" \
+      | vegeta attack -format=json -insecure "-duration=${duration}" "-rate=${rate}" \
+      | vegeta report
+  fi
 
   printf "  - Scaling down deployments for '%s' variant\n" "${variant}"
   scale_deployments "${name}" "0"
