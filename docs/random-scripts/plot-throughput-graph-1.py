@@ -203,9 +203,7 @@ def plot_and_save_results(
         ax_lin.errorbar(
             x, means, yerr=stds, label=labels[variant], color=colors[variant]
         )
-        ax_log.errorbar(
-            x, means, yerr=stds, label=labels[variant], color=colors[variant]
-        )
+        ax_log.errorbar(x, means, yerr=stds, color=colors[variant])
 
     ax_lin.set_xscale("linear")
     ax_lin.set_yscale("linear")
