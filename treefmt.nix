@@ -6,4 +6,10 @@
   programs.black.enable = true;
   programs.isort.enable = true;
   programs.isort.profile = "black";
+
+  programs.prettier.enable = true;
+  programs.prettier.settings = {
+    semi = false;
+  };
+  programs.prettier.includes = [ "*.mts" ];
 }
