@@ -47,7 +47,7 @@ PRJ_ROOT = (
 data_location = join(PRJ_ROOT, "evaluation/vegeta/bookinfo")
 graphs_location = join(PRJ_ROOT, "evaluation/vegeta/bookinfo/_graphs")
 
-graphs_to_plot = [
+graphs_to_plot = [  # shiver
     (
         "Evaluation",
         "shiver",
@@ -102,6 +102,61 @@ graphs_to_plot = [
         [
             # Same as above, but k8s is created with `--nodes=1 --cpus=30 --memory=500g`
             "2024-04-04T20:35:04-04:00",
+        ],
+    ),
+    (
+        "",
+        "shiver",
+        [
+            # Same as 2 above, no observations being made, plus cpu and memory limits are set
+            "2024-04-05T20:55:20-04:00",
+        ],
+    ),
+    (
+        "",
+        "shiver",
+        [
+            # Same as above, plus warmup is included, plot for rate of 100 and 200
+            "2024-04-05T21:30:02-04:00",
+        ],
+    ),
+    (
+        "",
+        "shiver",
+        [
+            # Same as above, but running other variants too, plot for rate 100,150,200
+            "2024-04-05T21:41:30-04:00",
+        ],
+    ),
+    (
+        "",
+        "shiver",
+        [
+            # Same as above, but 10 replicas of each pod
+            "2024-04-05T22:14:57-04:00",
+        ],
+    ),
+] + [  # moone
+    (
+        "",
+        "moone",
+        [
+            "2024-04-09T19:53:10-04:00",  # this run with 100 req/s seems sensible
+            "2024-04-09T20:06:44-04:00",  # this run with 140 req/s got hardware issues (congestion) which impacted results
+            # "2024-04-09T20:14:12-04:00", # this run failed
+        ],
+    ),
+    (
+        "Running filter-passthrough",
+        "moone",
+        ["2024-04-09T19:53:10-04:00", "2024-04-09T23:38:31-04:00"],
+    ),
+    (
+        "",
+        "moone",
+        [
+            # this run has 4 successful tests and the 5th is failed. so it skews the results
+            "2024-04-09T20:21:34-04:00"
         ],
     ),
 ]
