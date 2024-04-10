@@ -24,7 +24,7 @@ const rates = new Set([
   "1000",
 ])
 
-const bookinfo_variants = new Set<VARIANT>(["plain", "envoy", "filter"])
+const bookinfo_variants = new Set<VARIANT>(["plain", "envoy", "filter-passthrough", "filter"])
 const test_only = new Set<VARIANT>(bookinfo_variants)
 
 const TEST_RUNS = 100
@@ -43,7 +43,7 @@ $.cwd = process.argv.at(2) as string
 updateArgv(process.argv.slice(3))
 
 type RATE = string
-type VARIANT = "plain" | "envoy" | "filter"
+type VARIANT = "plain" | "envoy" | "filter" | "filter-passthrough"
 type METADATA = ReturnType<typeof generate_metadata>
 
 await (async function main() {

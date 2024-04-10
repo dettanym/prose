@@ -10,8 +10,13 @@ from typing import Any, Dict, List, Literal, Tuple
 import matplotlib.pyplot as plt
 import numpy as np
 
-Bookinfo_Variants = Literal["plain", "envoy", "filter"]
-bookinfo_variants: List[Bookinfo_Variants] = ["plain", "envoy", "filter"]
+Bookinfo_Variants = Literal["plain", "envoy", "filter-passthrough", "filter"]
+bookinfo_variants: List[Bookinfo_Variants] = [
+    "plain",
+    "envoy",
+    "filter-passthrough",
+    "filter",
+]
 
 RequestRate = str
 Metadata = Dict[str, Any]
@@ -21,11 +26,13 @@ ResultsPath = str
 colors = {
     "plain": "blue",
     "envoy": "orange",
+    "filter-passthrough": "brown",
     "filter": "green",
 }
 labels = {
     "plain": "K8s",
     "envoy": "K8s + Istio",
+    "filter-passthrough": "K8s + Istio + PassthroughFilter",
     "filter": "K8s + Istio + Prose",
 }
 
