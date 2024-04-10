@@ -20,18 +20,18 @@ case "$(hostname)" in
   click1|clack1)
     ripple_settings
     echo "creating minikube in ripple"
-    eval "${minikube_start[@]}" \
+    "${minikube_start[@]}" \
       --nodes=5 --cpus=12 --memory=90g
     ;;
   shiver)
     ripple_settings
     echo "creating minikube in ripple"
-    eval "${minikube_start[@]}" \
+    "${minikube_start[@]}" \
       --nodes=3 --cpus=10 --memory=100g
     ;;
   *)
     echo "creating minikube outside of ripple"
-    eval "${minikube_start[@]}" \
+    "${minikube_start[@]}" \
       --nodes=1 --cpus=4 --memory=8G
     ;;
 esac

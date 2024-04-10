@@ -25,8 +25,7 @@ function usage() {
 }
 
 # based on https://stackoverflow.com/a/39376824
-OPTS=$(getopt -o "-h" --long "help" -n "env.sh" -- "$@")
-if [[ $? != 0 ]]; then
+if ! OPTS=$(getopt -o "-h" --long "help" -n "env.sh" -- "$@"); then
   echo "Error in command line arguments." >&2
   exit 1
 fi
