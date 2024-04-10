@@ -37,12 +37,13 @@ PRJ_ROOT = (
     .strip()
 )
 
-data_location = join(PRJ_ROOT, "evaluation/vegeta/bookinfo/shiver")
+data_location = join(PRJ_ROOT, "evaluation/vegeta/bookinfo")
 graphs_location = join(PRJ_ROOT, "evaluation/vegeta/bookinfo/_graphs")
 
 graphs_to_plot = [
     (
         "Evaluation",
+        "shiver",
         [
             "2024-03-30T16:28:22-04:00",
             "2024-03-31T18:54:37-04:00",
@@ -55,6 +56,7 @@ graphs_to_plot = [
     ),
     (
         "Focus on smaller request rates",
+        "shiver",
         [
             "2024-03-31T22:39:07-04:00",
             "2024-04-01T01:52:20-04:00",
@@ -63,6 +65,7 @@ graphs_to_plot = [
     ),
     (
         "",
+        "shiver",
         [
             # default memory limits on istio-proxy container, 1 replica of each pod
             # we saw pod crashes and restarts during the test
@@ -71,6 +74,7 @@ graphs_to_plot = [
     ),
     (
         "",
+        "shiver",
         [
             # increased memory limits, 1 replica of each pod
             # no crashes and restarts noticed
@@ -79,6 +83,7 @@ graphs_to_plot = [
     ),
     (
         "",
+        "shiver",
         [
             # same as above
             "2024-04-04T20:16:59-04:00",
@@ -86,6 +91,7 @@ graphs_to_plot = [
     ),
     (
         "",
+        "shiver",
         [
             # Same as above, but k8s is created with `--nodes=1 --cpus=30 --memory=500g`
             "2024-04-04T20:35:04-04:00",
@@ -94,7 +100,7 @@ graphs_to_plot = [
 ]
 
 
-def load_folders(timestamps: List[str]) -> Dict[
+def load_folders(hostname: str, timestamps: List[str]) -> Dict[
     Bookinfo_Variants,
     Dict[RequestRate, Tuple[Metadata, List[Summary]]],
 ]:
@@ -104,7 +110,7 @@ def load_folders(timestamps: List[str]) -> Dict[
     ] = dict()
 
     for timestamp in timestamps:
-        results_dir = join(data_location, timestamp)
+        results_dir = join(data_location, hostname, timestamp)
         if not isdir(results_dir):
             raise ValueError(
                 "Timestamp '" + timestamp + "' is not present among results."
@@ -169,6 +175,7 @@ def load_folders(timestamps: List[str]) -> Dict[
 def plot_and_save_results(
     i: int,
     title: str,
+    hostname: str,
     results: Dict[
         Bookinfo_Variants,
         Dict[RequestRate, Tuple[Metadata, List[Summary]]],
@@ -219,11 +226,11 @@ def plot_and_save_results(
     fig.legend(title="Variants")
 
     fig.savefig(
-        join(graphs_location, "bookinfo_shiver_" + str(i) + ".svg"),
+        join(graphs_location, "bookinfo_" + hostname + "_" + str(i) + ".svg"),
         format="svg",
     )
     plt.close(fig)
 
 
-for i, (title, data) in enumerate(graphs_to_plot):
-    plot_and_save_results(i + 1, title, load_folders(data))
+for i, (title, hostname, data) in enumerate(graphs_to_plot):
+    plot_and_save_results(i + 1, title, hostname, load_folders(hostname, data))
