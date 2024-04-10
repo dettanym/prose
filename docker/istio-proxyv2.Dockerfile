@@ -9,6 +9,7 @@ RUN go mod download
 COPY ./privacy-profile-composer/ ./
 RUN go build -o dist/simple.so -buildmode=c-shared ./cmd/envoy-filter
 RUN go build -o dist/passthrough.so -buildmode=c-shared ./cmd/envoy-filter-passthrough
+RUN go build -o dist/passthrough-buffer.so -buildmode=c-shared ./cmd/envoy-filter-passthrough-buffer
 
 # This version needs to match the deployed istiod helmrelease version
 FROM istio/proxyv2:1.20.3@sha256:f4e94588a14eee4f053a80a767128ffc482a219f6c6e23039b7db1b6a6081a77
