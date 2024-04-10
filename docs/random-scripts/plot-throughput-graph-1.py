@@ -137,6 +137,13 @@ graphs_to_plot = [  # shiver
             "2024-04-05T22:14:57-04:00",
         ],
     ),
+    (
+        "Failed to complete, but includes passthrough filter variant",
+        "shiver",
+        [
+            "2024-04-10T00:05:58-04:00",
+        ],
+    ),
 ] + [  # moone
     (
         "",
