@@ -87,13 +87,13 @@ spec:
 '
 
 for pod in "${pods[@]}"; do
-  name="${pod}" envsubst < <(echo "${TEMPLATE}") \
-    | kubectl delete -f- --wait=false --ignore-not-found
+  name="${pod}" envsubst < <(echo "${TEMPLATE}") |
+    kubectl delete -f- --wait=false --ignore-not-found
 done
 
 for pod in "${pods[@]}"; do
-  name="${pod}" envsubst < <(echo "${TEMPLATE}") \
-    | kubectl apply -f-
+  name="${pod}" envsubst < <(echo "${TEMPLATE}") |
+    kubectl apply -f-
 done
 
 kubectl -n istio-system get envoyfilters.networking.istio.io
@@ -101,17 +101,17 @@ kubectl -n istio-system get envoyfilters.networking.istio.io
 sleep 1
 
 for pod in "${pods[@]}"; do
-  kubectl -n "${NAMESPACE}" get pod -l "app=${pod}" --no-headers \
-    | awk '{print $1}' \
-    | xargs kubectl -n "${NAMESPACE}" delete pod --wait=false
+  kubectl -n "${NAMESPACE}" get pod -l "app=${pod}" --no-headers |
+    awk '{print $1}' |
+    xargs kubectl -n "${NAMESPACE}" delete pod --wait=false
 done
 
 sleep 5
 
 WATCH_POD=$(
-  kubectl -n "${NAMESPACE}" get pod -l "app=${pods[0]}" --no-headers \
-    | rg -v 'Terminating' \
-    | awk '{print $1}'
+  kubectl -n "${NAMESPACE}" get pod -l "app=${pods[0]}" --no-headers |
+    rg -v 'Terminating' |
+    awk '{print $1}'
 )
 
 kubectl -n "${NAMESPACE}" wait --for=condition=Ready "pod/${WATCH_POD}"

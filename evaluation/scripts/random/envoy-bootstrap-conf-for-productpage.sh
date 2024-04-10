@@ -3,6 +3,6 @@
 
 ### Grab envoy bootstrap config for productpage pod
 
-kubectl -n bookinfo get pods -l app=productpage -o 'jsonpath={.items[*].metadata.name}' \
-  | xargs -n1 istioctl proxy-config bootstrap -n bookinfo \
-  | yq -p json -o yaml
+kubectl -n bookinfo get pods -l app=productpage -o 'jsonpath={.items[*].metadata.name}' |
+  xargs -n1 istioctl proxy-config bootstrap -n bookinfo |
+  yq -p json -o yaml

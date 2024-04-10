@@ -10,10 +10,10 @@ set -euo pipefail
 POD_SELECTOR=productpage
 
 POD=$(
-  kubectl get pods --no-headers \
-  | rg "$POD_SELECTOR" \
-  | awk '{print $1}' \
+  kubectl get pods --no-headers |
+    rg "$POD_SELECTOR" |
+    awk '{print $1}'
 )
 
-kubectl exec -ti "${POD}" -c istio-proxy -- pilot-agent request GET server_info --log_as_json \
-  | jq '{version}' | xargs echo
+kubectl exec -ti "${POD}" -c istio-proxy -- pilot-agent request GET server_info --log_as_json |
+  jq '{version}' | xargs echo
