@@ -3,7 +3,7 @@
 
 import json
 import subprocess
-from os import listdir, walk
+from os import listdir
 from os.path import isdir, isfile, join
 from typing import Any, Dict, List, Literal, Tuple
 
