@@ -6,3 +6,4 @@ resources:
   - ./with-envoy
   - ./with-filter
   - ./with-filter-passthrough
+  - ./with-filter-passthrough-buffer
