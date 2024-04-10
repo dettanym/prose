@@ -9,6 +9,7 @@ from typing import Any, Dict, List, Literal, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
+import numpy.core.records as rec
 
 Bookinfo_Variants = Literal["plain", "envoy", "filter-passthrough", "filter"]
 bookinfo_variants: List[Bookinfo_Variants] = [
@@ -164,11 +165,11 @@ graphs_to_plot = [  # shiver
 
 def load_folders(hostname: str, timestamps: List[str]) -> Dict[
     Bookinfo_Variants,
-    Dict[RequestRate, Tuple[Metadata, List[Summary]]],
+    Dict[RequestRate, Tuple[np.float64, np.float64]],
 ]:
     all_results: Dict[
         Bookinfo_Variants,
-        Dict[RequestRate, Tuple[Metadata, List[Summary]]],
+        Dict[RequestRate, Tuple[np.float64, np.float64]],
     ] = dict()
 
     for timestamp in timestamps:
@@ -228,7 +229,10 @@ def load_folders(hostname: str, timestamps: List[str]) -> Dict[
 
                     summaries.append(summary)
 
-                variant_results[rate] = (metadata, summaries)
+                summary_means = np.asarray(
+                    [summary["latencies"]["mean"] / ns_to_s for summary in summaries]
+                )
+                variant_results[rate] = (np.mean(summary_means), np.std(summary_means))
                 all_results[variant] = variant_results
 
     return all_results
@@ -240,39 +244,36 @@ def plot_and_save_results(
     hostname: str,
     results: Dict[
         Bookinfo_Variants,
-        Dict[RequestRate, Tuple[Metadata, List[Summary]]],
+        Dict[RequestRate, Tuple[np.float64, np.float64]],
     ],
 ):
     fig, (ax_lin, ax_log) = plt.subplots(nrows=1, ncols=2, figsize=(12.8, 4.8))
 
     for variant, variant_results in results.items():
-        x = np.empty(shape=0, dtype=np.int32)
-        y = None
-        for rate, (metadata, summaries) in variant_results.items():
-            rate_int = int(rate)
-            summary_means = np.asarray(
-                [summary["latencies"]["mean"] for summary in summaries]
-            )
-
-            if y is None:
-                y = np.empty(shape=(0, summary_means.size), dtype=np.int64)
-
-            x = np.append(x, rate_int)
-            y = np.append(y, [summary_means], axis=0)
-
-        means = np.mean(y, axis=1) / ns_to_s
-        stds = np.std(y, axis=1) / ns_to_s
-
-        # based on https://stackoverflow.com/a/43612676
-        shape = x.argsort(axis=None).reshape(x.shape)
-        x = x.ravel()[shape]
-        means = means.ravel()[shape]
-        stds = stds.ravel()[shape]
+        variant_data = rec.fromrecords(
+            sorted(
+                (
+                    (int(rate), mean, std)
+                    for rate, (mean, std) in variant_results.items()
+                ),
+                key=lambda v: v[0],
+            ),
+            names="x,y,yerr",
+        )
 
         ax_lin.errorbar(
-            x, means, yerr=stds, label=labels[variant], color=colors[variant]
+            variant_data.x,
+            variant_data.y,
+            yerr=variant_data.yerr,
+            label=labels[variant],
+            color=colors[variant],
         )
-        ax_log.errorbar(x, means, yerr=stds, color=colors[variant])
+        ax_log.errorbar(
+            variant_data.x,
+            variant_data.y,
+            yerr=variant_data.yerr,
+            color=colors[variant],
+        )
 
     ax_lin.set_xscale("linear")
     ax_lin.set_yscale("linear")
