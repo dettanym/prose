@@ -2,16 +2,16 @@
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: bookinfo-envoy-filter-details
+  name: bookinfo-envoy-filter-passthrough-details
   namespace: flux-system
 spec:
   dependsOn:
     - name: cluster-apps-istio-system-istiod
   path: ./evaluation/kubernetes/apps/samples/bookinfo/_template/filter
-  targetNamespace: bookinfo-with-filter
+  targetNamespace: bookinfo-with-filter-passthrough
   postBuild:
     substitute:
-      filter_name: simple
+      filter_name: passthrough
       app: details
   prune: true
   sourceRef:
@@ -25,16 +25,16 @@ spec:
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: bookinfo-envoy-filter-ratings
+  name: bookinfo-envoy-filter-passthrough-ratings
   namespace: flux-system
 spec:
   dependsOn:
     - name: cluster-apps-istio-system-istiod
   path: ./evaluation/kubernetes/apps/samples/bookinfo/_template/filter
-  targetNamespace: bookinfo-with-filter
+  targetNamespace: bookinfo-with-filter-passthrough
   postBuild:
     substitute:
-      filter_name: simple
+      filter_name: passthrough
       app: ratings
   prune: true
   sourceRef:
@@ -48,16 +48,16 @@ spec:
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: bookinfo-envoy-filter-reviews
+  name: bookinfo-envoy-filter-passthrough-reviews
   namespace: flux-system
 spec:
   dependsOn:
     - name: cluster-apps-istio-system-istiod
   path: ./evaluation/kubernetes/apps/samples/bookinfo/_template/filter
-  targetNamespace: bookinfo-with-filter
+  targetNamespace: bookinfo-with-filter-passthrough
   postBuild:
     substitute:
-      filter_name: simple
+      filter_name: passthrough
       app: reviews
   prune: true
   sourceRef:
@@ -71,16 +71,16 @@ spec:
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: bookinfo-envoy-filter-productpage
+  name: bookinfo-envoy-filter-passthrough-productpage
   namespace: flux-system
 spec:
   dependsOn:
     - name: cluster-apps-istio-system-istiod
   path: ./evaluation/kubernetes/apps/samples/bookinfo/_template/filter
-  targetNamespace: bookinfo-with-filter
+  targetNamespace: bookinfo-with-filter-passthrough
   postBuild:
     substitute:
-      filter_name: simple
+      filter_name: passthrough
       app: productpage
   prune: true
   sourceRef:
@@ -94,19 +94,19 @@ spec:
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: bookinfo-with-filter
+  name: bookinfo-with-filter-passthrough
   namespace: flux-system
 spec:
   dependsOn:
-    - name: bookinfo-envoy-filter-details
-    - name: bookinfo-envoy-filter-ratings
-    - name: bookinfo-envoy-filter-reviews
-    - name: bookinfo-envoy-filter-productpage
+    - name: bookinfo-envoy-filter-passthrough-details
+    - name: bookinfo-envoy-filter-passthrough-ratings
+    - name: bookinfo-envoy-filter-passthrough-reviews
+    - name: bookinfo-envoy-filter-passthrough-productpage
   path: ./evaluation/kubernetes/apps/samples/bookinfo/_template/app
-  targetNamespace: bookinfo-with-filter
+  targetNamespace: bookinfo-with-filter-passthrough
   postBuild:
     substitute:
-      ingress_name: bookinfo-filter
+      ingress_name: bookinfo-filter-passthrough
   prune: true
   sourceRef:
     kind: GitRepository

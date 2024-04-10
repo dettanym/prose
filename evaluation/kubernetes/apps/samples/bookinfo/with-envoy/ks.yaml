@@ -7,7 +7,7 @@ metadata:
 spec:
   dependsOn:
     - name: cluster-apps-istio-system-istiod
-  path: ./evaluation/kubernetes/apps/samples/bookinfo/_template
+  path: ./evaluation/kubernetes/apps/samples/bookinfo/_template/app
   targetNamespace: bookinfo-with-envoy
   postBuild:
     substitute:
