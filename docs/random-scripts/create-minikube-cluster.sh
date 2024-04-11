@@ -17,28 +17,28 @@ ripple_settings() {
 }
 
 case "$(hostname)" in
-  click1|clack1)
-    ripple_settings
-    echo "creating minikube in ripple"
-    "${minikube_start[@]}" \
-      --nodes=5 --cpus=12 --memory=90g
-    ;;
-  shiver)
-    ripple_settings
-    echo "creating minikube in ripple"
-    "${minikube_start[@]}" \
-      --nodes=3 --cpus=10 --memory=100g
-    ;;
-  *)
-    echo "creating minikube outside of ripple"
-    "${minikube_start[@]}" \
-      --nodes=1 --cpus=4 --memory=8G
-    ;;
+click1 | clack1)
+  ripple_settings
+  echo "creating minikube in ripple"
+  "${minikube_start[@]}" \
+    --nodes=5 --cpus=12 --memory=90g
+  ;;
+shiver)
+  ripple_settings
+  echo "creating minikube in ripple"
+  "${minikube_start[@]}" \
+    --nodes=3 --cpus=10 --memory=100g
+  ;;
+*)
+  echo "creating minikube outside of ripple"
+  "${minikube_start[@]}" \
+    --nodes=1 --cpus=4 --memory=8G
+  ;;
 esac
 
-if [[ "${ENABLE_METALLB}" == "true" ]]; then
+if [[ ${ENABLE_METALLB} == "true" ]]; then
   minikube addons enable metallb
-	cat <<-EOF | kubectl apply -f-
+  cat <<-EOF | kubectl apply -f-
 		apiVersion: v1
 		kind: ConfigMap
 		metadata:

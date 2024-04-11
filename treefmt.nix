@@ -14,4 +14,5 @@
   programs.prettier.includes = [ "*.mts" ];
 
   programs.shellcheck.enable = true;
+  programs.shfmt.enable = true;
 }

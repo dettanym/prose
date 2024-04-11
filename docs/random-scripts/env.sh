@@ -35,16 +35,25 @@ declare -a COMMAND
 eval set -- "$OPTS"
 while true; do
   case "$1" in
-    -h | --help ) usage; exit; ;;
-    -- ) shift; break ;;
-    * ) COMMAND+=( "$1" ); shift ;;
+  -h | --help)
+    usage
+    exit
+    ;;
+  --)
+    shift
+    break
+    ;;
+  *)
+    COMMAND+=("$1")
+    shift
+    ;;
   esac
 done
 
 ORIGINAL_PWD="$(pwd)"
 ENV_DIR="$(dirname "$0")"
 
-if [[ "$#" -gt 0 && ("$1" == "./"* || "$1" == "../"* ) ]]; then
+if [[ $# -gt 0 && ($1 == "./"* || $1 == "../"*) ]]; then
   PROGRAM="$1"
   shift
 
@@ -66,12 +75,12 @@ args=(
   "--command"
 )
 
-if [[ "${#COMMAND[@]}" -eq 0 ]]; then
+if [[ ${#COMMAND[@]} -eq 0 ]]; then
   usage
   exit
 fi
 
-if [[ -n "${IN_NIX_SHELL+x}" ]]; then
+if [[ -n ${IN_NIX_SHELL+x} ]]; then
   echo 'already within nix'
   exec /usr/bin/env "${COMMAND[@]}"
 elif command -v nix &>/dev/null; then
