@@ -12,4 +12,6 @@
     semi = false;
   };
   programs.prettier.includes = [ "*.mts" ];
+
+  programs.shellcheck.enable = true;
 }
