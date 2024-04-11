@@ -16,12 +16,18 @@
       indentStyle = "space";
       semicolons = "asNeeded";
     };
+    json.formatter = {
+      indentStyle = "space";
+    };
   };
   programs.prettier.enable = true;
   programs.prettier.settings = {
     semi = false;
   };
-  programs.prettier.excludes = options.programs.biome.includes.default;
+  programs.prettier.excludes = [
+    "pnpm-lock.yaml"
+    "charts/*/templates/*.yaml"
+  ] ++ options.programs.biome.includes.default;
 
   programs.shellcheck.enable = true;
   programs.shfmt.enable = true;

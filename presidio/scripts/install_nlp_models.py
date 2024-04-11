@@ -2,7 +2,7 @@
 
 import argparse
 import logging
-from typing import Union, Dict
+from typing import Dict, Union
 
 import spacy
 import yaml
@@ -16,7 +16,7 @@ except ImportError:
 try:
     import transformers
     from huggingface_hub import snapshot_download
-    from transformers import AutoTokenizer, AutoModelForTokenClassification
+    from transformers import AutoModelForTokenClassification, AutoTokenizer
 except ImportError:
     # transformers should be installed manually
     transformers = None

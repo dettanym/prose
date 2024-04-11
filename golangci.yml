@@ -298,4 +298,3 @@ issues:
       linters:
         - funlen
         - wrapcheck
-

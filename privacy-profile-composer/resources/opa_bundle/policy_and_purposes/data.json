@@ -1,16 +1,9 @@
 {
-  "purposes_of_use": [
-    "details",
-    "ratings",
-    "reviews",
-    "productpage"
-  ],
+  "purposes_of_use": ["details", "ratings", "reviews", "productpage"],
   "target_policy": {
     "details": [],
     "ratings": [],
     "reviews": [],
-    "productpage": [
-      { "data_item": "PERSON", "third_parties": [""] }
-    ]
+    "productpage": [{ "data_item": "PERSON", "third_parties": [""] }]
   }
 }

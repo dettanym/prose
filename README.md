@@ -27,4 +27,4 @@ See [evaluation/README.md](./evaluation/README.md) for details on running evalua
 1. Commit and push changes to the main branch of this repo.
 2. Flux will watch for changes to the main branch and automatically deploy them [every half an hour](./evaluation/kubernetes/flux/config/cluster.yaml#L8).
 3. To deploy them immediately, run `task cluster:reconcile`, which is defined [here](./.taskfiles/cluster/tasks.yml#L19)
-4. TODO: Describe using helm / flux suspend to debug. 
+4. TODO: Describe using helm / flux suspend to debug.

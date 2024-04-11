@@ -6,7 +6,7 @@ from logging.config import fileConfig
 from pathlib import Path
 from typing import Tuple
 
-from flask import Flask, request, jsonify, Response
+from flask import Flask, Response, jsonify, request
 from presidio_analyzer.analyzer_engine import AnalyzerEngine
 from presidio_analyzer.analyzer_request import AnalyzerRequest
 from presidio_analyzer.batch_analyzer_engine import BatchAnalyzerEngine
