@@ -57,126 +57,98 @@ PRJ_ROOT = (
 data_location = join(PRJ_ROOT, "evaluation/vegeta/bookinfo")
 graphs_location = join(PRJ_ROOT, "evaluation/vegeta/bookinfo/_graphs")
 
-graphs_to_plot = [  # shiver
-    (
-        "Evaluation",
-        "shiver",
-        [
-            "2024-03-30T16:28:22-04:00",
-            "2024-03-31T18:54:37-04:00",
-            "2024-03-31T22:39:07-04:00",
-            "2024-04-01T01:52:20-04:00",
-            "2024-04-01T04:31:25-04:00",
-            "2024-04-01T10:44:36-04:00",
-            "2024-04-01T23:46:58-04:00",
-        ],
-    ),
-    (
-        "Focus on smaller request rates",
-        "shiver",
-        [
-            "2024-03-31T22:39:07-04:00",
-            "2024-04-01T01:52:20-04:00",
-            "2024-04-01T23:46:58-04:00",
-        ],
-    ),
-    (
-        "",
-        "shiver",
-        [
-            # default memory limits on istio-proxy container, 1 replica of each pod
-            # we saw pod crashes and restarts during the test
-            "2024-04-03T22:25:53-04:00",
-        ],
-    ),
-    (
-        "",
-        "shiver",
-        [
-            # increased memory limits, 1 replica of each pod
-            # no crashes and restarts noticed
-            "2024-04-04T20:05:22-04:00",
-        ],
-    ),
-    (
-        "",
-        "shiver",
-        [
-            # same as above
-            "2024-04-04T20:16:59-04:00",
-        ],
-    ),
-    (
-        "",
-        "shiver",
-        [
-            # Same as above, but k8s is created with `--nodes=1 --cpus=30 --memory=500g`
-            "2024-04-04T20:35:04-04:00",
-        ],
-    ),
-    (
-        "",
-        "shiver",
-        [
-            # Same as 2 above, no observations being made, plus cpu and memory limits are set
-            "2024-04-05T20:55:20-04:00",
-        ],
-    ),
-    (
-        "",
-        "shiver",
-        [
-            # Same as above, plus warmup is included, plot for rate of 100 and 200
-            "2024-04-05T21:30:02-04:00",
-        ],
-    ),
-    (
-        "",
-        "shiver",
-        [
-            # Same as above, but running other variants too, plot for rate 100,150,200
-            "2024-04-05T21:41:30-04:00",
-        ],
-    ),
-    (
-        "",
-        "shiver",
-        [
-            # Same as above, but 10 replicas of each pod
-            "2024-04-05T22:14:57-04:00",
-        ],
-    ),
-    (
-        "Failed to complete, but includes passthrough filter variant",
-        "shiver",
-        [
-            "2024-04-10T00:05:58-04:00",
-        ],
-    ),
-] + [  # moone
-    (
-        "",
-        "moone",
-        [
-            "2024-04-09T19:53:10-04:00",  # this run with 100 req/s seems sensible
-            "2024-04-09T20:06:44-04:00",  # this run with 140 req/s got hardware issues (congestion) which impacted results
-            # "2024-04-09T20:14:12-04:00", # this run failed
-        ],
-    ),
-    (
-        "Running filter-passthrough",
-        "moone",
-        ["2024-04-09T19:53:10-04:00", "2024-04-09T23:38:31-04:00"],
-    ),
-    (
-        "",
-        "moone",
-        [
-            # this run has 4 successful tests and the 5th is failed. so it skews the results
-            "2024-04-09T20:21:34-04:00"
-        ],
-    ),
-]
+graphs_to_plot: Dict[str, List[Tuple[str, List[str], List[str]]]] = {
+    "shiver": [
+        (
+            "Evaluation",
+            [
+                "2024-03-30T16:28:22-04:00",
+                "2024-03-31T18:54:37-04:00",
+                "2024-03-31T22:39:07-04:00",
+                "2024-04-01T01:52:20-04:00",
+                "2024-04-01T04:31:25-04:00",
+                "2024-04-01T10:44:36-04:00",
+                "2024-04-01T23:46:58-04:00",
+            ],
+            [],
+        ),
+        (
+            "Focus on smaller request rates",
+            [
+                "2024-03-31T22:39:07-04:00",
+                "2024-04-01T01:52:20-04:00",
+                "2024-04-01T23:46:58-04:00",
+            ],
+            [],
+        ),
+        (
+            "default memory limits on istio-proxy container, 1 replica of each pod. we saw pod crashes and restarts during the test",
+            ["2024-04-03T22:25:53-04:00"],
+            [],
+        ),
+        (
+            "increased memory limits, 1 replica of each pod. no crashes and restarts noticed",
+            ["2024-04-04T20:05:22-04:00"],
+            [],
+        ),
+        (
+            "same as above",
+            ["2024-04-04T20:16:59-04:00"],
+            [],
+        ),
+        (
+            "Same as above, but k8s is created with `--nodes=1 --cpus=30 --memory=500g`",
+            ["2024-04-04T20:35:04-04:00"],
+            [],
+        ),
+        (
+            "Same as 2 above, no observations being made, plus cpu and memory limits are set",
+            ["2024-04-05T20:55:20-04:00"],
+            [],
+        ),
+        (
+            "Same as above, plus warmup is included, plot for rate of 100 and 200",
+            ["2024-04-05T21:30:02-04:00"],
+            [],
+        ),
+        (
+            "Same as above, but running other variants too, plot for rate 100,150,200",
+            ["2024-04-05T21:41:30-04:00"],
+            [],
+        ),
+        (
+            "Same as above, but 10 replicas of each pod",
+            ["2024-04-05T22:14:57-04:00"],
+            [],
+        ),
+        (
+            "Failed to complete, but includes passthrough filter variant",
+            ["2024-04-10T00:05:58-04:00"],
+            [],
+        ),
+    ],
+    "moone": [
+        (
+            "",
+            [
+                "2024-04-09T19:53:10-04:00",  # this run with 100 req/s seems sensible
+                "2024-04-09T20:06:44-04:00",  # this run with 140 req/s got hardware issues (congestion) which impacted results
+                # "2024-04-09T20:14:12-04:00", # this run failed
+            ],
+            [],
+        ),
+        (
+            "Running filter-passthrough",
+            ["2024-04-09T19:53:10-04:00", "2024-04-09T23:38:31-04:00"],
+            [],
+        ),
+        (
+            "this run has 4 successful tests and the 5th is failed. so it skews the results",
+            ["2024-04-09T20:21:34-04:00"],
+            [],
+        ),
+    ],
+}
 
 
 def load_folders(hostname: str, timestamps: List[str]) -> Dict[
@@ -311,5 +283,6 @@ def plot_and_save_results(
     plt.close(fig)
 
 
-for i, (title, hostname, data) in enumerate(graphs_to_plot):
-    plot_and_save_results(i + 1, title, hostname, load_folders(hostname, data))
+for hostname, hostname_data in graphs_to_plot.items():
+    for i, (title, include, exclude) in enumerate(hostname_data):
+        plot_and_save_results(i + 1, title, hostname, load_folders(hostname, include))
