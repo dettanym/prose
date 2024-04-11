@@ -1,4 +1,4 @@
-#!/usr/bin/env -S sh -c '"$(dirname $(readlink -f "$0"))/env.sh" python "$0" "$@"'
+#!/usr/bin/env -S bash -c '"$(dirname $(readlink -f "$0"))/env.sh" python "$0" "$@"'
 # shellcheck disable=SC2096
 
 import json
