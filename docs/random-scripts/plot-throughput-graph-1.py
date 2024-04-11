@@ -123,7 +123,11 @@ graphs_to_plot: Dict[str, List[Tuple[str, List[str], List[str]]]] = {
         #     [],
         # ),
         (
-            "Failed to complete, but includes passthrough filter variant",
+            # Failed to complete a full run and only has data from ~20 runs each.
+            # The issue occurred while scaling resources --- not while sending
+            # traffic --- which leads to the absence of outlier runs.
+            # It also includes new passthrough filter that simply continues the stream.
+            "Incomplete run, but includes passthrough filter",
             ["2024-04-10T00:05:58-04:00"],
             [],
         ),
