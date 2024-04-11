@@ -8,7 +8,7 @@
 # To use this, add a new sh script (e.g. in the current folder) and use the
 # following line at the top of the script as shebang command. The path to this
 # `env.sh` file can be specified relatively to the new file.
-# `#!/usr/bin/env -S sh -c '"$(dirname $(readlink -f "$0"))/env.sh" "$0" "$@"'`
+# `#!/usr/bin/env -S sh -c '"$(dirname $(readlink -f "$0"))/env.sh" bash "$0" "$@"'`
 ###
 
 set -euo pipefail
@@ -20,12 +20,12 @@ args=(
   "--keep" "KUBECONFIG"
   "--keep" "HOME"
   "--keep" "USER"
-  "--command" "bash"
+  "--command"
 )
 
 if [[ -n "${IN_NIX_SHELL+x}" ]]; then
   echo 'already within nix'
-  exec /usr/bin/env bash "$@"
+  exec /usr/bin/env "$@"
 elif command -v nix &>/dev/null; then
   echo 'using nix'
   exec "${args[@]}" "$@"
@@ -34,5 +34,5 @@ elif command -v nix-portable &>/dev/null; then
   exec nix-portable "${args[@]}" "$@"
 else
   echo 'trying to run script without nix'
-  exec /usr/bin/env bash "$@"
+  exec /usr/bin/env "$@"
 fi
