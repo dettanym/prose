@@ -172,11 +172,11 @@ graphs_to_plot: Dict[str, List[Tuple[str, List[str], List[str]]]] = {
 
 def load_folders(hostname: str, timestamps: List[str], exclude: List[str]) -> Dict[
     Bookinfo_Variants,
-    Dict[RequestRate, Tuple[np.float64, np.float64]],
+    Dict[RequestRate, List[Summary]],
 ]:
     all_results: Dict[
         Bookinfo_Variants,
-        Dict[RequestRate, Tuple[np.float64, np.float64]],
+        Dict[RequestRate, List[Summary]],
     ] = dict()
 
     for timestamp in timestamps:
@@ -211,17 +211,8 @@ def load_folders(hostname: str, timestamps: List[str], exclude: List[str]) -> Di
                     )
 
                 variant_results = all_results.get(variant, dict())
+                summaries: List[Summary] = variant_results.get(rate, [])
 
-                if rate in variant_results:
-                    raise KeyError(
-                        "Variant: '"
-                        + variant
-                        + "' has more than one set of data for the same rate value: '"
-                        + rate
-                        + "'"
-                    )
-
-                summaries: List[Summary] = []
                 for run_file in listdir(run_results_dir):
                     if not (
                         isfile(join(run_results_dir, run_file))
@@ -239,10 +230,7 @@ def load_folders(hostname: str, timestamps: List[str], exclude: List[str]) -> Di
 
                     summaries.append(summary)
 
-                summary_means = np.asarray(
-                    [summary["latencies"]["mean"] / ns_to_s for summary in summaries]
-                )
-                variant_results[rate] = (np.mean(summary_means), np.std(summary_means))
+                variant_results[rate] = summaries
                 all_results[variant] = variant_results
 
     return all_results
@@ -260,14 +248,15 @@ def plot_and_save_results(
     fig, (ax_lin, ax_log) = plt.subplots(nrows=1, ncols=2, figsize=(12.8, 4.8))
 
     for variant, variant_results in results.items():
+        data = []
+        for rate, summary_objects in variant_results.items():
+            summaries = np.asarray(
+                [summary["latencies"]["mean"] / ns_to_s for summary in summary_objects]
+            )
+            data.append((int(rate), np.mean(summaries), np.std(summaries)))
+
         variant_data = rec.fromrecords(
-            sorted(
-                (
-                    (int(rate), mean, std)
-                    for rate, (mean, std) in variant_results.items()
-                ),
-                key=lambda v: v[0],
-            ),
+            sorted(data, key=lambda v: v[0]),
             names="x,y,yerr",
         )
 
