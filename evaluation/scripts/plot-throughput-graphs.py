@@ -131,6 +131,33 @@ graphs_to_plot: Dict[str, List[Tuple[str, List[str], List[str]]]] = {
             ["2024-04-10T00:05:58-04:00"],
             [],
         ),
+        (
+            "Finished successfully; includes passthrough and passthrough+buffer filters",
+            ["2024-04-10T21:13:59-04:00"],
+            [],
+        ),
+        (
+            "Run collecting results across various days. It concatenates data for matching variants and rates",
+            [
+                "2024-03-31T22:39:07-04:00",
+                "2024-04-01T01:52:20-04:00",
+                "2024-04-01T23:46:58-04:00",
+                "2024-04-10T00:05:58-04:00",
+                "2024-04-10T21:13:59-04:00",
+            ],
+            [],
+        ),
+        (
+            "Same as above, minus prose filter",
+            [
+                "2024-03-31T22:39:07-04:00",
+                "2024-04-01T01:52:20-04:00",
+                "2024-04-01T23:46:58-04:00",
+                "2024-04-10T00:05:58-04:00",
+                "2024-04-10T21:13:59-04:00",
+            ],
+            ["*/*/filter/*"],
+        ),
     ],
     "moone": [
         (
