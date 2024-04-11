@@ -3,6 +3,7 @@
 
 import json
 import subprocess
+from fnmatch import fnmatchcase
 from os import listdir
 from os.path import isdir, isfile, join
 from typing import Any, Dict, List, Literal, Tuple
@@ -151,7 +152,7 @@ graphs_to_plot: Dict[str, List[Tuple[str, List[str], List[str]]]] = {
 }
 
 
-def load_folders(hostname: str, timestamps: List[str]) -> Dict[
+def load_folders(hostname: str, timestamps: List[str], exclude: List[str]) -> Dict[
     Bookinfo_Variants,
     Dict[RequestRate, Tuple[np.float64, np.float64]],
 ]:
@@ -207,6 +208,9 @@ def load_folders(hostname: str, timestamps: List[str]) -> Dict[
                     if not (
                         isfile(join(run_results_dir, run_file))
                         and run_file.endswith(summary_suffix)
+                    ) or any(
+                        fnmatchcase(join(timestamp, rate, variant, run_file), pat)
+                        for pat in exclude
                     ):
                         continue
 
@@ -285,4 +289,9 @@ def plot_and_save_results(
 
 for hostname, hostname_data in graphs_to_plot.items():
     for i, (title, include, exclude) in enumerate(hostname_data):
-        plot_and_save_results(i + 1, title, hostname, load_folders(hostname, include))
+        plot_and_save_results(
+            i + 1,
+            title,
+            hostname,
+            load_folders(hostname, include, exclude),
+        )
