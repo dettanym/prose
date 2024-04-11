@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ pkgs, options, ... }:
 {
   # Used to find the project root
   projectRootFile = "flake.nix";
@@ -13,7 +13,7 @@
   programs.prettier.settings = {
     semi = false;
   };
-  programs.prettier.includes = [ "*.mts" ];
+  programs.prettier.includes = [ "*.mts" ] ++ options.programs.prettier.includes.default;
 
   programs.shellcheck.enable = true;
   programs.shfmt.enable = true;
