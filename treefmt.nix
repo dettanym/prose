@@ -3,6 +3,7 @@
   # Used to find the project root
   projectRootFile = "flake.nix";
 
+  programs.statix.enable = true;
   programs.nixfmt-rfc-style.enable = true;
 
   programs.black.enable = true;
