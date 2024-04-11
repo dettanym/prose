@@ -6,7 +6,8 @@
   programs.statix.enable = true;
   programs.nixfmt-rfc-style.enable = true;
 
-  programs.black.enable = true;
+  programs.ruff.enable = true;
+  programs.ruff.format = true;
   programs.isort.enable = true;
   programs.isort.profile = "black";
 
