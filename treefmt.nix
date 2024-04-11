@@ -9,11 +9,18 @@
   programs.isort.enable = true;
   programs.isort.profile = "black";
 
+  programs.biome.enable = true;
+  programs.biome.settings = {
+    javascript.formatter = {
+      indentStyle = "space";
+      semicolons = "asNeeded";
+    };
+  };
   programs.prettier.enable = true;
   programs.prettier.settings = {
     semi = false;
   };
-  programs.prettier.includes = [ "*.mts" ] ++ options.programs.prettier.includes.default;
+  programs.prettier.excludes = options.programs.biome.includes.default;
 
   programs.shellcheck.enable = true;
   programs.shfmt.enable = true;
