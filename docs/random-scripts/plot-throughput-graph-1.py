@@ -130,22 +130,36 @@ graphs_to_plot: Dict[str, List[Tuple[str, List[str], List[str]]]] = {
     ],
     "moone": [
         (
-            "",
+            "; ".join(
+                [
+                    "100req/s is sensible",
+                    "120req/s failed during last attempt, leading to an outlier",
+                    "140req/s got hardware congestion impacting results",
+                ]
+            ),
             [
                 "2024-04-09T19:53:10-04:00",  # this run with 100 req/s seems sensible
                 "2024-04-09T20:06:44-04:00",  # this run with 140 req/s got hardware issues (congestion) which impacted results
-                # "2024-04-09T20:14:12-04:00", # this run failed
+                "2024-04-09T20:14:12-04:00",  # this run with 120 req/s is mostly okay; outlier is excluded
             ],
-            [],
+            [
+                # hardware congestion during the run.
+                # this run failed and a lot of requests timed out, becoming an outlier.
+                "2024-04-09T20:14:12-04:00/120/*/4.*",
+            ],
         ),
         (
-            "Running filter-passthrough",
-            ["2024-04-09T19:53:10-04:00", "2024-04-09T23:38:31-04:00"],
-            [],
-        ),
-        (
-            "this run has 4 successful tests and the 5th is failed. so it skews the results",
+            "this run has 4 successful tests and the 5th is failed.",
             ["2024-04-09T20:21:34-04:00"],
+            [
+                # this run failed and all requests timed out, becoming an outlier.
+                # including it significantly skewes the results
+                "2024-04-09T20:21:34-04:00/100/*/5.*",
+            ],
+        ),
+        (
+            "Results for prose filter and passthrough filter",
+            ["2024-04-09T19:53:10-04:00", "2024-04-09T23:38:31-04:00"],
             [],
         ),
     ],
