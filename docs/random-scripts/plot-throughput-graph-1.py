@@ -250,10 +250,16 @@ def plot_and_save_results(
     for variant, variant_results in results.items():
         data = []
         for rate, summary_objects in variant_results.items():
+            if len(summary_objects) == 0:
+                continue
+
             summaries = np.asarray(
                 [summary["latencies"]["mean"] / ns_to_s for summary in summary_objects]
             )
             data.append((int(rate), np.mean(summaries), np.std(summaries)))
+
+        if len(data) == 0:
+            continue
 
         variant_data = rec.fromrecords(
             sorted(data, key=lambda v: v[0]),
