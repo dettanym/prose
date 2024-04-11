@@ -1,26 +1,26 @@
 {
-  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": [
+  $schema: "https://docs.renovatebot.com/renovate-schema.json",
+  extends: [
     "config:recommended",
     "docker:enableMajor",
     "docker:pinDigests",
     ":automergeDigest",
     ":automergeBranch",
     ":semanticCommits",
-    ":prConcurrentLimit10"
+    ":prConcurrentLimit10",
   ],
-  "dependencyDashboardTitle": "Renovate Dashboard 🤖",
-  "schedule": ["every tuesday"],
-  "flux": {
-    "fileMatch": ["evaluation/kubernetes/.+\\.ya?ml$"]
+  dependencyDashboardTitle: "Renovate Dashboard 🤖",
+  schedule: ["every tuesday"],
+  flux: {
+    fileMatch: ["evaluation/kubernetes/.+\\.ya?ml$"],
   },
   "helm-values": {
-    "fileMatch": ["evaluation/kubernetes/.+\\.ya?ml$"]
+    fileMatch: ["evaluation/kubernetes/.+\\.ya?ml$"],
   },
-  "kubernetes": {
-    "fileMatch": ["evaluation/kubernetes/.+\\.ya?ml$"]
+  kubernetes: {
+    fileMatch: ["evaluation/kubernetes/.+\\.ya?ml$"],
   },
-  "ignorePaths": [
+  ignorePaths: [
     // default set
     "**/node_modules/**",
     "**/bower_components/**",
@@ -31,20 +31,20 @@
     "**/tests/**",
     "**/__fixtures__/**",
     // custom extra
-    ".archive/**"
+    ".archive/**",
   ],
-  "packageRules": [
+  packageRules: [
     {
-      "description": "Flux images and tags",
-      "groupName": "Flux",
-      "matchPackagePatterns": ["fluxcd"],
-      "matchDatasources": ["docker", "github-tags"],
-      "versioning": "semver",
-      "group": {
-        "commitMessageTopic": "{{{groupName}}} group"
+      description: "Flux images and tags",
+      groupName: "Flux",
+      matchPackagePatterns: ["fluxcd"],
+      matchDatasources: ["docker", "github-tags"],
+      versioning: "semver",
+      group: {
+        commitMessageTopic: "{{{groupName}}} group",
       },
-      "pinDigests": false,
-      "separateMinorPatch": true
-    }
-  ]
+      pinDigests: false,
+      separateMinorPatch: true,
+    },
+  ],
 }

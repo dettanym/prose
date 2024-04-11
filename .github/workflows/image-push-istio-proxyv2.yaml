@@ -3,13 +3,13 @@ name: Push Istio Proxy v2 with custom Golang filter
 on:
   push:
     branches:
-      - 'main'
+      - "main"
     paths:
-      - 'privacy-profile-composer/**'
-      - 'docker/istio-proxyv2.Dockerfile'
+      - "privacy-profile-composer/**"
+      - "docker/istio-proxyv2.Dockerfile"
   schedule:
     # Runs every Thursday midnight
-    - cron: '0 0 * * 4'
+    - cron: "0 0 * * 4"
 
 jobs:
   push_istio_proxyv2_to_registry:

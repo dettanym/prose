@@ -11,12 +11,12 @@ on:
     # (prose-k8s-home-ops repo or its renovatebot are configured to look for
     # images with this tag).
     tags:
-      - 'opa-composer-server/v**'
+      - "opa-composer-server/v**"
     branches:
-      - 'main'
+      - "main"
     paths:
-      - 'privacy-profile-composer/**'
-      - 'docker/opa-composer-server.Dockerfile'
+      - "privacy-profile-composer/**"
+      - "docker/opa-composer-server.Dockerfile"
 
 jobs:
   build_and_push:

@@ -5,9 +5,9 @@ on:
     tags:
       - presidio/v**
     branches:
-      - 'main'
+      - "main"
     paths:
-      - 'presidio/**'
+      - "presidio/**"
 
 jobs:
   push_opa_to_registry:
