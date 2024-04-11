@@ -5,8 +5,6 @@
     nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
     treefmt-nix.url = "github:numtide/treefmt-nix";
     treefmt-nix.inputs.nixpkgs.follows = "nixpkgs";
-    pnpm2nix-nzbr.url = "github:nzbr/pnpm2nix-nzbr";
-    pnpm2nix-nzbr.inputs.nixpkgs.follows = "nixpkgs";
   };
 
   outputs =
@@ -15,40 +13,10 @@
       nixpkgs,
       systems,
       treefmt-nix,
-      pnpm2nix-nzbr,
     }:
     let
       eachSystem = f: nixpkgs.lib.genAttrs (import systems) (system: f nixpkgs.legacyPackages.${system});
       treefmtEval = eachSystem (pkgs: treefmt-nix.lib.evalModule pkgs ./treefmt.nix);
-
-      pnpmPackages = eachSystem (
-        pkgs:
-        let
-          inherit (pnpm2nix-nzbr.packages.${pkgs.system}) mkPnpmPackage;
-        in
-        {
-          tsx = mkPnpmPackage rec {
-            pname = "tsx";
-            version = "4.7.1";
-
-            src = pkgs.fetchFromGitHub {
-              owner = "privatenumber";
-              repo = pname;
-              rev = "v${version}";
-              hash = "sha256-9+qQmDZ0WxO4IXVPA6IjhjPbBlhU9yIWk9FpUamMYVM=";
-            };
-
-            distDir = ".";
-            installInPlace = true;
-            extraBuildInputs = [ pkgs.makeWrapper ];
-
-            postInstall = ''
-              makeWrapper ${pkgs.nodejs}/bin/node $out/bin/${pname} \
-                --add-flags $out/dist/cli.cjs
-            '';
-          };
-        }
-      );
     in
     {
 
@@ -87,7 +55,6 @@
             ps.numpy
           ]))
           ripgrep
-          pnpmPackages.x86_64-linux.tsx
           vegeta
           yq-go
           zstd
