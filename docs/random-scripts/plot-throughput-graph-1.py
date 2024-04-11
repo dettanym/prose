@@ -82,46 +82,46 @@ graphs_to_plot: Dict[str, List[Tuple[str, List[str], List[str]]]] = {
             ],
             [],
         ),
-        (
-            "default memory limits on istio-proxy container, 1 replica of each pod. we saw pod crashes and restarts during the test",
-            ["2024-04-03T22:25:53-04:00"],
-            [],
-        ),
-        (
-            "increased memory limits, 1 replica of each pod. no crashes and restarts noticed",
-            ["2024-04-04T20:05:22-04:00"],
-            [],
-        ),
-        (
-            "same as above",
-            ["2024-04-04T20:16:59-04:00"],
-            [],
-        ),
-        (
-            "Same as above, but k8s is created with `--nodes=1 --cpus=30 --memory=500g`",
-            ["2024-04-04T20:35:04-04:00"],
-            [],
-        ),
-        (
-            "Same as 2 above, no observations being made, plus cpu and memory limits are set",
-            ["2024-04-05T20:55:20-04:00"],
-            [],
-        ),
-        (
-            "Same as above, plus warmup is included, plot for rate of 100 and 200",
-            ["2024-04-05T21:30:02-04:00"],
-            [],
-        ),
-        (
-            "Same as above, but running other variants too, plot for rate 100,150,200",
-            ["2024-04-05T21:41:30-04:00"],
-            [],
-        ),
-        (
-            "Same as above, but 10 replicas of each pod",
-            ["2024-04-05T22:14:57-04:00"],
-            [],
-        ),
+        # (
+        #     "default memory limits on istio-proxy container, 1 replica of each pod. we saw pod crashes and restarts during the test",
+        #     ["2024-04-03T22:25:53-04:00"],
+        #     [],
+        # ),
+        # (
+        #     "increased memory limits, 1 replica of each pod. no crashes and restarts noticed",
+        #     ["2024-04-04T20:05:22-04:00"],
+        #     [],
+        # ),
+        # (
+        #     "same as above",
+        #     ["2024-04-04T20:16:59-04:00"],
+        #     [],
+        # ),
+        # (
+        #     "Same as above, but k8s is created with `--nodes=1 --cpus=30 --memory=500g`",
+        #     ["2024-04-04T20:35:04-04:00"],
+        #     [],
+        # ),
+        # (
+        #     "Same as 2 above, no observations being made, plus cpu and memory limits are set",
+        #     ["2024-04-05T20:55:20-04:00"],
+        #     [],
+        # ),
+        # (
+        #     "Same as above, plus warmup is included, plot for rate of 100 and 200",
+        #     ["2024-04-05T21:30:02-04:00"],
+        #     [],
+        # ),
+        # (
+        #     "Same as above, but running other variants too, plot for rate 100,150,200",
+        #     ["2024-04-05T21:41:30-04:00"],
+        #     [],
+        # ),
+        # (
+        #     "Same as above, but 10 replicas of each pod",
+        #     ["2024-04-05T22:14:57-04:00"],
+        #     [],
+        # ),
         (
             "Failed to complete, but includes passthrough filter variant",
             ["2024-04-10T00:05:58-04:00"],
