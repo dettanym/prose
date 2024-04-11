@@ -8,16 +8,16 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-  - host: &host "online-boutique.${SECRET_DOMAIN}"
-    http:
-      paths:
-      - backend:
-          service:
-            name: frontend
-            port:
-              number: 80
-        path: /
-        pathType: Prefix
+    - host: &host "online-boutique.${SECRET_DOMAIN}"
+      http:
+        paths:
+          - backend:
+              service:
+                name: frontend
+                port:
+                  number: 80
+            path: /
+            pathType: Prefix
   tls:
-  - hosts:
-    - *host
+    - hosts:
+        - *host

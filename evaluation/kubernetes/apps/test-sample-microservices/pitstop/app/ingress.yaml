@@ -8,16 +8,16 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-  - host: &host "pitstop.${SECRET_DOMAIN}"
-    http:
-      paths:
-      - backend:
-          service:
-            name: webapp
-            port:
-              number: 7005
-        path: /
-        pathType: Prefix
+    - host: &host "pitstop.${SECRET_DOMAIN}"
+      http:
+        paths:
+          - backend:
+              service:
+                name: webapp
+                port:
+                  number: 7005
+            path: /
+            pathType: Prefix
   tls:
-  - hosts:
-    - *host
+    - hosts:
+        - *host

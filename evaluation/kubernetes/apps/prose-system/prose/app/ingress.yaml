@@ -7,16 +7,16 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-  - host: &host prose.my-example.com
-    http:
-      paths:
-      - pathType: Prefix
-        path: "/"
-        backend:
-          service:
-            name: opa
-            port: 
-              number: 8080
+    - host: &host prose.my-example.com
+      http:
+        paths:
+          - pathType: Prefix
+            path: "/"
+            backend:
+              service:
+                name: opa
+                port:
+                  number: 8080
   tls:
     - hosts:
         - *host

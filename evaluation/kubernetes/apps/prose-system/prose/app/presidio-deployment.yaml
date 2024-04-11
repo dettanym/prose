@@ -12,23 +12,23 @@ spec:
         app: presidio
     spec:
       containers:
-      - name: presidio
-        image: ghcr.io/dettanym/prose-presidio:main
-        resources:
-          requests:
-            cpu: 10m
-            memory: 500Mi
-          limits:
-            memory: 3Gi
-        ports:
-        - name: http
-          containerPort: 3000
-          protocol: TCP
-        livenessProbe:
-          httpGet:
-            path: /health
-            port: http
-        readinessProbe:
-          httpGet:
-            path: /health
-            port: http
+        - name: presidio
+          image: ghcr.io/dettanym/prose-presidio:main
+          resources:
+            requests:
+              cpu: 10m
+              memory: 500Mi
+            limits:
+              memory: 3Gi
+          ports:
+            - name: http
+              containerPort: 3000
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http

@@ -12,32 +12,32 @@ spec:
         app: prose-server
     spec:
       containers:
-      - name: prose-server
-        image: ghcr.io/dettanym/prose-opa-composer-server:main
-        ports:
-        - name: http
-          containerPort: 8080
-          protocol: TCP
-        - name: grpc
-          containerPort: 50051
-          protocol: TCP
-        volumeMounts:
-          - mountPath: /app/tmp
-            name: compiled-bundle
-        livenessProbe:
-          httpGet:
-            path: /health
-            port: http
-        readinessProbe:
-          httpGet:
-            path: /health
-            port: http
-        resources:
-          requests:
-            cpu: 10m
-            memory: 500Mi
-          limits:
-            memory: 3Gi
+        - name: prose-server
+          image: ghcr.io/dettanym/prose-opa-composer-server:main
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+            - name: grpc
+              containerPort: 50051
+              protocol: TCP
+          volumeMounts:
+            - mountPath: /app/tmp
+              name: compiled-bundle
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+          resources:
+            requests:
+              cpu: 10m
+              memory: 500Mi
+            limits:
+              memory: 3Gi
       volumes:
         - name: compiled-bundle
           emptyDir:
