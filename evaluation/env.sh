@@ -1,26 +1,62 @@
 #!/usr/bin/env bash
 
 ###
-# This file attempts to run the command within a nix environment, if tools are
-# present. If nix or nix-portable are not present, then this scripts tries to
-# run directly, assuming all of the tools are already installed.
+# Run command within nix environment.
 #
-# To use this, add a new sh script (e.g. in the `scripts/` folder) and use the
-# following line at the top of the script as shebang command. The path to this
-# `env.sh` file can be specified relatively to the new file.
-# `#!/usr/bin/env -S bash -c '"$(dirname $(readlink -f "$0"))/../env.sh" bash "$0" "$@"'`
+# Use either on terminal or as a script in shebang line:
+# `./env.sh <command>... [--] <command>... <args>...`
+# `#!/usr/bin/env -S bash -c '"$(dirname $(readlink -f "$0"))/env.sh" <command>... "$0" "$@"'`
 ###
 
 set -euo pipefail
 
 function usage() {
-  # TODO: fill in usage details
-  #  now if `--` is present in the list of parameters to this script, this env.sh
-  #  parses the list to find the program that is being executed and to change
-  #  to the folder containing the script. This is needed for npm/pnpm commands
-  #  which search folders for `package.json` and `node_modules/`.
   cat <<-EOF
-		Usage:
+		Usage: ./env.sh [-h | --help] [[<command>...] --] <command>...
+		       ./env.sh [<command>...] -- (./<path> | ../<path>) <args>...
+		       #!/usr/bin/env -S bash -c '"\$(dirname \$(readlink -f "\$0"))/env.sh" <command>... "\$0" "\$@"'
+
+		Description:
+		    Execute commands in nix environment if possible.
+
+		    This script is intended for use within shebang line of various executable
+		    scripts. It will reconstruct command specified in shebang line and attempt
+		    to run it within nix environment, given nix or nix-portable are available.
+		    If nix or nix-portable are not available, it will attempt to run the
+		    reconstructed command directly, assuming all required tools are already
+		    present on the machine. However, this script can also be used to quickly
+		    jump into nix environment.
+
+		    It has a special behavior when \`-- "\$0"\` is being used in the shebang
+		    command and "\$0" parameter evaluates to a relative path starting with
+		    \`./\` or \`../\`. In this case, the \`env.sh\` will capture the current
+		    working directory, change the current working directory to the folder
+		    containing the script specified by the relative path and it will pass
+		    captured path as a first parameter to the \`"\$0\"\` script. This is useful
+		    if the program specified before \`--\` resolves something based on the
+		    folder where the \`"\$0"\` script is located. For example, \`pnpm exec\` can
+		    resolve cli tools in \`node_modules/\` dir using node.js resolution
+		    algorithm when some ancestor folder contains \`node_modules/\` dir.
+
+		    Note, when used in shebang line, one of the two configurable parts of the
+		    line is represented by \`<command>...\` parameter in the usage above and the
+		    other is the relative location from the current script to \`env.sh\` file.
+		    That is all other parts are needed for correct execution of \`env.sh\`
+		    script itself. In that example, \`\$(dirname \$(readlink -f "\$0"))\` part
+		    is needed to resolve relative location of \`env.sh\` script, and
+		    \`"\$0" "\$@"\` part is necessary to pass the script path and the parameter
+		    to \`env.sh\`.
+
+		Examples:
+		    When running as executable on terminal:
+		        ./env.sh -- bash --norc --noprofile
+		        ./env.sh python ./some/script.py
+		        ./env.sh pnpm exec tsx -- ./some/script.mts
+
+		    When using in shebang line of an executable script:
+		        #!/usr/bin/env -S bash -c '"\$(dirname \$(readlink -f "\$0"))/env.sh" bash "\$0" "\$@"'
+		        #!/usr/bin/env -S bash -c '"\$(dirname \$(readlink -f "\$0"))/evaluation/env.sh" python "\$0" "\$@"'
+		        #!/usr/bin/env -S bash -c '"\$(dirname \$(readlink -f "\$0"))/../env.sh" pnpm exec tsx -- "\$0" "\$@"'
 	EOF
 }
 
