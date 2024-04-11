@@ -31,6 +31,7 @@
           docker
           envsubst
           fluxcd
+          getopt
           git
           go
           go-task
