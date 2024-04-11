@@ -11,11 +11,18 @@ import matplotlib.pyplot as plt
 import numpy as np
 import numpy.core.records as rec
 
-Bookinfo_Variants = Literal["plain", "envoy", "filter-passthrough", "filter"]
+Bookinfo_Variants = Literal[
+    "plain",
+    "envoy",
+    "filter-passthrough",
+    "filter-passthrough-buffer",
+    "filter",
+]
 bookinfo_variants: List[Bookinfo_Variants] = [
     "plain",
     "envoy",
     "filter-passthrough",
+    "filter-passthrough-buffer",
     "filter",
 ]
 
@@ -28,12 +35,14 @@ colors = {
     "plain": "blue",
     "envoy": "orange",
     "filter-passthrough": "brown",
+    "filter-passthrough-buffer": "red",
     "filter": "green",
 }
 labels = {
     "plain": "K8s",
     "envoy": "K8s + Istio",
     "filter-passthrough": "K8s + Istio + PassthroughFilter",
+    "filter-passthrough-buffer": "K8s + Istio + PassthroughFilter with Data Buffer",
     "filter": "K8s + Istio + Prose",
 }
 
