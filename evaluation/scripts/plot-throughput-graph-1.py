@@ -4,7 +4,7 @@
 import json
 import subprocess
 from fnmatch import fnmatchcase
-from os import listdir
+from os import listdir, makedirs
 from os.path import isdir, isfile, join
 from typing import Any, Dict, List, Literal, Tuple
 
@@ -299,6 +299,8 @@ def plot_and_save_results(
     )
     plt.close(fig)
 
+
+makedirs(graphs_location, exist_ok=True)
 
 for hostname, hostname_data in graphs_to_plot.items():
     for i, (title, include, exclude) in enumerate(hostname_data):
