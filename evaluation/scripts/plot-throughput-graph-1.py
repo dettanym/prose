@@ -242,7 +242,7 @@ def plot_and_save_results(
     hostname: str,
     results: Dict[
         Bookinfo_Variants,
-        Dict[RequestRate, Tuple[np.float64, np.float64]],
+        Dict[RequestRate, List[Summary]],
     ],
 ):
     fig, (ax_lin, ax_log) = plt.subplots(nrows=1, ncols=2, figsize=(12.8, 4.8))
