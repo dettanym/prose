@@ -13,7 +13,7 @@ from presidio_analyzer.batch_analyzer_engine import BatchAnalyzerEngine
 from presidio_anonymizer import BatchAnonymizerEngine
 from werkzeug.exceptions import HTTPException
 
-from helpers import convert_all_lists_to_dicts, extract_data_types_from_results
+from .helpers import convert_all_lists_to_dicts, extract_data_types_from_results
 
 DEFAULT_PORT = "3000"
 

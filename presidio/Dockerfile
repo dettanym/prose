@@ -22,4 +22,4 @@ RUN pipenv run python scripts/install_nlp_models.py --conf_file /app/${NLP_CONF_
 
 COPY server/ /app/server/
 
-CMD pipenv run python /app/server --host 0.0.0.0
+CMD pipenv run python -m server --host 0.0.0.0
