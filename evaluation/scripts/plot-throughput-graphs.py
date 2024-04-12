@@ -202,7 +202,9 @@ graphs_to_plot: Dict[str, List[Tuple[str, List[str], List[str]]]] = {
 
 
 def load_folders(
-    hostname: str, timestamps: List[str], exclude: List[str]
+    hostname: str,
+    timestamps: List[str],
+    exclude: List[str],
 ) -> Dict[
     Bookinfo_Variants,
     Dict[RequestRate, List[Summary]],
