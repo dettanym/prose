@@ -15,7 +15,7 @@ type Config struct {
 	direction     common.SidecarDirection
 	ZipkinUrl     string
 	opaEnforce    bool
-	opaConfig     string
+	OpaConfig     string
 	presidioUrl   string
 	internalCidrs []net.IPNet
 	purpose       string
@@ -72,7 +72,7 @@ func (p *ConfigParser) Parse(any *anypb.Any, callbacks api.ConfigCallbackHandler
 	} else if opaConfig, ok := parsedStr.(string); !ok {
 		return nil, fmt.Errorf("opa_config: expect (YAML inline) string while got %T", opaConfig)
 	} else {
-		conf.opaConfig = opaConfig
+		conf.OpaConfig = opaConfig
 	}
 
 	if parsedStr, ok := configStruct["presidio_url"]; !ok {
@@ -129,8 +129,8 @@ func (p *ConfigParser) Merge(parent interface{}, child interface{}) interface{} 
 		newConfig.ZipkinUrl = childConfig.ZipkinUrl
 	}
 
-	if childConfig.opaConfig != "" {
-		newConfig.opaConfig = childConfig.opaConfig
+	if childConfig.OpaConfig != "" {
+		newConfig.OpaConfig = childConfig.OpaConfig
 	}
 
 	if childConfig.presidioUrl != "" {

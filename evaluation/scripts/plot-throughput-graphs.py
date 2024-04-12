@@ -18,6 +18,7 @@ Bookinfo_Variants = Literal[
     "filter-passthrough",
     "filter-passthrough-buffer",
     "filter-traces",
+    "filter-traces-opa",
     "filter",
 ]
 bookinfo_variants: List[Bookinfo_Variants] = [
@@ -26,6 +27,7 @@ bookinfo_variants: List[Bookinfo_Variants] = [
     "filter-passthrough",
     "filter-passthrough-buffer",
     "filter-traces",
+    "filter-traces-opa",
     "filter",
 ]
 
@@ -40,6 +42,7 @@ colors = {
     "filter-passthrough": "brown",
     "filter-passthrough-buffer": "red",
     "filter-traces": "cyan",
+    "filter-traces-opa": "olive",
     "filter": "green",
 }
 labels = {
@@ -48,6 +51,7 @@ labels = {
     "filter-passthrough": "K8s + Istio + PassthroughFilter",
     "filter-passthrough-buffer": "K8s + Istio + PassthroughFilter with Data Buffer",
     "filter-traces": "K8s + Istio + PassthroughFilter with Buffer and Traces",
+    "filter-traces-opa": "K8s + Istio + PassthroughFilter with Buffer, Traces and OPA instance created",
     "filter": "K8s + Istio + Prose",
 }
 

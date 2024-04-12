@@ -30,6 +30,7 @@ const bookinfo_variants = new Set<VARIANT>([
   "filter-passthrough",
   "filter-passthrough-buffer",
   "filter-traces",
+  "filter-traces-opa",
   "filter",
 ])
 /**
@@ -62,6 +63,7 @@ type VARIANT =
   | "filter-passthrough"
   | "filter-passthrough-buffer"
   | "filter-traces"
+  | "filter-traces-opa"
   | "filter"
 type METADATA = ReturnType<typeof generate_metadata>
 

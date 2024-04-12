@@ -21,7 +21,7 @@ import (
 func NewFilter(callbacks api.FilterCallbackHandler, config *Config) (api.StreamFilter, error) {
 	opaObj, err := sdk.New(context.Background(), sdk.Options{
 		ID:     "golang-filter-opa",
-		Config: bytes.NewReader([]byte(config.opaConfig)),
+		Config: bytes.NewReader([]byte(config.OpaConfig)),
 	})
 
 	if err != nil {
