@@ -11,9 +11,9 @@ import (
 	"privacy-profile-composer/pkg/envoyfilter/internal/common"
 )
 
-type config struct {
+type Config struct {
 	direction     common.SidecarDirection
-	zipkinUrl     string
+	ZipkinUrl     string
 	opaEnforce    bool
 	opaConfig     string
 	presidioUrl   string
@@ -31,7 +31,7 @@ func (p *ConfigParser) Parse(any *anypb.Any, callbacks api.ConfigCallbackHandler
 		return nil, err
 	}
 
-	conf := &config{}
+	conf := &Config{}
 
 	if val, ok := configStruct["direction"]; !ok {
 		return nil, fmt.Errorf("missing direction")
@@ -53,7 +53,7 @@ func (p *ConfigParser) Parse(any *anypb.Any, callbacks api.ConfigCallbackHandler
 	} else if str, ok := zipkinUrl.(string); !ok {
 		return nil, fmt.Errorf("zipkin_url: expect string while got %T", zipkinUrl)
 	} else {
-		conf.zipkinUrl = str
+		conf.ZipkinUrl = str
 	}
 
 	// decide whether to drop requests after a violation or not
@@ -117,16 +117,16 @@ func (p *ConfigParser) Parse(any *anypb.Any, callbacks api.ConfigCallbackHandler
 }
 
 func (p *ConfigParser) Merge(parent interface{}, child interface{}) interface{} {
-	parentConfig := parent.(*config)
-	childConfig := child.(*config)
+	parentConfig := parent.(*Config)
+	childConfig := child.(*Config)
 
 	// copy one, do not update parentConfig directly.
 	newConfig := *parentConfig
 
 	newConfig.direction = childConfig.direction
 
-	if childConfig.zipkinUrl != "" {
-		newConfig.zipkinUrl = childConfig.zipkinUrl
+	if childConfig.ZipkinUrl != "" {
+		newConfig.ZipkinUrl = childConfig.ZipkinUrl
 	}
 
 	if childConfig.opaConfig != "" {

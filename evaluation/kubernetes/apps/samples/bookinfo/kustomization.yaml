@@ -7,3 +7,4 @@ resources:
   - ./with-filter
   - ./with-filter-passthrough
   - ./with-filter-passthrough-buffer
+  - ./with-filter-traces

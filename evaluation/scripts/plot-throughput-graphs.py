@@ -17,6 +17,7 @@ Bookinfo_Variants = Literal[
     "envoy",
     "filter-passthrough",
     "filter-passthrough-buffer",
+    "filter-traces",
     "filter",
 ]
 bookinfo_variants: List[Bookinfo_Variants] = [
@@ -24,6 +25,7 @@ bookinfo_variants: List[Bookinfo_Variants] = [
     "envoy",
     "filter-passthrough",
     "filter-passthrough-buffer",
+    "filter-traces",
     "filter",
 ]
 
@@ -37,6 +39,7 @@ colors = {
     "envoy": "orange",
     "filter-passthrough": "brown",
     "filter-passthrough-buffer": "red",
+    "filter-traces": "cyan",
     "filter": "green",
 }
 labels = {
@@ -44,6 +47,7 @@ labels = {
     "envoy": "K8s + Istio",
     "filter-passthrough": "K8s + Istio + PassthroughFilter",
     "filter-passthrough-buffer": "K8s + Istio + PassthroughFilter with Data Buffer",
+    "filter-traces": "K8s + Istio + PassthroughFilter with Buffer and Traces",
     "filter": "K8s + Istio + Prose",
 }
 

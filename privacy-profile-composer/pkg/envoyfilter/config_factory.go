@@ -7,12 +7,12 @@ import (
 )
 
 func ConfigFactory(c interface{}) api.StreamFilterFactory {
-	conf, ok := c.(*config)
+	conf, ok := c.(*Config)
 	if !ok {
 		panic("unexpected config type")
 	}
 
-	_, err := common.UpdateTracer(conf.zipkinUrl)
+	_, err := common.UpdateTracer(conf.ZipkinUrl)
 	if err != nil {
 		panic(err)
 	}

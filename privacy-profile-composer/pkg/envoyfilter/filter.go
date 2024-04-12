@@ -18,7 +18,7 @@ import (
 	"privacy-profile-composer/pkg/envoyfilter/internal/common"
 )
 
-func NewFilter(callbacks api.FilterCallbackHandler, config *config) (api.StreamFilter, error) {
+func NewFilter(callbacks api.FilterCallbackHandler, config *Config) (api.StreamFilter, error) {
 	opaObj, err := sdk.New(context.Background(), sdk.Options{
 		ID:     "golang-filter-opa",
 		Config: bytes.NewReader([]byte(config.opaConfig)),
@@ -40,7 +40,7 @@ type Filter struct {
 	api.PassThroughStreamFilter
 
 	callbacks api.FilterCallbackHandler
-	config    *config
+	config    *Config
 	opa       *sdk.OPA
 
 	// Runtime state of the filter
