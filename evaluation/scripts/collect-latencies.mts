@@ -18,10 +18,10 @@ const rates = new Set([
   "160",
   "180",
   "200",
-  "400",
-  "600",
-  "800",
-  "1000",
+  // "400",
+  // "600",
+  // "800",
+  // "1000",
 ])
 
 const bookinfo_variants = new Set<VARIANT>([
@@ -39,10 +39,14 @@ const bookinfo_variants = new Set<VARIANT>([
  * variant, there is some weird behavior where each second attack fails for
  * most of the requests.
  */
-const test_only = new Set<VARIANT>(bookinfo_variants)
+const test_only = new Set<VARIANT>([
+  "filter-traces",
+  "filter-traces-opa",
+  "filter",
+])
 
-const TEST_RUNS = 100
-const WARMUP_RUNS = 3
+const TEST_RUNS = 20
+const WARMUP_RUNS = 0
 
 const INGRESS_IP = "192.168.49.21"
 
