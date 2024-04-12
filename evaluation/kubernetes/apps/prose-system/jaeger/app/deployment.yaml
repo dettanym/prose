@@ -33,7 +33,7 @@ spec:
             - name: QUERY_BASE_PATH
               value: /jaeger
             - name: LOG_LEVEL
-              value: debug
+              value: info
           livenessProbe:
             httpGet:
               path: /
