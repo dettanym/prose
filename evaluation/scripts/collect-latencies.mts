@@ -32,6 +32,12 @@ const bookinfo_variants = new Set<VARIANT>([
   "filter-traces",
   "filter",
 ])
+/**
+ * Which variants to test during this run.
+ * Note, that there has to be more than one variant here, since with one
+ * variant, there is some weird behavior where each second attack fails for
+ * most of the requests.
+ */
 const test_only = new Set<VARIANT>(bookinfo_variants)
 
 const TEST_RUNS = 100
