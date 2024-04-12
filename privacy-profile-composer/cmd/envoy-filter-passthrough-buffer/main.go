@@ -4,13 +4,13 @@ import (
 	"github.com/envoyproxy/envoy/contrib/golang/common/go/api"
 	"github.com/envoyproxy/envoy/contrib/golang/filters/http/source/go/pkg/http"
 
-	"privacy-profile-composer/pkg/envoyfilter/noopconfig"
+	"privacy-profile-composer/pkg/envoyfilter"
 )
 
 const Name = "passthrough-buffer"
 
 func init() {
-	http.RegisterHttpFilterConfigFactoryAndParser(Name, passthroughFilterWithBufferFactory, noopconfig.Parser{})
+	http.RegisterHttpFilterConfigFactoryAndParser(Name, passthroughFilterWithBufferFactory, &envoyfilter.ConfigParser{})
 }
 
 func main() {}
