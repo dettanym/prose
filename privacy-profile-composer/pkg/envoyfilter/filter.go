@@ -210,13 +210,14 @@ func (f *Filter) EncodeHeaders(header api.ResponseHeaderMap, endStream bool) api
 
 // Callbacks which are called in response path
 func (f *Filter) EncodeData(buffer api.BufferInstance, endStream bool) api.StatusType {
+	// TODO: we might need to be careful about collecting the data from all
+	//  of these buffers. Maybe go has some builtin methods to work with it,
+	//  instead of us collecting the entire body using string concat.
+	// https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/buffer_filter
+	// https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/file_system_buffer_filter
+	f.encodeDataBuffer += buffer.String()
+
 	if !endStream {
-		// TODO: we might need to be careful about collecting the data from all
-		//  of these buffers. Maybe go has some builtin methods to work with it,
-		//  instead of us collecting the entire body using string concat.
-		// https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/buffer_filter
-		// https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/file_system_buffer_filter
-		f.encodeDataBuffer += buffer.String()
 		return api.StopAndBuffer
 	}
 
