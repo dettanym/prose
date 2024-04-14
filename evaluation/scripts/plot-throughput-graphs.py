@@ -42,7 +42,7 @@ colors = {
     "filter-passthrough": "brown",
     "filter-passthrough-buffer": "red",
     "filter-traces": "cyan",
-    "filter-traces-opa": "olive",
+    "filter-traces-opa": "grey",
     "filter": "green",
 }
 labels = {
