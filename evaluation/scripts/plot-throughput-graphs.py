@@ -150,8 +150,12 @@ graphs_to_plot: Dict[str, List[Tuple[str, List[str], List[str]]]] = {
                 "2024-03-31T22:39:07-04:00",
                 "2024-04-01T01:52:20-04:00",
                 "2024-04-01T23:46:58-04:00",
-                "2024-04-10T00:05:58-04:00",
-                "2024-04-10T21:13:59-04:00",
+                # all of these results are invalid, since our plugin wasn't
+                # properly loaded and envoy defaulted to passthrough plugin
+                # "2024-04-10T00:05:58-04:00",
+                # "2024-04-10T21:13:59-04:00",
+                # "2024-04-12T00:21:50-04:00", # 3 passthrough filter variants; 10 samples each
+                # "2024-04-12T13:06:39-04:00", # 2 new varaints + prose filter; 20 samples each
             ],
             [],
         ),
@@ -161,11 +165,27 @@ graphs_to_plot: Dict[str, List[Tuple[str, List[str], List[str]]]] = {
                 "2024-03-31T22:39:07-04:00",
                 "2024-04-01T01:52:20-04:00",
                 "2024-04-01T23:46:58-04:00",
-                "2024-04-10T00:05:58-04:00",
-                "2024-04-10T21:13:59-04:00",
+                # all of these results are invalid, since our plugin wasn't
+                # properly loaded and envoy defaulted to passthrough plugin
+                # "2024-04-10T00:05:58-04:00",
+                # "2024-04-10T21:13:59-04:00",
+                # "2024-04-12T00:21:50-04:00",
+                # "2024-04-12T13:06:39-04:00",
             ],
             ["*/*/filter/*"],
         ),
+        # (
+        #     "finished run for passthrough+buffer+tracing. all of these results are invalid",
+        #     [
+        #         # results are very inconsistent - there are many runs which do not all have successful response codes
+        #         # "2024-04-11T21:10:16-04:00",
+        #         # same inconsistent results
+        #         # "2024-04-11T22:52:42-04:00",
+        #         # same inconsistent results. interrupted early
+        #         # "2024-04-12T00:07:44-04:00",
+        #     ],
+        #     [],
+        # ),
     ],
     "moone": [
         (
