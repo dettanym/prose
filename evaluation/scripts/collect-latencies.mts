@@ -40,9 +40,10 @@ const bookinfo_variants = new Set<VARIANT>([
  * most of the requests.
  */
 const test_only = new Set<VARIANT>([
+  "filter-passthrough",
+  "filter-passthrough-buffer",
   "filter-traces",
   "filter-traces-opa",
-  "filter",
 ])
 
 const TEST_RUNS = 20
