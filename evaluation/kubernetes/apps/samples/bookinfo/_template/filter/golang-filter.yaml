@@ -50,9 +50,9 @@ spec:
           name: &golang-filter-name golangfilter-inbound
           typed_config:
             "@type": type.googleapis.com/envoy.extensions.filters.http.golang.v3alpha.Config
-            library_id: simple
+            library_id: "${filter_name}"
             library_path: "/etc/envoy/${filter_name}.so"
-            plugin_name: simple
+            plugin_name: "${filter_name}"
             plugin_config:
               "@type": type.googleapis.com/xds.type.v3.TypedStruct
               value:
@@ -147,9 +147,9 @@ spec:
           name: &golang-filter-name golangfilter-outbound
           typed_config:
             "@type": type.googleapis.com/envoy.extensions.filters.http.golang.v3alpha.Config
-            library_id: simple
+            library_id: "{filter_name}"
             library_path: "/etc/envoy/${filter_name}.so"
-            plugin_name: simple
+            plugin_name: "${filter_name}"
             plugin_config:
               "@type": type.googleapis.com/xds.type.v3.TypedStruct
               value:
