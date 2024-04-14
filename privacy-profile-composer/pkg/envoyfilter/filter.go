@@ -139,7 +139,7 @@ func (f *Filter) DecodeData(buffer api.BufferInstance, endStream bool) api.Statu
 	// log.Println(">>> DECODE DATA")
 	// log.Println("  <<About to forward", len(f.decodeDataBuffer), "bytes of data to service>>")
 
-	span.Tag("buffer-value", f.decodeDataBuffer)
+	// span.Tag("buffer-value", f.decodeDataBuffer)
 
 	if f.processDecodeBody {
 		sendLocalReply, err, proseTags := f.processBody(ctx, f.decodeDataBuffer, true)
@@ -234,7 +234,7 @@ func (f *Filter) EncodeData(buffer api.BufferInstance, endStream bool) api.Statu
 	// log.Println("<<< ENCODE DATA")
 	// log.Println("  <<About to forward", len(f.encodeDataBuffer), "bytes of data to client>>")
 
-	span.Tag("buffer-value", f.encodeDataBuffer)
+	// span.Tag("buffer-value", f.encodeDataBuffer)
 
 	if f.processEncodeBody {
 		sendLocalReply, err, proseTags := f.processBody(ctx, f.encodeDataBuffer, false)
