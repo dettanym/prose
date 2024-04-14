@@ -6,6 +6,7 @@ package envoyfilter
 const (
 	PROSE_SIDECAR_DIRECTION = "prose_sidecar_direction"
 	PROSE_PRESIDIO_ERROR    = "prose_presidio_error"
+	PROSE_JSON_BODY_ERROR   = "prose_get_json_body_error"
 	PROSE_PII_TYPES         = "prose_pii_types"
 	PROSE_OPA_ENFORCE       = "prose_opa_enforce"
 	PROSE_OPA_ERROR         = "prose_opa_error"

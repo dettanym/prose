@@ -278,6 +278,7 @@ func (f *Filter) processBody(ctx context.Context, body string, isDecode bool) (s
 
 	jsonBody, err := common.GetJSONBody(ctx, f.headerMetadata, body)
 	if err != nil {
+		proseTags[PROSE_JSON_BODY_ERROR] = fmt.Sprintf("%s", err)
 		return false, err, proseTags
 	}
 
