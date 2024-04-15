@@ -31,6 +31,7 @@ const bookinfo_variants = new Set<VARIANT>([
   "filter-passthrough-buffer",
   "filter-traces",
   "filter-traces-opa",
+  "filter-traces-opa-singleton",
   "filter",
 ])
 /**
@@ -40,10 +41,8 @@ const bookinfo_variants = new Set<VARIANT>([
  * most of the requests.
  */
 const test_only = new Set<VARIANT>([
-  "filter-passthrough",
-  "filter-passthrough-buffer",
   "filter-traces",
-  "filter-traces-opa",
+  "filter-traces-opa-singleton",
 ])
 
 const TEST_RUNS = 20
@@ -69,6 +68,7 @@ type VARIANT =
   | "filter-passthrough-buffer"
   | "filter-traces"
   | "filter-traces-opa"
+  | "filter-traces-opa-singleton"
   | "filter"
 type METADATA = ReturnType<typeof generate_metadata>
 

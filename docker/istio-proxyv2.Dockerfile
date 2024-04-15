@@ -12,6 +12,7 @@ RUN go build -o dist/passthrough.so -buildmode=c-shared ./cmd/envoy-filter-passt
 RUN go build -o dist/passthrough-buffer.so -buildmode=c-shared ./cmd/envoy-filter-passthrough-buffer
 RUN go build -o dist/traces.so -buildmode=c-shared ./cmd/envoy-filter-traces
 RUN go build -o dist/traces-opa.so -buildmode=c-shared ./cmd/envoy-filter-traces-opa
+RUN go build -o dist/traces-opa-singleton.so -buildmode=c-shared ./cmd/envoy-filter-traces-opa-singleton
 
 # This version needs to match the deployed istiod helmrelease version
 FROM istio/proxyv2:1.20.3@sha256:f4e94588a14eee4f053a80a767128ffc482a219f6c6e23039b7db1b6a6081a77
