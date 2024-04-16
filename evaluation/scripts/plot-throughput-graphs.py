@@ -21,6 +21,9 @@ Bookinfo_Variants = Literal[
     "filter-traces-opa",
     "filter-traces-opa-singleton",
     "filter",
+    # state of filter before this commit. historical record of test results,
+    # since we modified this filter in place.
+    "filter-97776ef1",
 ]
 bookinfo_variants: List[Bookinfo_Variants] = [
     "plain",
@@ -31,6 +34,7 @@ bookinfo_variants: List[Bookinfo_Variants] = [
     "filter-traces-opa",
     "filter-traces-opa-singleton",
     "filter",
+    "filter-97776ef1",
 ]
 
 RequestRate = str
@@ -47,6 +51,7 @@ colors = {
     "filter-traces-opa": "grey",
     "filter-traces-opa-singleton": "pink",
     "filter": "green",
+    "filter-97776ef1": "green",
 }
 labels = {
     "plain": "K8s",
@@ -57,6 +62,7 @@ labels = {
     "filter-traces-opa": "K8s + Istio + PassthroughFilter with Buffer, Traces and OPA instance created",
     "filter-traces-opa-singleton": "K8s + Istio + PassthroughFilter with Buffer, Traces and singleton OPA instance",
     "filter": "K8s + Istio + Prose",
+    "filter-97776ef1": "K8s + Istio + Prose (opa per request)",
 }
 
 ns_to_s = 1000 * 1000 * 1000  # milliseconds in nanoseconds
@@ -182,7 +188,7 @@ graphs_to_plot: Dict[str, List[Tuple[str, List[str], List[str]]]] = {
                 "2024-04-14T00:54:06-04:00",
                 "2024-04-16T00:28:01-04:00",
             ],
-            ["*/*/filter/*", "*/*/filter-traces-opa/*"],
+            ["*/*/filter-97776ef1/*", "*/*/filter-traces-opa/*"],
         ),
         # (
         #     "finished run for passthrough+buffer+tracing. all of these results are invalid",
