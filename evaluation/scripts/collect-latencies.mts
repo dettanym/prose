@@ -43,6 +43,7 @@ const bookinfo_variants = new Set<VARIANT>([
 const test_only = new Set<VARIANT>([
   "filter-traces",
   "filter-traces-opa-singleton",
+  "filter",
 ])
 
 const TEST_RUNS = 20
