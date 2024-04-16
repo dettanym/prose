@@ -31,6 +31,7 @@ func UpdateTracer(url string) (*ZipkinTracer, error) {
 
 		err = GlobalTracer.Close()
 		if err != nil {
+			_ = tracer.Close()
 			return nil, err
 		}
 
