@@ -1,7 +1,6 @@
 package envoyfilter
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"log"
@@ -19,20 +18,9 @@ import (
 )
 
 func NewFilter(callbacks api.FilterCallbackHandler, config *Config) (api.StreamFilter, error) {
-	opaObj, err := sdk.New(context.Background(), sdk.Options{
-		ID:     "golang-filter-opa",
-		Config: bytes.NewReader([]byte(config.OpaConfig)),
-	})
-
-	if err != nil {
-		return nil, fmt.Errorf("could not initialize an OPA object --- "+
-			"this means that the data plane cannot evaluate the target privacy policy ----- %+v\n", err)
-	}
-
 	return &Filter{
 		callbacks: callbacks,
 		config:    config,
-		opa:       opaObj,
 	}, nil
 }
 
@@ -41,7 +29,6 @@ type Filter struct {
 
 	callbacks api.FilterCallbackHandler
 	config    *Config
-	opa       *sdk.OPA
 
 	// Runtime state of the filter
 	parentSpanContext model.SpanContext
@@ -265,7 +252,6 @@ func (f *Filter) EncodeTrailers(trailers api.ResponseTrailerMap) api.StatusType 
 }
 
 func (f *Filter) OnDestroy(reason api.DestroyReason) {
-	f.opa.Stop(context.Background())
 }
 
 func (f *Filter) processBody(ctx context.Context, body string, isDecode bool) (sendLocalReply bool, err error, proseTags map[string]string) {
@@ -307,7 +293,7 @@ func (f *Filter) runOPA(ctx context.Context, isDecode bool, dataItems []string) 
 	proseTags = map[string]string{}
 
 	// get the named policy decision for the specified input
-	result, err := f.opa.Decision(
+	result, err := common.GlobalAuthAgent.Decision(
 		ctx,
 		sdk.DecisionOptions{
 			Path: "/prose/authz_logic/allow",
