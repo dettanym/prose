@@ -80,8 +80,10 @@ while true; do
     break
     ;;
   *)
-    COMMAND+=("$1")
-    shift
+    while [[ $1 != "--" ]]; do
+      COMMAND+=("$1")
+      shift
+    done
     ;;
   esac
 done
