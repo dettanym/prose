@@ -7,21 +7,21 @@ import { $, echo, fs, os, path, updateArgv } from "zx"
 const duration = "10s"
 const warmup_rate = "100"
 const rates = new Set([
-  "10",
-  "20",
-  "40",
-  "60",
-  "80",
-  warmup_rate,
-  "120",
-  "140",
-  "160",
-  "180",
+  "1000",
+  "800",
+  "600",
+  "400",
   "200",
-  // "400",
-  // "600",
-  // "800",
-  // "1000",
+  // "10",
+  // "20",
+  // "40",
+  // "60",
+  // "80",
+  warmup_rate,
+  // "120",
+  // "140",
+  // "160",
+  // "180",
 ])
 
 const bookinfo_variants = new Set<VARIANT>([
@@ -41,12 +41,14 @@ const bookinfo_variants = new Set<VARIANT>([
  * most of the requests.
  */
 const test_only = new Set<VARIANT>([
-  "filter-traces",
+  "plain",
+  "envoy",
+  "filter-passthrough",
   "filter-traces-opa-singleton",
   "filter",
 ])
 
-const TEST_RUNS = 20
+const TEST_RUNS = 50
 const WARMUP_RUNS = 0
 
 const INGRESS_IP = "192.168.49.21"
