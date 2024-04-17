@@ -170,6 +170,8 @@ graphs_to_plot: Dict[str, List[Tuple[str, List[str], List[str]]]] = {
                 "2024-04-14T00:54:06-04:00",
                 # new variant with singleton opa; plus rerunning filter-traces variant; 20 samples each
                 "2024-04-16T00:28:01-04:00",
+                # adding comparison of prose filter to the previous setup
+                "2024-04-16T18:22:43-04:00",
             ],
             [],
         ),
@@ -179,14 +181,13 @@ graphs_to_plot: Dict[str, List[Tuple[str, List[str], List[str]]]] = {
                 "2024-03-31T22:39:07-04:00",
                 "2024-04-01T01:52:20-04:00",
                 "2024-04-01T23:46:58-04:00",
-                # all of these results are invalid, since our plugin wasn't
-                # properly loaded and envoy defaulted to passthrough plugin
                 # "2024-04-10T00:05:58-04:00",
                 # "2024-04-10T21:13:59-04:00",
                 # "2024-04-12T00:21:50-04:00",
                 # "2024-04-12T13:06:39-04:00",
                 "2024-04-14T00:54:06-04:00",
                 "2024-04-16T00:28:01-04:00",
+                "2024-04-16T18:22:43-04:00",
             ],
             ["*/*/filter-97776ef1/*", "*/*/filter-traces-opa/*"],
         ),
