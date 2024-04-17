@@ -26,7 +26,7 @@ const rates = new Set([
   "10",
 ])
 
-const bookinfo_variants = new Set<VARIANT>([
+const bookinfo_variants = new Set([
   "plain",
   "envoy",
   "filter-passthrough",
@@ -35,7 +35,7 @@ const bookinfo_variants = new Set<VARIANT>([
   "filter-traces-opa",
   "filter-traces-opa-singleton",
   "filter",
-])
+] as const)
 /**
  * Which variants to test during this run.
  * Note, that there has to be more than one variant here, since with one
@@ -65,15 +65,7 @@ $.cwd = process.argv.at(2) as string
 updateArgv(process.argv.slice(3))
 
 type RATE = string
-type VARIANT =
-  | "plain"
-  | "envoy"
-  | "filter-passthrough"
-  | "filter-passthrough-buffer"
-  | "filter-traces"
-  | "filter-traces-opa"
-  | "filter-traces-opa-singleton"
-  | "filter"
+type VARIANT = typeof bookinfo_variants extends Set<infer R> ? R : never
 type METADATA = ReturnType<typeof generate_metadata>
 
 await (async function main() {
