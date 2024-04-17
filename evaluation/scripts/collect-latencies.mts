@@ -4,8 +4,10 @@ import { $, echo, fs, os, path, updateArgv } from "zx"
 
 /*--- PARAMETERS -----------------------------------------------------*/
 
-const duration = "10s"
+const warmup_duration = "10s"
 const warmup_rate = "100"
+
+const duration = "10s"
 const rates = new Set([
   "1000",
   "800",
@@ -49,7 +51,6 @@ const test_only = new Set<VARIANT>([
 ])
 
 const TEST_RUNS = 50
-const WARMUP_RUNS = 0
 
 const INGRESS_IP = "192.168.49.21"
 
@@ -97,6 +98,7 @@ await (async function main() {
           rate,
           variant,
           warmup_rate,
+          warmup_duration,
           duration,
           hostname,
           timestamp,
@@ -121,13 +123,6 @@ await (async function main() {
   echo`* suspend everything before the test`
   for (const variant of bookinfo_variants) {
     await alter_fluxtomizations("suspend", variant)
-  }
-
-  for (const i of range(1, WARMUP_RUNS)) {
-    for (const variant of test_only) {
-      echo`* Running warmup #${i} against variant '${variant}' with rate '${warmup_rate}'`
-      await run_test(metadata_map.get(warmup_rate)!.get(variant)!, i)
-    }
   }
 
   for (const i of range(1, TEST_RUNS)) {
@@ -163,6 +158,7 @@ function generate_metadata({
   rate,
   variant,
   warmup_rate,
+  warmup_duration,
   duration,
   timestamp,
   hostname,
@@ -171,13 +167,16 @@ function generate_metadata({
   rate: string
   variant: VARIANT
   warmup_rate: string
+  warmup_duration: string
   duration: string
   timestamp: string
   hostname: string
   INGRESS_IP: string
 }) {
   return {
+    version: "2",
     timestamp,
+    warmupsFileSuffix: ".warmups.json.zst",
     resultsFileSuffix: ".results.json.zst",
     summaryFileSuffix: ".summary.json",
     req: {
@@ -187,9 +186,11 @@ function generate_metadata({
         Host: ["bookinfo-" + variant + ".my-example.com"],
       },
     },
+    warmupOptions: {
+      duration: warmup_duration,
+      rate: warmup_rate,
+    },
     testOptions: {
-      includesWarmup: true,
-      warmupRate: warmup_rate,
       duration,
       rate,
     },
@@ -209,7 +210,7 @@ async function write_metadata(dir: string, metadata: METADATA) {
 async function run_test(
   metadata: METADATA,
   test_run_index: number,
-  test_results_dir: string | null = null,
+  test_results_dir: string,
 ) {
   echo`  - Scaling up deployments for '${metadata.workloadInfo.variant}' variant`
   await scale_deployments(
@@ -220,45 +221,49 @@ async function run_test(
   echo`  - Waiting until ready`
   await wait_util_ready(metadata.workloadInfo.namespace)
 
-  const attack_params = [
-    "-format=json",
-    "-insecure",
-    `-duration=${metadata.testOptions.duration}`,
-    `-rate=${metadata.testOptions.rate}`,
-  ]
+  const warmups_file = path.join(
+    test_results_dir,
+    `${test_run_index}${metadata.warmupsFileSuffix}`,
+  )
+  const results_file = path.join(
+    test_results_dir,
+    `${test_run_index}${metadata.resultsFileSuffix}`,
+  )
+  const summary_file = path.join(
+    test_results_dir,
+    `${test_run_index}${metadata.summaryFileSuffix}`,
+  )
 
-  if (test_results_dir != null) {
-    const results_file = path.join(
-      test_results_dir,
-      `${test_run_index}${metadata.resultsFileSuffix}`,
-    )
-    const summary_file = path.join(
-      test_results_dir,
-      `${test_run_index}${metadata.summaryFileSuffix}`,
-    )
+  const attack_params = ({
+    duration,
+    rate,
+  }: {
+    duration: string
+    rate: string
+  }) => ["-format=json", "-insecure", `-duration=${duration}`, `-rate=${rate}`]
 
-    echo`  - Testing '${metadata.workloadInfo.variant}' variant`
-    await $`
+  echo`  - Warm-up '${metadata.workloadInfo.variant}' variant`
+  await $`
       echo ${JSON.stringify(metadata.req)} \
-        | vegeta attack ${attack_params} \
+        | vegeta attack ${attack_params(metadata.warmupOptions)} \
+        | vegeta encode --to json \
+        | zstd -c -T0 --ultra -20 - >${warmups_file}
+    `
+
+  echo`  - Testing '${metadata.workloadInfo.variant}' variant`
+  await $`
+      echo ${JSON.stringify(metadata.req)} \
+        | vegeta attack ${attack_params(metadata.testOptions)} \
         | vegeta encode --to json \
         | zstd -c -T0 --ultra -20 - >${results_file}
      `
 
-    echo`  - Report for '${metadata.workloadInfo.variant}' variant`
-    await $`
+  echo`  - Report for '${metadata.workloadInfo.variant}' variant`
+  await $`
       zstd -c -d ${results_file} \
         | vegeta report -type json \
         | jq -M >${summary_file}
     `
-  } else {
-    echo`  - Report for '${metadata.workloadInfo.variant}' variant`
-    await $`
-      echo ${JSON.stringify(metadata.req)} \
-        | vegeta attack ${attack_params} \
-        | vegeta report
-    `
-  }
 
   echo`  - Scaling down deployments for '${metadata.workloadInfo.variant}' variant`
   await scale_deployments(metadata.workloadInfo.namespace, 0)
