@@ -14,16 +14,16 @@ const rates = new Set([
   "600",
   "400",
   "200",
-  // "10",
-  // "20",
-  // "40",
-  // "60",
-  // "80",
+  "180",
+  "160",
+  "140",
+  "120",
   warmup_rate,
-  // "120",
-  // "140",
-  // "160",
-  // "180",
+  "80",
+  "60",
+  "40",
+  "20",
+  "10",
 ])
 
 const bookinfo_variants = new Set<VARIANT>([
@@ -50,7 +50,7 @@ const test_only = new Set<VARIANT>([
   "filter",
 ])
 
-const TEST_RUNS = 50
+const TEST_RUNS = 10
 
 const INGRESS_IP = "192.168.49.21"
 
