@@ -89,6 +89,15 @@ the fix to be "filter-97776ef1".
       possible (while initiating traces sdk, opa sdk and creating and submitting
       some traces) while not executing any of our prose code.
 
+We discovered that the first half of each run of all successful results above
+starts with very jittery latency values and stabilizes towards the second half
+of the test. We created a new script to collect latencies, which runs a warm-up
+load before executing the actual test. Note, we do not kill pods between warmup
+and execution of the actual test, since killing and restarting pods negates all
+warm-up procedures and makes them effectively useless.
+
+- `"2024-04-17T23:03:57-04:00"    # "plain"+"envoy"+"filter"+"filter-passthrough"+"filter-traces-opa-singleton"; 10 runs; 10,20,40,60,80,100,120,140,160,180,200,400,600,800,1000req/s`
+
 ### All test runs from `"moone"`
 
 This host contains some random attempts.

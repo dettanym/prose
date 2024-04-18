@@ -129,6 +129,16 @@ graphs_to_plot: Dict[str, List[Tuple[str, List[str], List[str]]]] = {
             ["2024-04-17T00:47:50-04:00"],
             [],
         ),
+        (
+            "Evaluation of interesting variants across high and low request rates. Includes pod warmup stage",
+            ["2024-04-17T23:03:57-04:00"],
+            [],
+        ),
+        (
+            "Evaluation of interesting variants across low request rates. Includes pod warmup stage",
+            ["2024-04-17T23:03:57-04:00"],
+            ["*/400/*", "*/600/*", "*/800/*", "*/1000/*"],
+        ),
     ],
 }
 
