@@ -31,12 +31,12 @@ function usage() {
 		    command and "\$0" parameter evaluates to a relative path starting with
 		    \`./\` or \`../\`. In this case, the \`env.sh\` will capture the current
 		    working directory, change the current working directory to the folder
-		    containing the script specified by the relative path and it will pass
-		    captured path as a first parameter to the \`"\$0\"\` script. This is useful
-		    if the program specified before \`--\` resolves something based on the
-		    folder where the \`"\$0"\` script is located. For example, \`pnpm exec\` can
-		    resolve cli tools in \`node_modules/\` dir using node.js resolution
-		    algorithm when some ancestor folder contains \`node_modules/\` dir.
+		    containing the \`env.sh\` script and it will pass captured path as a first
+		    parameter to the \`"\$0"\` script. This is useful if the program specified
+		    before \`--\` resolves something based on the folder where the \`env.sh\`
+		    script is located. For example, \`pnpm exec\` can resolve cli tools in
+		    \`node_modules/\` dir using node.js resolution algorithm when some ancestor
+		    folder contains \`node_modules/\` dir.
 
 		    Note, when used in shebang line, one of the two configurable parts of the
 		    line is represented by \`<command>...\` parameter in the usage above and the
@@ -61,12 +61,12 @@ function usage() {
 }
 
 # based on https://stackoverflow.com/a/39376824
-if ! OPTS=$(getopt -o "-h" --long "help" -n "env.sh" -- "$@"); then
+if ! OPTS=$(getopt -o "+h" --long "help" -n "env.sh" -- "$@"); then
   echo "Error in command line arguments." >&2
   exit 1
 fi
 
-declare -a COMMAND
+declare -a COMMAND=()
 
 eval set -- "$OPTS"
 while true; do
@@ -77,13 +77,17 @@ while true; do
     ;;
   --)
     shift
-    break
-    ;;
-  *)
-    while [[ $1 != "--" ]]; do
+
+    # absorb remaining parameters after parsing options
+    while [[ $# -gt 0 && $1 != "--" ]]; do
       COMMAND+=("$1")
       shift
     done
+    if [[ $# -gt 0 && $1 == "--" ]]; then
+      shift
+    fi
+
+    break
     ;;
   esac
 done
