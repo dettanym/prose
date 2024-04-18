@@ -79,7 +79,7 @@ graphs_location = join(PRJ_ROOT, "evaluation/vegeta/bookinfo/_graphs")
 graphs_to_plot: Dict[str, List[Tuple[str, List[str], List[str]]]] = {
     "shiver": [
         (
-            "Evaluation",
+            "Original evaluation (collector script v1)",
             [
                 "2024-03-30T16:28:22-04:00",
                 "2024-03-31T18:54:37-04:00",
@@ -92,7 +92,7 @@ graphs_to_plot: Dict[str, List[Tuple[str, List[str], List[str]]]] = {
             [],
         ),
         (
-            "Focus on smaller request rates",
+            "Original evaluation, but focusing on smaller request rates (collector script v1)",
             [
                 "2024-03-31T22:39:07-04:00",
                 "2024-04-01T01:52:20-04:00",
@@ -100,142 +100,33 @@ graphs_to_plot: Dict[str, List[Tuple[str, List[str], List[str]]]] = {
             ],
             [],
         ),
-        # (
-        #     "default memory limits on istio-proxy container, 1 replica of each pod. we saw pod crashes and restarts during the test",
-        #     ["2024-04-03T22:25:53-04:00"],
-        #     [],
-        # ),
-        # (
-        #     "increased memory limits, 1 replica of each pod. no crashes and restarts noticed",
-        #     ["2024-04-04T20:05:22-04:00"],
-        #     [],
-        # ),
-        # (
-        #     "same as above",
-        #     ["2024-04-04T20:16:59-04:00"],
-        #     [],
-        # ),
-        # (
-        #     "Same as above, but k8s is created with `--nodes=1 --cpus=30 --memory=500g`",
-        #     ["2024-04-04T20:35:04-04:00"],
-        #     [],
-        # ),
-        # (
-        #     "Same as 2 above, no observations being made, plus cpu and memory limits are set",
-        #     ["2024-04-05T20:55:20-04:00"],
-        #     [],
-        # ),
-        # (
-        #     "Same as above, plus warmup is included, plot for rate of 100 and 200",
-        #     ["2024-04-05T21:30:02-04:00"],
-        #     [],
-        # ),
-        # (
-        #     "Same as above, but running other variants too, plot for rate 100,150,200",
-        #     ["2024-04-05T21:41:30-04:00"],
-        #     [],
-        # ),
-        # (
-        #     "Same as above, but 10 replicas of each pod",
-        #     ["2024-04-05T22:14:57-04:00"],
-        #     [],
-        # ),
         (
-            # Failed to complete a full run and only has data from ~20 runs each.
-            # The issue occurred while scaling resources --- not while sending
-            # traffic --- which leads to the absence of outlier runs.
-            # It also includes new passthrough filter that simply continues the stream.
-            "Incomplete run, but includes passthrough filter",
-            ["2024-04-10T00:05:58-04:00"],
-            [],
-        ),
-        (
-            "Finished successfully; includes passthrough and passthrough+buffer filters",
-            ["2024-04-10T21:13:59-04:00"],
-            [],
-        ),
-        (
-            "Run collecting results across various days. It concatenates data for matching variants and rates",
+            "Comparison of all test variants (old and new runs), focusing on smaller request rates",
             [
                 "2024-03-31T22:39:07-04:00",
                 "2024-04-01T01:52:20-04:00",
                 "2024-04-01T23:46:58-04:00",
-                # all of these results are invalid, since our plugin wasn't
-                # properly loaded and envoy defaulted to passthrough plugin
-                # "2024-04-10T00:05:58-04:00",
-                # "2024-04-10T21:13:59-04:00",
-                # "2024-04-12T00:21:50-04:00", # 3 passthrough filter variants; 10 samples each
-                # "2024-04-12T13:06:39-04:00", # 2 new varaints + prose filter; 20 samples each
-                # 4 new passthrough filter based variants, while properly loading plugin in envoy settings; 20 samples each
                 "2024-04-14T00:54:06-04:00",
-                # new variant with singleton opa; plus rerunning filter-traces variant; 20 samples each
                 "2024-04-16T00:28:01-04:00",
-                # adding comparison of prose filter to the previous setup
                 "2024-04-16T18:22:43-04:00",
             ],
             [],
         ),
         (
-            "Same as above, minus prose filter",
+            "Comparison of all non-exponential variants, focusing on smaller request rates",
             [
                 "2024-03-31T22:39:07-04:00",
                 "2024-04-01T01:52:20-04:00",
                 "2024-04-01T23:46:58-04:00",
-                # "2024-04-10T00:05:58-04:00",
-                # "2024-04-10T21:13:59-04:00",
-                # "2024-04-12T00:21:50-04:00",
-                # "2024-04-12T13:06:39-04:00",
                 "2024-04-14T00:54:06-04:00",
                 "2024-04-16T00:28:01-04:00",
                 "2024-04-16T18:22:43-04:00",
             ],
             ["*/*/filter-97776ef1/*", "*/*/filter-traces-opa/*"],
         ),
-        # (
-        #     "finished run for passthrough+buffer+tracing. all of these results are invalid",
-        #     [
-        #         # results are very inconsistent - there are many runs which do not all have successful response codes
-        #         # "2024-04-11T21:10:16-04:00",
-        #         # same inconsistent results
-        #         # "2024-04-11T22:52:42-04:00",
-        #         # same inconsistent results. interrupted early
-        #         # "2024-04-12T00:07:44-04:00",
-        #     ],
-        #     [],
-        # ),
-    ],
-    "moone": [
         (
-            "; ".join(
-                [
-                    "100req/s is sensible",
-                    "120req/s failed during last attempt, leading to an outlier",
-                    "140req/s got hardware congestion impacting results",
-                ]
-            ),
-            [
-                "2024-04-09T19:53:10-04:00",  # this run with 100 req/s seems sensible
-                "2024-04-09T20:06:44-04:00",  # this run with 140 req/s got hardware issues (congestion) which impacted results
-                "2024-04-09T20:14:12-04:00",  # this run with 120 req/s is mostly okay; outlier is excluded
-            ],
-            [
-                # hardware congestion during the run.
-                # this run failed and a lot of requests timed out, becoming an outlier.
-                "2024-04-09T20:14:12-04:00/120/*/4.*",
-            ],
-        ),
-        (
-            "this run has 4 successful tests and the 5th is failed.",
-            ["2024-04-09T20:21:34-04:00"],
-            [
-                # this run failed and all requests timed out, becoming an outlier.
-                # including it significantly skewes the results
-                "2024-04-09T20:21:34-04:00/100/*/5.*",
-            ],
-        ),
-        (
-            "Results for prose filter and passthrough filter",
-            ["2024-04-09T19:53:10-04:00", "2024-04-09T23:38:31-04:00"],
+            "Most interesting variants (only new runs), under high request rates",
+            ["2024-04-17T00:47:50-04:00"],
             [],
         ),
     ],
