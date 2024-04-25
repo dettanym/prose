@@ -32,7 +32,8 @@ type Filter struct {
 
 	// Runtime state of the filter
 	parentSpanContext model.SpanContext
-	headerMetadata    common.HeaderMetadata
+	reqHeaderMetadata common.RequestHeaderMetadata
+	resHeaderMetadata common.ResponseHeaderMetadata
 	thirdPartyURL     string
 	processDecodeBody bool
 	decodeDataBuffer  string
@@ -52,7 +53,7 @@ func (f *Filter) DecodeHeaders(header api.RequestHeaderMap, endStream bool) api.
 	span.Tag("SIDECAR_DIRECTION", string(f.config.direction))
 	span.Tag("DATA_FLOW", "DECODE_HEADERS")
 
-	f.headerMetadata = common.ExtractHeaderData(header)
+	f.reqHeaderMetadata = common.ExtractRequestHeaderData(header)
 
 	// common.LogDecodeHeaderData(header)
 
@@ -88,7 +89,7 @@ func (f *Filter) DecodeHeaders(header api.RequestHeaderMap, endStream bool) api.
 			return api.Continue
 		}
 
-		f.thirdPartyURL = f.headerMetadata.Host
+		f.thirdPartyURL = f.reqHeaderMetadata.Host
 		f.processDecodeBody = true
 
 	default:
@@ -168,6 +169,8 @@ func (f *Filter) EncodeHeaders(header api.ResponseHeaderMap, endStream bool) api
 
 	span.Tag("SIDECAR_DIRECTION", string(f.config.direction))
 	span.Tag("DATA_FLOW", "ENCODE_HEADERS")
+
+	f.resHeaderMetadata = common.ExtractResponseHeaderData(header)
 
 	if endStream {
 		// here we have a header-only request
@@ -262,14 +265,21 @@ func (f *Filter) processBody(ctx context.Context, body string, isDecode bool) (s
 
 	proseTags[PROSE_SIDECAR_DIRECTION] = string(f.config.direction)
 
-	jsonBody, err := common.GetJSONBody(ctx, f.headerMetadata, body)
+	var contentType *string
+	if isDecode {
+		contentType = f.reqHeaderMetadata.ContentType
+	} else {
+		contentType = f.resHeaderMetadata.ContentType
+	}
+
+	jsonBody, err := common.GetJSONBody(ctx, contentType, body)
 	if err != nil {
 		proseTags[PROSE_JSON_BODY_ERROR] = fmt.Sprintf("%s", err)
 		return false, err, proseTags
 	}
 
 	// Run Presidio and add tags for PII types or an error from Presidio
-	piiTypes, err := common.PiiAnalysis(ctx, f.config.presidioUrl, f.headerMetadata.SvcName, jsonBody)
+	piiTypes, err := common.PiiAnalysis(ctx, f.config.presidioUrl, f.reqHeaderMetadata.SvcName, jsonBody)
 	if err != nil {
 		proseTags[PROSE_PRESIDIO_ERROR] = fmt.Sprintf("%s", err)
 		return false, err, proseTags

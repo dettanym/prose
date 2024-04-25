@@ -14,7 +14,7 @@ import (
 const anyPurpose = "ANY"
 const unknownSvcName = "UNKNOWN SVC"
 
-type HeaderMetadata struct {
+type RequestHeaderMetadata struct {
 	Host   string
 	Method string
 	Path   string
@@ -25,6 +25,11 @@ type HeaderMetadata struct {
 
 	SvcName string
 	Purpose string
+}
+
+type ResponseHeaderMetadata struct {
+	ContentType   *string
+	ContentLength *string
 }
 
 type SidecarDirection string
@@ -51,8 +56,8 @@ func LogEncodeHeaderData(header api.ResponseHeaderMap) {
 	//})
 }
 
-func ExtractHeaderData(header api.RequestHeaderMap) HeaderMetadata {
-	metadata := HeaderMetadata{
+func ExtractRequestHeaderData(header api.RequestHeaderMap) RequestHeaderMetadata {
+	metadata := RequestHeaderMetadata{
 		Host:   header.Host(),
 		Method: header.Method(),
 		Path:   header.Path(),
@@ -99,6 +104,22 @@ func ExtractHeaderData(header api.RequestHeaderMap) HeaderMetadata {
 	return metadata
 }
 
+func ExtractResponseHeaderData(headers api.ResponseHeaderMap) ResponseHeaderMetadata {
+	metadata := ResponseHeaderMetadata{}
+
+	contentType, exists := headers.Get("content-type")
+	if exists {
+		metadata.ContentType = &contentType
+	}
+
+	contentLength, exists := headers.Get("content-length")
+	if exists {
+		metadata.ContentLength = &contentLength
+	}
+
+	return metadata
+}
+
 func GetDirection(callbacks api.FilterCallbackHandler) (SidecarDirection, error) {
 	directionEnum, err := callbacks.GetProperty("xds.listener_direction")
 	if err != nil {
@@ -128,15 +149,15 @@ func GetDirection(callbacks api.FilterCallbackHandler) (SidecarDirection, error)
 		"check the Envoy docs for the range of values for this key", directionInt)
 }
 
-func GetJSONBody(ctx context.Context, headerMetadata HeaderMetadata, body string) (interface{}, error) {
+func GetJSONBody(ctx context.Context, contentType *string, body string) (interface{}, error) {
 	span, ctx := GlobalTracer.StartSpanFromContext(ctx, "getJSONBody")
 	defer span.Finish()
 
-	if headerMetadata.ContentType == nil {
+	if contentType == nil {
 		return nil, fmt.Errorf("cannot analyze body, since 'ContentType' header is not set")
 	}
 
-	switch *headerMetadata.ContentType {
+	switch *contentType {
 	case "application/json":
 		var data interface{}
 
@@ -154,6 +175,6 @@ func GetJSONBody(ctx context.Context, headerMetadata HeaderMetadata, body string
 
 		return query, nil
 	default:
-		return nil, fmt.Errorf("cannot analyze a body with ContentType '%s'", *headerMetadata.ContentType)
+		return nil, fmt.Errorf("cannot analyze a body with ContentType '%s'", *contentType)
 	}
 }
