@@ -11,6 +11,7 @@ from typing import Any, Dict, List, Literal, Tuple
 import matplotlib.pyplot as plt
 import numpy as np
 import numpy.core.records as rec
+from matplotlib import ticker
 
 Bookinfo_Variants = Literal[
     "plain",
@@ -222,6 +223,7 @@ def plot_and_save_results(
         Dict[RequestRate, List[Summary]],
     ],
 ):
+    locator = ticker.MaxNLocator(nbins=11)
     fig, (ax_lin, ax_log) = plt.subplots(nrows=1, ncols=2, figsize=(12.8, 4.8))
 
     for variant, variant_results in results.items():
@@ -261,6 +263,7 @@ def plot_and_save_results(
     ax_lin.set_yscale("linear")
     ax_lin.set_xlabel("Load (req/s)")
     ax_lin.set_ylabel("Mean response latency (s)")
+    ax_lin.xaxis.set_major_locator(locator)
 
     ax_log.set_xscale("log")
     ax_log.set_yscale("log")
