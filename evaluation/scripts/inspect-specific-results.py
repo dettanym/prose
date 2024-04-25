@@ -54,6 +54,14 @@ interest_points = {
             "Plots for Envoy without filter with request rate 200req/s",
             "2024-04-01T01:52:20-04:00/200/envoy/1.results.json.zst",
         ),
+        (
+            "plots for plain variant with request rate 120req/s after warmup, 1st run",
+            "2024-04-17T23:03:57-04:00/120/plain/1.results.json.zst",
+        ),
+        (
+            "plots for plain variant with request rate 120req/s after warmup, 2nd run",
+            "2024-04-17T23:03:57-04:00/120/plain/2.results.json.zst",
+        ),
     ]
 }
 
