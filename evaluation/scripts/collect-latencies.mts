@@ -1,6 +1,6 @@
 #!/usr/bin/env -S bash -c '"$(dirname $(readlink -f "$0"))/../env.sh" pnpm exec tsx -- "$0" "$@"'
 
-import { $, echo, fs, os, path, updateArgv } from "zx"
+import { $, echo, fs, os, path, updateArgv, sleep } from "zx"
 
 /*--- PARAMETERS -----------------------------------------------------*/
 
@@ -112,6 +112,10 @@ await (async function main() {
     }
   }
 
+  echo`* start managing presidio`
+  await $`flux suspend kustomization cluster-apps-prose-system-prose`
+  await scale_specific_deployments(0, "prose-system", "presidio")
+
   echo`* suspend everything before the test`
   for (const variant of bookinfo_variants) {
     await alter_fluxtomizations("suspend", variant)
@@ -134,6 +138,10 @@ await (async function main() {
   for (const variant of bookinfo_variants) {
     await alter_fluxtomizations("resume", variant)
   }
+
+  echo`* stop managing presidio`
+  await scale_specific_deployments(1, "prose-system", "presidio")
+  await $`flux resume kustomization --wait=false cluster-apps-prose-system-prose`
 
   const completion_time = await current_timestamp()
   echo`* Completed at ${completion_time}`
@@ -204,14 +212,43 @@ async function run_test(
   test_run_index: number,
   test_results_dir: string,
 ) {
+  // we will not bring all these pods down at the end of the test, but rather
+  // restart them when needed. It means that this scale command would only
+  // actually do something once at the beginning of the test.
+  await scale_specific_deployments(
+    metadata.workloadInfo.test_replicas,
+    "prose-system",
+    "presidio",
+  )
+
   echo`  - Scaling up deployments for '${metadata.workloadInfo.variant}' variant`
   await scale_deployments(
     metadata.workloadInfo.namespace,
     metadata.workloadInfo.test_replicas,
   )
 
+  if (
+    metadata.workloadInfo.variant !== "plain" &&
+    metadata.workloadInfo.variant !== "envoy"
+  ) {
+    echo`  - Restarting presidio`
+    await restart_pods("prose-system", "presidio")
+  }
+
+  await sleep("1s")
+
   echo`  - Waiting until ready`
-  await wait_util_ready(metadata.workloadInfo.namespace)
+  await Promise.all([
+    wait_until_ready(
+      metadata.workloadInfo.test_replicas,
+      metadata.workloadInfo.namespace,
+    ),
+    wait_until_ready(
+      metadata.workloadInfo.test_replicas,
+      "prose-system",
+      "presidio",
+    ),
+  ])
 
   const warmups_file = path.join(
     test_results_dir,
@@ -277,21 +314,51 @@ function get_resource_name(variant: VARIANT) {
 }
 
 function scale_deployments(namespace: string, replicas: number) {
+  return scale_specific_deployments(replicas, namespace, "--all")
+}
+
+function scale_specific_deployments(
+  replicas: number,
+  namespace: string,
+  deployments: string | string[],
+) {
   // language=sh
   return $`
     kubectl scale \
       --replicas ${replicas} \
       --namespace ${namespace} \
-      deployments --all >/dev/null
+      deployments ${
+        Array.isArray(deployments) ? deployments.join(" ") : deployments
+      } >/dev/null
   `
 }
 
-function wait_util_ready(namespace: string) {
+function restart_pods(namespace: string, deployments: string | string[] = "") {
   // language=sh
   return $`
-    kubectl wait --for condition=available --timeout=5m \
+    kubectl rollout restart \
       --namespace ${namespace} \
-      deployments --all >/dev/null
+      deployments ${
+        Array.isArray(deployments) ? deployments.join(" ") : deployments
+      } >/dev/null
+  `
+}
+
+function wait_until_ready(
+  replicas: number,
+  namespace: string,
+  deployment = "--all",
+) {
+  // language=sh
+  return $`
+    kubectl wait --timeout=1m \
+      --for='jsonpath={.status.updatedReplicas}=${replicas}' \
+      --namespace ${namespace} \
+      deployments ${deployment} >/dev/null && \
+    kubectl wait --timeout=5m \
+      --for='jsonpath={.status.readyReplicas}=${replicas}' \
+      --namespace ${namespace} \
+      deployments ${deployment} >/dev/null
   `
 }
 
