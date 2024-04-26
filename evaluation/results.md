@@ -98,6 +98,24 @@ warm-up procedures and makes them effectively useless.
 
 - `"2024-04-17T23:03:57-04:00"    # "plain"+"envoy"+"filter"+"filter-passthrough"+"filter-traces-opa-singleton"; 10 runs; 10,20,40,60,80,100,120,140,160,180,200,400,600,800,1000req/s`
 
+We fixed a bug which prevented request or response bodies from being analyzed:
+[`ee1bc3d7d1faae0a3fc54a9bd44df9dd027680e6`](https://github.com/dettanym/prose/commit/ee1bc3d7d1faae0a3fc54a9bd44df9dd027680e6)
+and
+[`b8267c62bebac34e8b01eca51b6e54583f33ab97`](https://github.com/dettanym/prose/commit/b8267c62bebac34e8b01eca51b6e54583f33ab97).
+The test below has the results for the fixed code with the same settings as the
+test above.
+
+- `"2024-04-25T23:37:03-04:00"    # "plain"+"envoy"+"filter"+"filter-passthrough"+"filter-traces-opa-singleton"; 10 runs; 10,20,40,60,80,100,120,140,160,180,200,400,600,800,1000req/s`
+
+However, it turned out during the test above that our prose golang filter
+variant had a lot of failed requests during the test. The guess here is that we
+only have one presidio replica, and it cannot keep up with the demand from 10
+replicas of each pod from bookinfo namespace. With these changes (in
+[ca26c19db2c9675e2f3a65f10aec106b0d97a6a7](https://github.com/dettanym/prose/commit/ca26c19db2c9675e2f3a65f10aec106b0d97a6a7))
+we also updated the waiting mechanism for ready pods.
+
+- `"2024-04-26T01:47:38-04:00"    # "plain"+"envoy"+"filter"+"filter-passthrough"+"filter-traces-opa-singleton"; 10 runs; 10,20,40,60,80,100,120,140,160,180,200,400,600,800,1000req/s`
+
 ### All test runs from `"moone"`
 
 This host contains some random attempts.
