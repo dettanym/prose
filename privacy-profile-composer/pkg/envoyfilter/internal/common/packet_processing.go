@@ -161,7 +161,7 @@ func GetJSONBody(ctx context.Context, contentType *string, body string) (interfa
 	case "application/json":
 		var data interface{}
 
-		err := json.Unmarshal([]byte(body), data)
+		err := json.Unmarshal([]byte(body), &data)
 		if err != nil {
 			return nil, fmt.Errorf("failed to unmarshal json body: %w", err)
 		}
