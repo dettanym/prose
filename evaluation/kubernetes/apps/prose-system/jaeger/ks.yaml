@@ -5,8 +5,6 @@ metadata:
   name: cluster-apps-prose-system-jaeger
   namespace: flux-system
 spec:
-  dependsOn:
-    - name: cluster-apps-prose-system-elasticsearch
   path: ./evaluation/kubernetes/apps/prose-system/jaeger/app
   prune: true
   sourceRef:
