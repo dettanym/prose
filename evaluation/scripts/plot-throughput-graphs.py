@@ -140,6 +140,16 @@ graphs_to_plot: Dict[str, List[Tuple[str, List[str], List[str]]]] = {
             ["2024-04-17T23:03:57-04:00"],
             ["*/400/*", "*/600/*", "*/800/*", "*/1000/*"],
         ),
+        (
+            "Evaluation of filter analyzing request/response body",
+            ["2024-04-26T01:47:38-04:00"],
+            [],
+        ),
+        (
+            "Evaluation of filter analyzing request/response body",
+            ["2024-04-26T01:47:38-04:00"],
+            ["*/400/*", "*/600/*", "*/800/*", "*/1000/*"],
+        ),
     ],
 }
 
