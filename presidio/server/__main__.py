@@ -129,7 +129,10 @@ class Server:
             try:
                 request_obj = request.get_json()
                 print(request_obj["json_to_analyze"], type(request_obj))
-                if not request_obj["json_to_analyze"]:
+                if (
+                    "json_to_analyze" not in request_obj
+                    or request_obj["json_to_analyze"] is None
+                ):
                     raise Exception(
                         "Please set a JSON field named 'json_to_analyze' in the body, with the JSON object "
                         "to analyze."
