@@ -9,9 +9,6 @@ RUN go mod download
 COPY ./privacy-profile-composer/ ./
 RUN go build -o dist/simple.so -buildmode=c-shared ./cmd/envoy-filter
 RUN go build -o dist/passthrough.so -buildmode=c-shared ./cmd/envoy-filter-passthrough
-RUN go build -o dist/passthrough-buffer.so -buildmode=c-shared ./cmd/envoy-filter-passthrough-buffer
-RUN go build -o dist/traces.so -buildmode=c-shared ./cmd/envoy-filter-traces
-RUN go build -o dist/traces-opa.so -buildmode=c-shared ./cmd/envoy-filter-traces-opa
 RUN go build -o dist/traces-opa-singleton.so -buildmode=c-shared ./cmd/envoy-filter-traces-opa-singleton
 
 # This version needs to match the deployed istiod helmrelease version

@@ -6,7 +6,4 @@ resources:
   - ./with-envoy
   - ./with-filter
   - ./with-filter-passthrough
-  - ./with-filter-passthrough-buffer
-  - ./with-filter-traces
-  - ./with-filter-traces-opa
   - ./with-filter-traces-opa-singleton

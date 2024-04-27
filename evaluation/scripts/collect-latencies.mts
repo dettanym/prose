@@ -30,9 +30,6 @@ const bookinfo_variants = new Set([
   "plain",
   "envoy",
   "filter-passthrough",
-  "filter-passthrough-buffer",
-  "filter-traces",
-  "filter-traces-opa",
   "filter-traces-opa-singleton",
   "filter",
 ] as const)
