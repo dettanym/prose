@@ -11,6 +11,15 @@ patches:
       apiVersion: apps/v1
       kind: Deployment
       metadata:
+        name: not-used
+      spec:
+        replicas: 0
+    target:
+      kind: Deployment
+  - patch: |-
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
         name: details-v1
       spec:
         template:
