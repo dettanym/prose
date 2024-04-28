@@ -1,4 +1,4 @@
-#!/usr/bin/env -S bash -c '"$(dirname $(readlink -f "$0"))/../env.sh" python "$0" "$@"'
+#!/usr/bin/env -S bash -c '"$(dirname $(readlink -f "$0"))/../env.sh" python -m "scripts" '"'#!'"' -- "$0" "$@"'
 # shellcheck disable=SC2096
 
 import json
@@ -290,13 +290,14 @@ def plot_and_save_results(
     plt.close(fig)
 
 
-makedirs(graphs_location, exist_ok=True)
+def main(*args, **kwargs):
+    makedirs(graphs_location, exist_ok=True)
 
-for hostname, hostname_data in graphs_to_plot.items():
-    for i, (title, include, exclude) in enumerate(hostname_data):
-        plot_and_save_results(
-            i + 1,
-            title,
-            hostname,
-            load_folders(hostname, include, exclude),
-        )
+    for hostname, hostname_data in graphs_to_plot.items():
+        for i, (title, include, exclude) in enumerate(hostname_data):
+            plot_and_save_results(
+                i + 1,
+                title,
+                hostname,
+                load_folders(hostname, include, exclude),
+            )
