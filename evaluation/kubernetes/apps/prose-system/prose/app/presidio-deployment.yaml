@@ -14,6 +14,9 @@ spec:
       containers:
         - name: presidio
           image: ghcr.io/dettanym/prose-presidio:main
+          env:
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://otlp.prose-system.svc.cluster.local:4318
           resources:
             requests:
               cpu: 10m
