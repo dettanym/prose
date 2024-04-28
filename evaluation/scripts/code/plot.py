@@ -16,10 +16,10 @@ def plot_and_save_results(
     hostname: str,
     i: int,
     title: str,
-    colors: Dict[str, str],
-    labels: Dict[str, str],
+    colors: Dict[Bookinfo_Variants, str],
+    labels: Dict[Bookinfo_Variants, str],
     results: Dict[
-        Bookinfo_Variants,
+        Bookinfo_Variants | str,
         Dict[RequestRate, List[Summary]],
     ],
 ):
@@ -49,14 +49,14 @@ def plot_and_save_results(
             variant_data.x,
             variant_data.y,
             yerr=variant_data.yerr,
-            label=labels[variant],
-            color=colors[variant],
+            label=labels.get(variant),
+            color=colors.get(variant),
         )
         ax_log.errorbar(
             variant_data.x,
             variant_data.y,
             yerr=variant_data.yerr,
-            color=colors[variant],
+            color=colors.get(variant),
         )
 
     ax_lin.set_xscale("linear")

@@ -9,38 +9,56 @@ from typing import Dict, List, Tuple
 from .code.data import Bookinfo_Variants, check_loaded_variants, load_folders
 from .code.plot import plot_and_save_results
 
-bookinfo_variants: List[Bookinfo_Variants] = [
-    "plain",
-    "envoy",
-    "filter-passthrough",
-    "filter-passthrough-buffer",
-    "filter-traces",
-    "filter-traces-opa",
-    "filter-traces-opa-singleton",
-    "filter",
-    "filter-97776ef1",
-]
-colors = {
+# Describes mapping from historical data collection to internal bookinfo
+# variant names. The values on the left should not change, unless we rename
+# existing folders in results directory.
+bookinfo_variant_mapping: Dict[str, Bookinfo_Variants] = {
+    "plain": "plain",
+    #
+    "envoy": "istio",
+    #
+    "filter-passthrough": "passthrough-filter",
+    #
+    "filter-traces-opa-singleton": "tooling-filter",
+    #
+    "filter": "prose-filter",
+    # historical
+    #   state of filter before this commit. historical record of test results,
+    #   since we modified this filter in place.
+    "filter-97776ef1": "prose-filter-97776ef1",
+    # deleted
+    "filter-passthrough-buffer": "filter-passthrough-buffer",
+    "filter-traces": "filter-traces",
+    "filter-traces-opa": "filter-traces-opa",
+}
+
+colors: Dict[Bookinfo_Variants, str] = {
+    # current
     "plain": "blue",
-    "envoy": "orange",
-    "filter-passthrough": "brown",
+    "istio": "orange",
+    "passthrough-filter": "brown",
+    "tooling-filter": "pink",
+    "prose-filter": "green",
+    # historical
+    "prose-filter-97776ef1": "green",
+    # deleted
     "filter-passthrough-buffer": "red",
     "filter-traces": "cyan",
     "filter-traces-opa": "grey",
-    "filter-traces-opa-singleton": "pink",
-    "filter": "green",
-    "filter-97776ef1": "green",
 }
-labels = {
+labels: Dict[Bookinfo_Variants, str] = {
+    # current
     "plain": "K8s",
-    "envoy": "K8s + Istio",
-    "filter-passthrough": "K8s + Istio + PassthroughFilter",
+    "istio": "K8s + Istio",
+    "passthrough-filter": "K8s + Istio + PassthroughFilter",
+    "tooling-filter": "K8s + Istio + PassthroughFilter with Buffer, Traces and singleton OPA instance",
+    "prose-filter": "K8s + Istio + Prose",
+    # historical
+    "prose-filter-97776ef1": "K8s + Istio + Prose (opa per request)",
+    # deleted
     "filter-passthrough-buffer": "K8s + Istio + PassthroughFilter with Data Buffer",
     "filter-traces": "K8s + Istio + PassthroughFilter with Buffer and Traces",
     "filter-traces-opa": "K8s + Istio + PassthroughFilter with Buffer, Traces and OPA instance created",
-    "filter-traces-opa-singleton": "K8s + Istio + PassthroughFilter with Buffer, Traces and singleton OPA instance",
-    "filter": "K8s + Istio + Prose",
-    "filter-97776ef1": "K8s + Istio + Prose (opa per request)",
 }
 
 graphs_to_plot: Dict[str, List[Tuple[str, List[str], List[str]]]] = {
@@ -145,7 +163,7 @@ def main(*args, **kwargs):
                 colors,
                 labels,
                 check_loaded_variants(
-                    bookinfo_variants,
+                    bookinfo_variant_mapping,
                     load_folders(
                         join(data_location, hostname),
                         include,

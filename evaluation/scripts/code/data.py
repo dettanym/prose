@@ -9,17 +9,18 @@ RequestRate = str
 Summary = Dict[str, Any]
 
 Bookinfo_Variants = Literal[
+    # current
     "plain",
-    "envoy",
-    "filter-passthrough",
+    "istio",
+    "passthrough-filter",
+    "tooling-filter",
+    "prose-filter",
+    # historical
+    "prose-filter-97776ef1",
+    # deleted
     "filter-passthrough-buffer",
     "filter-traces",
     "filter-traces-opa",
-    "filter-traces-opa-singleton",
-    "filter",
-    # state of filter before this commit. historical record of test results,
-    # since we modified this filter in place.
-    "filter-97776ef1",
 ]
 
 
@@ -91,17 +92,21 @@ def load_folders(
 
 
 def check_loaded_variants(
-    known_variants: List[str],
+    known_variants: Dict[str, Bookinfo_Variants],
     data: Dict[Variant, Dict[RequestRate, List[Summary]]],
-) -> Dict[Bookinfo_Variants, Dict[RequestRate, List[Summary]]]:
+) -> Dict[Bookinfo_Variants | str, Dict[RequestRate, List[Summary]]]:
+    result = dict()
     unknown = set()
 
-    for variant in data.keys():
-        if variant not in known_variants:
+    for variant, summaries in data.items():
+        if variant in known_variants:
+            result[known_variants[variant]] = summaries
+        else:
             unknown.add(variant)
+            result[variant] = summaries
 
     if len(unknown) > 0:
         print("detected some unknown variants amount data folders:")
         print(unknown)
 
-    return data
+    return result
