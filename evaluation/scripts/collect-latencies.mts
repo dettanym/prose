@@ -28,10 +28,10 @@ const rates = new Set([
 
 const bookinfo_variants = new Set([
   "plain",
-  "envoy",
-  "filter-passthrough",
-  "filter-traces-opa-singleton",
-  "filter",
+  "istio",
+  "passthrough-filter",
+  "tooling-filter",
+  "prose-filter",
 ] as const)
 /**
  * Which variants to test during this run.
@@ -41,10 +41,10 @@ const bookinfo_variants = new Set([
  */
 const test_only = new Set<VARIANT>([
   "plain",
-  "envoy",
-  "filter-passthrough",
-  "filter-traces-opa-singleton",
-  "filter",
+  "istio",
+  "passthrough-filter",
+  "tooling-filter",
+  "prose-filter",
 ])
 
 const TEST_RUNS = 10
@@ -170,6 +170,7 @@ function generate_metadata({
   hostname: string
   INGRESS_IP: string
 }) {
+  const workload_name = get_resource_name(variant)
   return {
     version: "2",
     timestamp,
@@ -180,7 +181,7 @@ function generate_metadata({
       method: "GET",
       url: "https://" + INGRESS_IP + "/productpage?u=test",
       header: {
-        Host: ["bookinfo-" + variant + ".my-example.com"],
+        Host: [workload_name + ".my-example.com"],
       },
     },
     warmupOptions: {
@@ -193,7 +194,7 @@ function generate_metadata({
     },
     workloadInfo: {
       variant,
-      namespace: get_resource_name(variant),
+      namespace: workload_name,
       hostname,
       test_replicas: get_test_replicas(hostname),
     },
@@ -224,7 +225,7 @@ async function run_test(
     metadata.workloadInfo.test_replicas,
   )
 
-  if (metadata.workloadInfo.variant === "filter") {
+  if (metadata.workloadInfo.variant === "prose-filter") {
     echo`  - Restarting presidio`
     await restart_pods("prose-system", "presidio")
   }

@@ -3,7 +3,7 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
   - ./plain
-  - ./with-envoy
-  - ./with-filter
-  - ./with-filter-passthrough
-  - ./with-filter-traces-opa-singleton
+  - ./with-istio
+  - ./with-passthrough-filter
+  - ./with-prose-filter
+  - ./with-tooling-filter

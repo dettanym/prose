@@ -2,16 +2,16 @@
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: bookinfo-with-envoy
+  name: &name bookinfo-with-istio
   namespace: flux-system
 spec:
   dependsOn:
     - name: cluster-apps-istio-system-istiod
   path: ./evaluation/kubernetes/apps/samples/bookinfo/_template/app
-  targetNamespace: bookinfo-with-envoy
+  targetNamespace: *name
   postBuild:
     substitute:
-      ingress_name: bookinfo-envoy
+      ingress_name: *name
   prune: true
   sourceRef:
     kind: GitRepository

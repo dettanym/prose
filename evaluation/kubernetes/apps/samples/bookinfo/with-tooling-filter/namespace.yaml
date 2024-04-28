@@ -2,7 +2,7 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: bookinfo-with-filter-passthrough
+  name: bookinfo-with-tooling-filter
   labels:
     kustomize.toolkit.fluxcd.io/prune: disabled
     istio-injection: enabled

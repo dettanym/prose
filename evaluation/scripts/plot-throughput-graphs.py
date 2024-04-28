@@ -16,12 +16,16 @@ bookinfo_variant_mapping: Dict[str, Bookinfo_Variants] = {
     "plain": "plain",
     #
     "envoy": "istio",
+    "istio": "istio",
     #
     "filter-passthrough": "passthrough-filter",
+    "passthrough-filter": "passthrough-filter",
     #
     "filter-traces-opa-singleton": "tooling-filter",
+    "tooling-filter": "tooling-filter",
     #
     "filter": "prose-filter",
+    "prose-filter": "prose-filter",
     # historical
     #   state of filter before this commit. historical record of test results,
     #   since we modified this filter in place.

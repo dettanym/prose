@@ -2,13 +2,13 @@
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: bookinfo-envoy-filter-traces-opa-singleton-details
+  name: bookinfo-envoy-tooling-filter-details
   namespace: flux-system
 spec:
   dependsOn:
     - name: cluster-apps-istio-system-istiod
   path: ./evaluation/kubernetes/apps/samples/bookinfo/_template/filter
-  targetNamespace: bookinfo-with-filter-traces-opa-singleton
+  targetNamespace: bookinfo-with-tooling-filter
   postBuild:
     substitute:
       filter_name: traces-opa-singleton
@@ -25,13 +25,13 @@ spec:
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: bookinfo-envoy-filter-traces-opa-singleton-ratings
+  name: bookinfo-envoy-tooling-filter-ratings
   namespace: flux-system
 spec:
   dependsOn:
     - name: cluster-apps-istio-system-istiod
   path: ./evaluation/kubernetes/apps/samples/bookinfo/_template/filter
-  targetNamespace: bookinfo-with-filter-traces-opa-singleton
+  targetNamespace: bookinfo-with-tooling-filter
   postBuild:
     substitute:
       filter_name: traces-opa-singleton
@@ -48,13 +48,13 @@ spec:
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: bookinfo-envoy-filter-traces-opa-singleton-reviews
+  name: bookinfo-envoy-tooling-filter-reviews
   namespace: flux-system
 spec:
   dependsOn:
     - name: cluster-apps-istio-system-istiod
   path: ./evaluation/kubernetes/apps/samples/bookinfo/_template/filter
-  targetNamespace: bookinfo-with-filter-traces-opa-singleton
+  targetNamespace: bookinfo-with-tooling-filter
   postBuild:
     substitute:
       filter_name: traces-opa-singleton
@@ -71,13 +71,13 @@ spec:
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: bookinfo-envoy-filter-traces-opa-singleton-productpage
+  name: bookinfo-envoy-tooling-filter-productpage
   namespace: flux-system
 spec:
   dependsOn:
     - name: cluster-apps-istio-system-istiod
   path: ./evaluation/kubernetes/apps/samples/bookinfo/_template/filter
-  targetNamespace: bookinfo-with-filter-traces-opa-singleton
+  targetNamespace: bookinfo-with-tooling-filter
   postBuild:
     substitute:
       filter_name: traces-opa-singleton
@@ -94,19 +94,19 @@ spec:
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: bookinfo-with-filter-traces-opa-singleton
+  name: bookinfo-with-tooling-filter
   namespace: flux-system
 spec:
   dependsOn:
-    - name: bookinfo-envoy-filter-traces-opa-singleton-details
-    - name: bookinfo-envoy-filter-traces-opa-singleton-ratings
-    - name: bookinfo-envoy-filter-traces-opa-singleton-reviews
-    - name: bookinfo-envoy-filter-traces-opa-singleton-productpage
+    - name: bookinfo-envoy-tooling-filter-details
+    - name: bookinfo-envoy-tooling-filter-ratings
+    - name: bookinfo-envoy-tooling-filter-reviews
+    - name: bookinfo-envoy-tooling-filter-productpage
   path: ./evaluation/kubernetes/apps/samples/bookinfo/_template/app
-  targetNamespace: bookinfo-with-filter-traces-opa-singleton
+  targetNamespace: bookinfo-with-tooling-filter
   postBuild:
     substitute:
-      ingress_name: bookinfo-filter-traces-opa-singleton
+      ingress_name: bookinfo-with-tooling-filter
   prune: true
   sourceRef:
     kind: GitRepository

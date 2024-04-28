@@ -2,7 +2,7 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: bookinfo-with-filter-traces-opa-singleton
+  name: bookinfo-with-prose-filter
   labels:
     kustomize.toolkit.fluxcd.io/prune: disabled
     istio-injection: enabled
