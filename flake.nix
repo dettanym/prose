@@ -5,6 +5,8 @@
     nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
     treefmt-nix.url = "github:numtide/treefmt-nix";
     treefmt-nix.inputs.nixpkgs.follows = "nixpkgs";
+
+    pipenv_2023_10_24_nixpkgs.url = "github:nixos/nixpkgs/2039ace2f4008fb413834b8f236462ba1f02a458";
   };
 
   outputs =
@@ -13,6 +15,7 @@
       nixpkgs,
       systems,
       treefmt-nix,
+      pipenv_2023_10_24_nixpkgs,
     }:
     let
       eachSystem = f: nixpkgs.lib.genAttrs (import systems) (system: f nixpkgs.legacyPackages.${system});
@@ -52,6 +55,7 @@
             ps.matplotlib
             ps.numpy
           ]))
+          pipenv_2023_10_24_nixpkgs.legacyPackages.x86_64-linux.pipenv
           ripgrep
           vegeta
           yq-go
