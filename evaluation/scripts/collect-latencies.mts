@@ -224,10 +224,7 @@ async function run_test(
     metadata.workloadInfo.test_replicas,
   )
 
-  if (
-    metadata.workloadInfo.variant !== "plain" &&
-    metadata.workloadInfo.variant !== "envoy"
-  ) {
+  if (metadata.workloadInfo.variant === "filter") {
     echo`  - Restarting presidio`
     await restart_pods("prose-system", "presidio")
   }
