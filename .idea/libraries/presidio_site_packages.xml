@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="presidio_site-packages">
+    <CLASSES />
+    <JAVADOC />
+    <SOURCES>
+      <root url="file://$PROJECT_DIR$/presidio/.venv/lib/python3.11/site-packages" />
+    </SOURCES>
+  </library>
+</component>

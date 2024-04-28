@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/evaluation/evaluation.iml" filepath="$PROJECT_DIR$/evaluation/evaluation.iml" />
+      <module fileurl="file://$PROJECT_DIR$/presidio/presidio.iml" filepath="$PROJECT_DIR$/presidio/presidio.iml" />
+      <module fileurl="file://$PROJECT_DIR$/privacy-profile-composer/privacy-profile-composer.iml" filepath="$PROJECT_DIR$/privacy-profile-composer/privacy-profile-composer.iml" />
+      <module fileurl="file://$PROJECT_DIR$/prose.iml" filepath="$PROJECT_DIR$/prose.iml" />
+    </modules>
+  </component>
+</project>
