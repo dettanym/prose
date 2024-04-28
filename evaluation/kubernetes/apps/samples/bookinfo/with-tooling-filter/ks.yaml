@@ -1,117 +1,85 @@
 ---
-apiVersion: kustomize.toolkit.fluxcd.io/v1
-kind: Kustomization
-metadata:
-  name: bookinfo-envoy-tooling-filter-details
-  namespace: flux-system
-spec:
-  dependsOn:
-    - name: cluster-apps-istio-system-istiod
-  path: ./evaluation/kubernetes/apps/samples/bookinfo/_template/filter
-  targetNamespace: bookinfo-with-tooling-filter
-  postBuild:
-    substitute:
-      filter_name: traces-opa-singleton
-      app: details
-  prune: true
-  sourceRef:
-    kind: GitRepository
-    name: prose-k8s-home-ops
-  wait: true
-  interval: 30m
-  retryInterval: 1m
-  timeout: 3m
----
-apiVersion: kustomize.toolkit.fluxcd.io/v1
-kind: Kustomization
-metadata:
-  name: bookinfo-envoy-tooling-filter-ratings
-  namespace: flux-system
-spec:
-  dependsOn:
-    - name: cluster-apps-istio-system-istiod
-  path: ./evaluation/kubernetes/apps/samples/bookinfo/_template/filter
-  targetNamespace: bookinfo-with-tooling-filter
-  postBuild:
-    substitute:
-      filter_name: traces-opa-singleton
-      app: ratings
-  prune: true
-  sourceRef:
-    kind: GitRepository
-    name: prose-k8s-home-ops
-  wait: true
-  interval: 30m
-  retryInterval: 1m
-  timeout: 3m
----
-apiVersion: kustomize.toolkit.fluxcd.io/v1
-kind: Kustomization
-metadata:
-  name: bookinfo-envoy-tooling-filter-reviews
-  namespace: flux-system
-spec:
-  dependsOn:
-    - name: cluster-apps-istio-system-istiod
-  path: ./evaluation/kubernetes/apps/samples/bookinfo/_template/filter
-  targetNamespace: bookinfo-with-tooling-filter
-  postBuild:
-    substitute:
-      filter_name: traces-opa-singleton
-      app: reviews
-  prune: true
-  sourceRef:
-    kind: GitRepository
-    name: prose-k8s-home-ops
-  wait: true
-  interval: 30m
-  retryInterval: 1m
-  timeout: 3m
----
-apiVersion: kustomize.toolkit.fluxcd.io/v1
-kind: Kustomization
-metadata:
-  name: bookinfo-envoy-tooling-filter-productpage
-  namespace: flux-system
-spec:
-  dependsOn:
-    - name: cluster-apps-istio-system-istiod
-  path: ./evaluation/kubernetes/apps/samples/bookinfo/_template/filter
-  targetNamespace: bookinfo-with-tooling-filter
-  postBuild:
-    substitute:
-      filter_name: traces-opa-singleton
-      app: productpage
-  prune: true
-  sourceRef:
-    kind: GitRepository
-    name: prose-k8s-home-ops
-  wait: true
-  interval: 30m
-  retryInterval: 1m
-  timeout: 3m
----
-apiVersion: kustomize.toolkit.fluxcd.io/v1
-kind: Kustomization
-metadata:
-  name: bookinfo-with-tooling-filter
-  namespace: flux-system
-spec:
-  dependsOn:
-    - name: bookinfo-envoy-tooling-filter-details
-    - name: bookinfo-envoy-tooling-filter-ratings
-    - name: bookinfo-envoy-tooling-filter-reviews
-    - name: bookinfo-envoy-tooling-filter-productpage
-  path: ./evaluation/kubernetes/apps/samples/bookinfo/_template/app
-  targetNamespace: bookinfo-with-tooling-filter
-  postBuild:
-    substitute:
-      ingress_name: bookinfo-with-tooling-filter
-  prune: true
-  sourceRef:
-    kind: GitRepository
-    name: prose-k8s-home-ops
-  wait: true
-  interval: 30m
-  retryInterval: 1m
-  timeout: 3m
+apiVersion: v1
+kind: List
+extra:
+  filterName: &filterName traces-opa-singleton
+  name: &name bookinfo-with-tooling-filter
+
+  baseSpec: &baseSpec
+    targetNamespace: *name
+    prune: true
+    sourceRef:
+      kind: GitRepository
+      name: prose-k8s-home-ops
+    wait: true
+    interval: 30m
+    retryInterval: 1m
+    timeout: 3m
+
+  filterSpec: &filterSpec
+    <<: *baseSpec
+    dependsOn:
+      - name: cluster-apps-istio-system-istiod
+    path: ./evaluation/kubernetes/apps/samples/bookinfo/_template/filter
+
+items:
+  - apiVersion: kustomize.toolkit.fluxcd.io/v1
+    kind: Kustomization
+    metadata:
+      name: *name
+      namespace: flux-system
+    spec:
+      <<: *baseSpec
+      dependsOn:
+        - name: bookinfo-envoy-tooling-filter-details
+        - name: bookinfo-envoy-tooling-filter-ratings
+        - name: bookinfo-envoy-tooling-filter-reviews
+        - name: bookinfo-envoy-tooling-filter-productpage
+      path: ./evaluation/kubernetes/apps/samples/bookinfo/_template/app
+      postBuild:
+        substitute:
+          ingress_name: *name
+  - apiVersion: kustomize.toolkit.fluxcd.io/v1
+    kind: Kustomization
+    metadata:
+      name: bookinfo-envoy-tooling-filter-details
+      namespace: flux-system
+    spec:
+      <<: *filterSpec
+      postBuild:
+        substitute:
+          filter_name: *filterName
+          app: details
+  - apiVersion: kustomize.toolkit.fluxcd.io/v1
+    kind: Kustomization
+    metadata:
+      name: bookinfo-envoy-tooling-filter-ratings
+      namespace: flux-system
+    spec:
+      <<: *filterSpec
+      postBuild:
+        substitute:
+          filter_name: *filterName
+          app: ratings
+  - apiVersion: kustomize.toolkit.fluxcd.io/v1
+    kind: Kustomization
+    metadata:
+      name: bookinfo-envoy-tooling-filter-reviews
+      namespace: flux-system
+    spec:
+      <<: *filterSpec
+      postBuild:
+        substitute:
+          filter_name: *filterName
+          app: reviews
+  - apiVersion: kustomize.toolkit.fluxcd.io/v1
+    kind: Kustomization
+    metadata:
+      name: bookinfo-envoy-tooling-filter-productpage
+      namespace: flux-system
+    spec:
+      <<: *filterSpec
+      postBuild:
+        substitute:
+          filter_name: *filterName
+          app: productpage
