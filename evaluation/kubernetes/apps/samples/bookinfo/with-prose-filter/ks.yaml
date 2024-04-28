@@ -2,7 +2,7 @@
 apiVersion: v1
 kind: List
 extra:
-  filterName: &filterName simple
+  filterName: &filterName prose
   name: &name bookinfo-with-prose-filter
 
   baseSpec: &baseSpec

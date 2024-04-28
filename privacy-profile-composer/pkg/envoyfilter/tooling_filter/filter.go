@@ -1,4 +1,4 @@
-package passthrough_buffer_traces_opa_singleton
+package tooling_filter
 
 import (
 	"strconv"

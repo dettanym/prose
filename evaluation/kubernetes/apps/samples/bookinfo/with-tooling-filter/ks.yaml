@@ -2,7 +2,7 @@
 apiVersion: v1
 kind: List
 extra:
-  filterName: &filterName traces-opa-singleton
+  filterName: &filterName tooling
   name: &name bookinfo-with-tooling-filter
 
   baseSpec: &baseSpec

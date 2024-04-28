@@ -4,15 +4,15 @@ import (
 	"github.com/envoyproxy/envoy/contrib/golang/filters/http/source/go/pkg/http"
 
 	"privacy-profile-composer/pkg/envoyfilter"
-	"privacy-profile-composer/pkg/envoyfilter/passthrough_buffer_traces_opa_singleton"
+	"privacy-profile-composer/pkg/envoyfilter/tooling_filter"
 )
 
-const Name = "traces-opa-singleton"
+const Name = "tooling"
 
 func init() {
 	http.RegisterHttpFilterConfigFactoryAndParser(
 		Name,
-		passthrough_buffer_traces_opa_singleton.FilterFactory,
+		tooling_filter.FilterFactory,
 		&envoyfilter.ConfigParser{},
 	)
 }

@@ -6,7 +6,7 @@ import (
 	"privacy-profile-composer/pkg/envoyfilter"
 )
 
-const Name = "simple"
+const Name = "prose"
 
 func init() {
 	http.RegisterHttpFilterConfigFactoryAndParser(Name, envoyfilter.ConfigFactory, &envoyfilter.ConfigParser{})
