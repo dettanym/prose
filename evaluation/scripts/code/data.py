@@ -4,9 +4,9 @@ from os import listdir
 from os.path import isdir, isfile, join
 from typing import Any, Dict, List, Literal
 
+Variant = str
 RequestRate = str
 Summary = Dict[str, Any]
-
 
 Bookinfo_Variants = Literal[
     "plain",
@@ -23,30 +23,26 @@ Bookinfo_Variants = Literal[
 ]
 
 
-def load_folders(
-    bookinfo_variants: List[Bookinfo_Variants],
-    data_location: str,
-    included_timestamps: List[str],
-    exclude: List[str],
-) -> Dict[
-    Bookinfo_Variants,
-    Dict[RequestRate, List[Summary]],
-]:
-    all_results: Dict[
-        Bookinfo_Variants,
-        Dict[RequestRate, List[Summary]],
-    ] = dict()
+def _get_dir_names(directory: str) -> List[str]:
+    return [f for f in listdir(directory) if isdir(join(directory, f))]
 
-    for timestamp in included_timestamps:
+
+def load_folders(
+    data_location: str,
+    include_timestamps: List[str],
+    exclude_patterns: List[str],
+) -> Dict[Variant, Dict[RequestRate, List[Summary]]]:
+    all_results: Dict[Variant, Dict[RequestRate, List[Summary]]] = dict()
+
+    for timestamp in include_timestamps:
         results_dir = join(data_location, timestamp)
         if not isdir(results_dir):
             raise ValueError(
                 "Timestamp '" + timestamp + "' is not present among results."
             )
 
-        rates = [f for f in listdir(results_dir) if isdir(join(results_dir, f))]
-        for rate in rates:
-            for variant in bookinfo_variants:
+        for rate in _get_dir_names(results_dir):
+            for variant in _get_dir_names(join(results_dir, rate)):
                 run_results_dir = join(results_dir, rate, variant)
 
                 metadata_path = join(run_results_dir, "metadata.json")
@@ -69,7 +65,7 @@ def load_folders(
                     )
 
                 variant_results = all_results.get(variant, dict())
-                summaries: List[Summary] = variant_results.get(rate, [])
+                summaries = variant_results.get(rate, [])
 
                 for run_file in listdir(run_results_dir):
                     if not (
@@ -77,7 +73,7 @@ def load_folders(
                         and run_file.endswith(summary_suffix)
                     ) or any(
                         fnmatchcase(join(timestamp, rate, variant, run_file), pat)
-                        for pat in exclude
+                        for pat in exclude_patterns
                     ):
                         continue
 
@@ -92,3 +88,20 @@ def load_folders(
                 all_results[variant] = variant_results
 
     return all_results
+
+
+def check_loaded_variants(
+    known_variants: List[str],
+    data: Dict[Variant, Dict[RequestRate, List[Summary]]],
+) -> Dict[Bookinfo_Variants, Dict[RequestRate, List[Summary]]]:
+    unknown = set()
+
+    for variant in data.keys():
+        if variant not in known_variants:
+            unknown.add(variant)
+
+    if len(unknown) > 0:
+        print("detected some unknown variants amount data folders:")
+        print(unknown)
+
+    return data

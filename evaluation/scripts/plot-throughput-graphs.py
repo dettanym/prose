@@ -6,7 +6,7 @@ from os import makedirs
 from os.path import join
 from typing import Dict, List, Tuple
 
-from .code.data import load_folders, Bookinfo_Variants
+from .code.data import Bookinfo_Variants, check_loaded_variants, load_folders
 from .code.plot import plot_and_save_results
 
 bookinfo_variants: List[Bookinfo_Variants] = [
@@ -144,10 +144,12 @@ def main(*args, **kwargs):
                 title,
                 colors,
                 labels,
-                load_folders(
+                check_loaded_variants(
                     bookinfo_variants,
-                    join(data_location, hostname),
-                    include,
-                    exclude,
+                    load_folders(
+                        join(data_location, hostname),
+                        include,
+                        exclude,
+                    ),
                 ),
             )
