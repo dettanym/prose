@@ -7,6 +7,9 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+
+	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type PresidioDataFormat struct {
@@ -17,6 +20,13 @@ type PresidioDataFormat struct {
 func PiiAnalysis(ctx context.Context, presidioSvcURL string, svcName string, bufferBytes interface{}) ([]string, error) {
 	span, ctx := GlobalTracer.StartSpanFromContext(ctx, "PiiAnalysis")
 	defer span.Finish()
+
+	otelSpanCtx, err := otelSpanContextFromZipkin(span.Context())
+	if err != nil {
+		fmt.Printf("Error converting span context: %v\n", err)
+	}
+
+	ctx = trace.ContextWithSpanContext(ctx, otelSpanCtx)
 
 	empty := []string{}
 
@@ -30,7 +40,15 @@ func PiiAnalysis(ctx context.Context, presidioSvcURL string, svcName string, buf
 		return empty, fmt.Errorf("could not convert data for presidio into json: %w", err)
 	}
 
-	resp, err := http.Post(presidioSvcURL, "application/json", bytes.NewBuffer(msgString))
+	req, err := http.NewRequest("POST", presidioSvcURL, bytes.NewBuffer(msgString))
+	if err != nil {
+		return empty, fmt.Errorf("could not create new request object: %w", err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	GlobalOtelPropagator.Inject(ctx, propagation.HeaderCarrier(req.Header))
+
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return empty, fmt.Errorf("presidio post error: %w", err)
 	}
