@@ -30,7 +30,7 @@ shiver)
 *)
   echo "minikube outside of ripple"
   minikube_start+=(
-    "--nodes=1" "--cpus=4" "--memory=8G"
+    "--nodes=1" "--cpus=4" "--memory=12G"
   )
   ;;
 esac
