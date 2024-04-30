@@ -92,7 +92,8 @@ the fix to be "filter-97776ef1".
 We discovered that the first half of each run of all successful results above
 starts with very jittery latency values and stabilizes towards the second half
 of the test. We created a new script to collect latencies, which runs a warm-up
-load before executing the actual test. Note, we do not kill pods between warmup
+load before executing the actual test. (We also updated metadata file to
+versioned with version 2 as a value). Note, we do not kill pods between warmup
 and execution of the actual test, since killing and restarting pods negates all
 warm-up procedures and makes them effectively useless.
 
