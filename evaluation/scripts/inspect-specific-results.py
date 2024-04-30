@@ -62,7 +62,25 @@ interest_points = {
             "plots for plain variant with request rate 120req/s after warmup, 2nd run",
             "2024-04-17T23:03:57-04:00/120/plain/2.results.json.zst",
         ),
-    ]
+    ],
+    "moone": [
+        (
+            "prose-filter, serial mode, 1000 total requests, during warmup",
+            "2024-05-02T00:01:04-04:00/100/prose-filter/1.warmups.json.zst",
+        ),
+        (
+            "prose-filter, serial mode, 1000 total requests, after warmup",
+            "2024-05-02T00:01:04-04:00/100/prose-filter/1.results.json.zst",
+        ),
+        (
+            "istio variant, serial mode, 1000 total requests, during warmup",
+            "2024-05-02T02:09:53-04:00/100/istio/1.warmups.json.zst",
+        ),
+        (
+            "istio variant, serial mode, 1000 total requests, after warmup",
+            "2024-05-02T02:09:53-04:00/100/istio/1.results.json.zst",
+        ),
+    ],
 }
 
 

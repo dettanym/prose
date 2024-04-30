@@ -1,6 +1,10 @@
 #!/usr/bin/env -S bash -c '"$(dirname $(readlink -f "$0"))/../env.sh" pnpm exec tsx -- "$0" "$@"'
 
-import { $, echo, fs, os, path, updateArgv, sleep } from "zx"
+import "@js-joda/timezone"
+
+import { $, echo, fs, os, path, updateArgv, sleep, argv, fetch } from "zx"
+import { Duration, Instant, ZonedDateTime, ZoneId } from "@js-joda/core"
+import { Agent } from "https"
 
 /*--- PARAMETERS -----------------------------------------------------*/
 
@@ -51,6 +55,8 @@ const TEST_RUNS = 10
 
 const INGRESS_IP = "192.168.49.21"
 
+type SupportedTestModes = "vegeta" | "serial"
+
 /*--- PROGRAM --------------------------------------------------------*/
 
 $.verbose = false
@@ -67,9 +73,11 @@ type VARIANT = typeof bookinfo_variants extends Set<infer R> ? R : never
 type METADATA = ReturnType<typeof generate_metadata>
 
 await (async function main() {
+  const { testMode } = validate_flags(argv)
+
   const PRJ_ROOT = (await $`git rev-parse --show-toplevel`).stdout.trim()
   const hostname = os.hostname()
-  const timestamp = await current_timestamp()
+  const timestamp = current_timestamp()
 
   const test_results_dir = await get_test_results_dir(
     PRJ_ROOT,
@@ -85,6 +93,7 @@ await (async function main() {
       map.set(
         variant,
         generate_metadata({
+          testMode,
           rate,
           variant,
           warmup_rate,
@@ -141,7 +150,7 @@ await (async function main() {
   await scale_specific_deployments(1, "prose-system", "presidio")
   await $`flux resume kustomization --wait=false cluster-apps-prose-system-prose`
 
-  const completion_time = await current_timestamp()
+  const completion_time = current_timestamp()
   echo`* Completed at ${completion_time}`
 
   await fs.outputFile(
@@ -152,7 +161,28 @@ await (async function main() {
 
 //<editor-fold desc="--- HELPERS --------------------------------------------------------">
 
+function validate_flags({ "test-mode": testMode }: typeof argv) {
+  return {
+    testMode: validate_test_mode(testMode),
+  }
+
+  function validate_test_mode(testMode: unknown): SupportedTestModes {
+    if (testMode == null) {
+      return "vegeta"
+    }
+
+    if (testMode === "vegeta" || testMode === "serial") {
+      return testMode
+    }
+
+    throw new Error(
+      'flag "mode" is not valid. either accepts "vegeta" or "serial"',
+    )
+  }
+}
+
 function generate_metadata({
+  testMode,
   rate,
   variant,
   warmup_rate,
@@ -162,6 +192,7 @@ function generate_metadata({
   hostname,
   INGRESS_IP,
 }: {
+  testMode: SupportedTestModes
   rate: string
   variant: VARIANT
   warmup_rate: string
@@ -173,7 +204,8 @@ function generate_metadata({
 }) {
   const workload_name = get_resource_name(variant)
   return {
-    version: "2",
+    version: "3",
+    testMode: testMode,
     timestamp,
     warmupsFileSuffix: ".warmups.json.zst",
     resultsFileSuffix: ".results.json.zst",
@@ -259,36 +291,92 @@ async function run_test(
     `${test_run_index}${metadata.summaryFileSuffix}`,
   )
 
-  const attack_params = ({
-    duration,
-    rate,
-  }: {
-    duration: string
-    rate: string
-  }) => ["-format=json", "-insecure", `-duration=${duration}`, `-rate=${rate}`]
-
-  echo`  - Warm-up '${metadata.workloadInfo.variant}' variant`
-  await $`
+  if (metadata.testMode === "vegeta") {
+    echo`  - Warm-up '${metadata.workloadInfo.variant}' variant`
+    await $`
       echo ${JSON.stringify(metadata.req)} \
-        | vegeta attack ${attack_params(metadata.warmupOptions)} \
+        | vegeta attack ${vegeta_attack_params(metadata.warmupOptions)} \
         | vegeta encode --to json \
         | zstd -c -T0 --ultra -20 - >${warmups_file}
     `
 
-  echo`  - Testing '${metadata.workloadInfo.variant}' variant`
-  await $`
+    echo`  - Testing '${metadata.workloadInfo.variant}' variant`
+    await $`
       echo ${JSON.stringify(metadata.req)} \
-        | vegeta attack ${attack_params(metadata.testOptions)} \
+        | vegeta attack ${vegeta_attack_params(metadata.testOptions)} \
         | vegeta encode --to json \
         | zstd -c -T0 --ultra -20 - >${results_file}
-     `
+    `
+  } else if (metadata.testMode === "serial") {
+    const fetch_params = [
+      metadata.req.url,
+      {
+        method: metadata.req.method,
+        headers: Object.fromEntries(
+          Object.entries(metadata.req.header ?? {})
+            .map(([k, vs]) => [k, vs[0] ?? null] as const)
+            .filter((x): x is [string, string] => x[1] != null),
+        ),
+        agent: new Agent({ rejectUnauthorized: false }),
+      },
+    ] satisfies Parameters<typeof fetch>
+    const base_vegeta_result = {
+      attack: "",
+      bytes_out: 0,
+      method: metadata.req.method,
+      url: metadata.req.url,
+    } satisfies Partial<VegetaResultFormat>
+
+    const send_request_encode_response = async (seq: number) => {
+      const start = current_micro_timestamp()
+      const res = await fetch(...fetch_params)
+      const end = current_micro_timestamp()
+
+      return sorted_vegeta_result({
+        ...base_vegeta_result,
+        ...(await vegeta_fields_from_fetch_result(res)),
+
+        seq,
+        timestamp: format_zoned_timestamp(end),
+        latency: Duration.between(start, end).toNanos(),
+      })
+    }
+
+    const warmup_compression = $`zstd -c -T0 --ultra -20 - >${warmups_file}`
+    const warmup_compression_stdin = warmup_compression.stdin
+
+    echo`  - Warm-up '${metadata.workloadInfo.variant}' variant`
+    for (let seq = 0; seq < serial_runs_amount(metadata.warmupOptions); seq++) {
+      warmup_compression_stdin.write(
+        JSON.stringify(await send_request_encode_response(seq)) + "\n",
+      )
+    }
+
+    warmup_compression_stdin.end()
+    await warmup_compression
+
+    const test_compression = $`zstd -c -T0 --ultra -20 - >${results_file}`
+    const test_compression_stdin = test_compression.stdin
+
+    echo`  - Testing '${metadata.workloadInfo.variant}' variant`
+    for (let seq = 0; seq < serial_runs_amount(metadata.testOptions); seq++) {
+      test_compression_stdin.write(
+        JSON.stringify(await send_request_encode_response(seq)) + "\n",
+      )
+    }
+
+    test_compression_stdin.end()
+    await test_compression
+  } else {
+    absurd(metadata.testMode)
+  }
 
   echo`  - Report for '${metadata.workloadInfo.variant}' variant`
   await $`
-      zstd -c -d ${results_file} \
-        | vegeta report -type json \
-        | jq -M >${summary_file}
-    `
+    zstd -c -d ${results_file} \
+      | vegeta report -type json \
+      | jq -M >${summary_file}
+  `
 
   echo`  - Scaling down deployments for '${metadata.workloadInfo.variant}' variant`
   await scale_deployments(metadata.workloadInfo.namespace, 0)
@@ -377,6 +465,26 @@ async function alter_fluxtomizations(
   return action
 }
 
+function vegeta_attack_params({
+  duration,
+  rate,
+}: {
+  duration: string
+  rate: string
+}) {
+  return ["-format=json", "-insecure", `-duration=${duration}`, `-rate=${rate}`]
+}
+
+function serial_runs_amount({
+  duration,
+  rate,
+}: {
+  duration: string
+  rate: string
+}) {
+  return parse_duration(duration) * parseInt(rate)
+}
+
 async function get_test_results_dir(
   PRJ_ROOT: string,
   hostname: string,
@@ -394,8 +502,85 @@ async function get_test_results_dir(
   return (...segments: string[]) => path.join(test_run_results_dir, ...segments)
 }
 
-async function current_timestamp() {
-  return (await $`date -Iseconds`).stdout.trim()
+async function vegeta_fields_from_fetch_result(
+  result: Awaited<ReturnType<typeof fetch>>,
+) {
+  const headers: VegetaResultFormat["headers"] = {}
+  for (const [k, v] of result.headers) {
+    headers[k] = [v]
+  }
+
+  const body_data = await result
+    .text()
+    .catch(() => "")
+    .then((body) => ({
+      bytes_in: body.length,
+      body: Buffer.from(body).toString("base64"),
+    }))
+
+  return {
+    code: result.status,
+    error: result.ok ? "" : result.statusText,
+
+    headers,
+
+    ...body_data,
+  } satisfies Partial<VegetaResultFormat>
+}
+
+function sorted_vegeta_result(
+  incoming: VegetaResultFormat,
+): VegetaResultFormat {
+  const keys = [
+    "attack",
+    "seq",
+    "code",
+    "timestamp",
+    "latency",
+    "bytes_out",
+    "bytes_in",
+    "error",
+    "body",
+    "method",
+    "url",
+    "headers",
+  ] satisfies Array<keyof VegetaResultFormat>
+
+  type check = keyof VegetaResultFormat extends (typeof keys)[0] ? true : false
+  typeCheck(undefined as never as check)
+
+  const result: Record<string, unknown> = {}
+  for (const key of keys) {
+    result[key] = incoming[key]
+  }
+  return result as VegetaResultFormat
+}
+
+function format_zoned_timestamp(ts: ZonedDateTime): string {
+  return ts.toOffsetDateTime().toString()
+}
+
+function current_timestamp() {
+  return format_zoned_timestamp(ZonedDateTime.now().withNano(0))
+}
+
+function current_micro_timestamp() {
+  // if a version of node does not have 'performance' global variable, try
+  // 'microtime' package: https://www.npmjs.com/package/microtime
+  const nowMicros = (performance.now() + performance.timeOrigin) * 1000
+
+  return ZonedDateTime.ofInstant(
+    Instant.ofEpochMicro(nowMicros),
+    ZoneId.systemDefault(),
+  )
+}
+
+function parse_duration(duration: string): number {
+  if (/\d+s/.test(duration)) {
+    return parseInt(duration.slice(0, -1))
+  }
+
+  throw new Error(`Unknown duration: "${duration}".`)
 }
 
 function range(start: number, stop: number, step = 1) {
@@ -403,6 +588,28 @@ function range(start: number, stop: number, step = 1) {
     { length: (stop - start) / step + 1 },
     (_, index) => start + index * step,
   )
+}
+
+function typeCheck(_: true): void {}
+function absurd<A>(_: never): A {
+  throw new Error("Called `absurd` function which should be uncallable")
+}
+
+// matches stored vegeta format, so we can reuse the same processing scripts
+// https://github.com/tsenart/vegeta/blob/61f64b715904c695e4c82cfd92066cf82b1ff0d0/lib/results.go#L26
+type VegetaResultFormat = {
+  readonly attack: string
+  readonly seq: number
+  readonly code: number
+  readonly timestamp: string // ISO-8601 formatted timestamp
+  readonly latency: number
+  readonly bytes_out: number
+  readonly bytes_in: number
+  readonly error: string
+  readonly body: string // base64 encoded
+  readonly method: string
+  readonly url: string
+  readonly headers: Record<string, readonly string[]>
 }
 
 //</editor-fold>

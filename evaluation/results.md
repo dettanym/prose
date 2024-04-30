@@ -117,6 +117,12 @@ we also updated the waiting mechanism for ready pods.
 
 - `"2024-04-26T01:47:38-04:00"    # "plain"+"envoy"+"filter"+"filter-passthrough"+"filter-traces-opa-singleton"; 10 runs; 10,20,40,60,80,100,120,140,160,180,200,400,600,800,1000req/s`
 
+To avoid the issue with lots of congestion, we added a new mode selector to
+"collect-latencies" script. We can select between `'vegeta'` mode and `'curl'`
+mode for different request modes. Note, the data across modes cannot be combined
+when producing plots, since we expect different modes to load the containers in
+a different way. Also updated metadata file to have version 3 and include mode.
+
 ### All test runs from `"moone"`
 
 This host contains some random attempts.
@@ -134,3 +140,15 @@ This host contains some random attempts.
     the results.
 - `"2024-04-09T23:38:31-04:00"    # "filter-passthrough"; 5 runs; 100 req/s`
   - Results for prose filter and passthrough filter
+
+### Serial mode results:
+
+While developing and shortly after it was done:
+
+- Both results below are when experimenting with serial mode and after it was
+  just finished:
+  - `"2024-05-01T23:19:20-04:00"    # "prose-filter"; 1 run; 1000 total requests (equivalent of 100 req/s for 10s)`
+  - `"2024-05-02T00:01:04-04:00"    # "prose-filter"; 1 run; 1000 total requests (equivalent of 100 req/s for 10s)`
+- This is the run on istio variant to evaluate generated spans and to compare
+  them with prose-filter spans from above:
+  - `"2024-05-02T02:09:53-04:00"    # "istio"; 1 run; 1000 total requests (equivalent of 100 req/s for 10s)`
