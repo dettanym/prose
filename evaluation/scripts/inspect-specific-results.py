@@ -119,7 +119,13 @@ for hostname, hostname_data in interest_points.items():
         )
         cdf_data = np.sort(data.latency)
 
-        fig, (cumulative, seq_lat) = plt.subplots(nrows=1, ncols=2, figsize=(12.8, 4.8))
+        nrows = 1
+        ncols = 3
+        fig, (cumulative, seq_lat, distribution) = plt.subplots(
+            nrows=nrows,
+            ncols=ncols,
+            figsize=(ncols * 6.4, nrows * 4.8),
+        )
 
         cumulative.plot(cdf_data, np.arange(cdf_data.size) / cdf_data.size)
         cumulative.set_xlabel("response latency (ms)")
@@ -128,6 +134,10 @@ for hostname, hostname_data in interest_points.items():
         seq_lat.plot(data.seq, data.latency)
         seq_lat.set_xlabel("request sequence number")
         seq_lat.set_ylabel("response latency (ms)")
+
+        distribution.hist(data.latency, bins=100)
+        distribution.set_xlabel("response latency (ms)")
+        distribution.set_ylabel("number of requests")
 
         fig.suptitle(title)
 
