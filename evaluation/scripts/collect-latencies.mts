@@ -4,10 +4,10 @@ import { $, echo, fs, os, path, updateArgv, sleep } from "zx"
 
 /*--- PARAMETERS -----------------------------------------------------*/
 
-const warmup_duration = "10s"
-const warmup_rate = "100"
+const warmup_duration = "10s" satisfies DURATION
+const warmup_rate = "100" satisfies RATE
 
-const duration = "10s"
+const duration = "10s" satisfies DURATION
 const rates = new Set([
   "1000",
   "800",
@@ -24,7 +24,7 @@ const rates = new Set([
   "40",
   "20",
   "10",
-])
+]) satisfies Iterable<RATE>
 
 const bookinfo_variants = new Set([
   "plain",
@@ -61,7 +61,8 @@ $.verbose = false
 $.cwd = process.argv.at(2) as string
 updateArgv(process.argv.slice(3))
 
-type RATE = string
+type DURATION = `${number}s`
+type RATE = `${number}`
 type VARIANT = typeof bookinfo_variants extends Set<infer R> ? R : never
 type METADATA = ReturnType<typeof generate_metadata>
 
