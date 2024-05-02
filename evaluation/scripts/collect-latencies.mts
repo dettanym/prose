@@ -157,6 +157,12 @@ await (async function main() {
     test_results_dir("completion_time.txt"),
     completion_time + "\n",
   )
+
+  const total_duration = Duration.between(
+    ZonedDateTime.parse(timestamp),
+    ZonedDateTime.parse(completion_time),
+  )
+  echo`    took ${show_duration(total_duration)}`
 })()
 
 //<editor-fold desc="--- HELPERS --------------------------------------------------------">
@@ -575,6 +581,33 @@ function current_micro_timestamp() {
   )
 }
 
+function show_duration(dur: Duration) {
+  if (dur.seconds() === 0) {
+    return "0s"
+  }
+
+  const duration_value = dur.abs()
+
+  const h = duration_value.toHours()
+  const m = duration_value.minusHours(h).toMinutes()
+  const s = duration_value.minusHours(h).minusMinutes(m).seconds()
+
+  const sign = dur.isNegative() ? "-" : ""
+  const values = dropRightWhile(
+    dropLeftWhile(
+      [
+        [h, "h"],
+        [m, "m"],
+        [s, "s"],
+      ],
+      ([v]) => v === 0,
+    ),
+    ([v]) => v === 0,
+  ).reduce((acc, [value, unit]) => acc + value + unit, "")
+
+  return sign + values
+}
+
 function parse_duration(duration: string): number {
   if (/\d+s/.test(duration)) {
     return parseInt(duration.slice(0, -1))
@@ -588,6 +621,22 @@ function range(start: number, stop: number, step = 1) {
     { length: (stop - start) / step + 1 },
     (_, index) => start + index * step,
   )
+}
+
+function dropLeftWhile<T>(
+  array: ReadonlyArray<T>,
+  predicate: (item: T) => boolean,
+): ReadonlyArray<T> {
+  const i = array.findIndex((_) => !predicate(_))
+  return i > -1 ? array.slice(i) : array
+}
+
+function dropRightWhile<T>(
+  array: ReadonlyArray<T>,
+  predicate: (item: T) => boolean,
+): ReadonlyArray<T> {
+  const i = array.findLastIndex((_) => !predicate(_))
+  return i > -1 ? array.slice(0, i + 1) : array
 }
 
 function typeCheck(_: true): void {}
