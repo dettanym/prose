@@ -122,6 +122,44 @@ To avoid the issue with lots of congestion, we added a new mode selector to
 mode for different request modes. Note, the data across modes cannot be combined
 when producing plots, since we expect different modes to load the containers in
 a different way. Also updated metadata file to have version 3 and include mode.
+We haven't executed any runs in sequential mode yet.
+
+Across vegeta results for the previous test run, we found that prose starts to
+differ from all other variants around 60req/s. We plotted the PDF, CDF, and the
+response latency v/s the request number for all variants, both during and after
+the warmup. Through these graphs, we can see that the other variants have
+bimodal plots after the warmup. In these bimodal plots, their 99th percentiles
+fall around 70ms--80ms. Whereas Prose noticeably does not have a bimodal plot.
+Its 99th percentiles fall around 900ms. Its average and median falls around
+300ms. So we draw two conclusions: one, that the distribution of latencies for
+Prose differs significantly from that of all other variants.
+
+Second, for Prose, we can see a trend upwards in the response latency v/s the
+request number. We do not see a trend upwards for the other variants. We were
+concerned whether the average of the average latencies can be used for the
+latency v/s request rate plot. The hypothesis was that once the warmups were
+applied, we can safely say that the response latency no longer depends on the
+request number, and then use the average of the averages. This hypothesis is
+true for all other variants, but is not true for Prose.
+
+To investigate whether _Presidio_ has long latencies of 100ms or more, we want
+to analyze the traces. So, we ran vegeta mode for 1 iteration in 60req/s for 10s
+against prose-filter variant.
+
+`"2024-05-02T16:20:42-04:00"`
+
+For example, we found that Presidio took around 70ms + 15ms + 50ms = 135ms when
+the response latency was around 170ms. The mean was 370ms. We can safely say
+that Presidio took at least 45\% of the response latency, if not more.
+
+Interestingly, when we ran the test in the `curl` mode on `"moone"`, i.e.
+timestamp `"2024-05-02T00:01:04-04:00"` we found that Presidio's latencies added
+up to around 17ms + 5ms + 25ms ~=50ms. Though we cannot compare these statistics
+directly, since they were run on different machines.
+
+So next steps: we should run the sequential `curl` mode on `shiver`. It might
+also be relevant to run Presidio separately (in a Docker container) and measure
+response latencies in both the `curl` and `vegeta` modes.
 
 ### All test runs from `"moone"`
 
