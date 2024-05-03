@@ -82,6 +82,14 @@ interest_points = {
             "plots for prose-filter variant with request rate 60req/s after warmup, 1st run",
             "2024-05-02T16:20:42-04:00/60/prose-filter/1.results.json.zst",
         ),
+        (
+            "plots for istio variant (sequential case) with request rate 60req/s after warmup, 1st run",
+            "2024-05-03T00:27:26-04:00/60/istio/1.results.json.zst",
+        ),
+        (
+            "plots for prose-filter variant (sequential case) with request rate 60req/s after warmup, 1st run",
+            "2024-05-03T00:27:26-04:00/60/prose-filter/1.results.json.zst",
+        ),
     ],
     "moone": [
         (

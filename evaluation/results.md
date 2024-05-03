@@ -161,6 +161,54 @@ So next steps: we should run the sequential `curl` mode on `shiver`. It might
 also be relevant to run Presidio separately (in a Docker container) and measure
 response latencies in both the `curl` and `vegeta` modes.
 
+`traces-1714682252555.json` includes zipped traces for this run.
+
+`2024-05-03T00:27:26-04:00`:
+
+This covers a sequential run over the same parameters as above: 1 iteration in
+60req/s for 10s against prose-filter variant and istio variant.
+
+We note that all latencies are slightly larger for the sequential case;
+presumably this is because the services are not facing high load (?) E.g. Istio
+has a max of 97ms while it earlier only saw a max of 70ms. We found that
+Prose-filter had the same pattern as in the vegeta attack mode. Prose-filter
+still shows latencies from 100ms--1000ms. Based on the traces
+(`traces-1714713825594.json`), Presidio caused a significant fraction of these
+times e.g. for a 437ms response, it took up 165ms + 15ms + 80ms = 260ms. Out of
+a 180ms response, it took up 35ms + 9ms + 48ms ~=95ms. That is, it continues to
+take around or even slightly over half the total response time.
+
+Importantly, in the sequential case, only one Presidio replica processes a
+request at a time. Whereas in the vegeta mode, multiple Presidio replicas could
+simultaneously process requests sent by different Golang filters, which are
+attached to different service pods that are receiving requests simultaneously.
+Since the sequential results are similar to the vegeta run, we can conclude that
+an insufficient number of Presidio replicas is not the cause of the large delays
+by Presidio in the vegeta case. That is, increasing the number of Presidio
+replicas will not reduce the runtimes for the vegeta case. In other words, it is
+not the case that the different Presidio replicas have buffered queues; each
+Presidio replica is slow and this cannot be fixed by increasing the number of
+replicas.
+
+Note that in all traces, the parent of the Presidio span only takes 1-2ms more
+than the Presidio span. This leads me (Miti) to believe that even if we
+eliminated the round-trip to the Presidio pod, we would only be able to save
+1-2ms per call ~=3-6ms in total.
+
+Next experiments:
+
+1. In Prose, instead of the call to Presidio, mock a constant delay of T=25ms.
+2. At the same time, we send a request to Presidio _using the same response
+   body_.
+
+This should lead to the same plot for Prose-filter as the Envoy case,
+right-shifted by T. If it doesn't and has longer latencies or a similar
+trendline as the current Prose-filter variant, then the cause might be some
+resource contention between the service pods and Presidio pods.
+
+Our effort might be better spent identifying what's taking Presidio so long and
+whether we can e.g. hash or memoize the results safely.
+
 ### All test runs from `"moone"`
 
 This host contains some random attempts.
