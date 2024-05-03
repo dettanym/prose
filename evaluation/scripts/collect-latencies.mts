@@ -39,9 +39,9 @@ const bookinfo_variants = new Set([
 ] as const)
 /**
  * Which variants to test during this run.
- * Note, that there has to be more than one variant here, since with one
- * variant, there is some weird behavior where each second attack fails for
- * most of the requests.
+ * Note, that there has to be more than one variant here if we are testing more
+ * than one rate value. That is because with one variant, there is some weird
+ * behavior where each second attack fails for most of the requests.
  */
 const test_only = new Set<VARIANT>([
   "plain",
@@ -86,7 +86,7 @@ await (async function main() {
   )
 
   const metadata_map = new Map<RATE, Map<VARIANT, METADATA>>()
-  for (const rate of rates) {
+  for (const rate of new Set<RATE>([warmup_rate, ...rates])) {
     const map = new Map<VARIANT, METADATA>()
 
     for (const variant of test_only) {
