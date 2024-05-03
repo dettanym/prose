@@ -1,12 +1,6 @@
 {
   description = "Development environment for prose";
 
-  inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
-    treefmt-nix.url = "github:numtide/treefmt-nix";
-    treefmt-nix.inputs.nixpkgs.follows = "nixpkgs";
-  };
-
   outputs =
     {
       self,
@@ -74,4 +68,10 @@
         formatting = treefmtEval.${pkgs.system}.config.build.check self;
       });
     };
+
+  inputs = {
+    nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
+    treefmt-nix.url = "github:numtide/treefmt-nix";
+    treefmt-nix.inputs.nixpkgs.follows = "nixpkgs";
+  };
 }
