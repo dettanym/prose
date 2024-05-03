@@ -24,6 +24,18 @@
   programs.prettier.enable = true;
   programs.prettier.settings = {
     semi = false;
+    overrides = [
+      {
+        # Note: need to add `*(../)` at the beginning, to match using any
+        # patterns in prettier settings. That is because the file path expands
+        # to a relative value with `../` at the beginning, and in micromatch
+        # extglob (`**/`) does not match against `../`.
+        files = [ "*(../)**/evaluation/results.md" ];
+        options = {
+          proseWrap = "always";
+        };
+      }
+    ];
   };
   programs.prettier.excludes = [
     "pnpm-lock.yaml"
