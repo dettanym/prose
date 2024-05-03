@@ -73,7 +73,7 @@ type VARIANT = typeof bookinfo_variants extends Set<infer R> ? R : never
 type METADATA = ReturnType<typeof generate_metadata>
 
 await (async function main() {
-  const { testMode } = validate_flags(argv)
+  const { test_mode } = validate_flags(argv)
 
   const PRJ_ROOT = (await $`git rev-parse --show-toplevel`).stdout.trim()
   const hostname = os.hostname()
@@ -93,7 +93,7 @@ await (async function main() {
       map.set(
         variant,
         generate_metadata({
-          testMode,
+          test_mode,
           rate,
           variant,
           warmup_rate,
@@ -167,18 +167,18 @@ await (async function main() {
 
 //<editor-fold desc="--- HELPERS --------------------------------------------------------">
 
-function validate_flags({ "test-mode": testMode }: typeof argv) {
+function validate_flags({ "test-mode": test_mode }: typeof argv) {
   return {
-    testMode: validate_test_mode(testMode),
+    test_mode: validate_test_mode(test_mode),
   }
 
-  function validate_test_mode(testMode: unknown): SupportedTestModes {
-    if (testMode == null) {
+  function validate_test_mode(test_mode: unknown): SupportedTestModes {
+    if (test_mode == null) {
       return "vegeta"
     }
 
-    if (testMode === "vegeta" || testMode === "serial") {
-      return testMode
+    if (test_mode === "vegeta" || test_mode === "serial") {
+      return test_mode
     }
 
     throw new Error(
@@ -188,7 +188,7 @@ function validate_flags({ "test-mode": testMode }: typeof argv) {
 }
 
 function generate_metadata({
-  testMode,
+  test_mode,
   rate,
   variant,
   warmup_rate,
@@ -198,7 +198,7 @@ function generate_metadata({
   hostname,
   INGRESS_IP,
 }: {
-  testMode: SupportedTestModes
+  test_mode: SupportedTestModes
   rate: string
   variant: VARIANT
   warmup_rate: string
@@ -211,7 +211,7 @@ function generate_metadata({
   const workload_name = get_resource_name(variant)
   return {
     version: "3",
-    testMode: testMode,
+    testMode: test_mode,
     timestamp,
     warmupsFileSuffix: ".warmups.json.zst",
     resultsFileSuffix: ".results.json.zst",
