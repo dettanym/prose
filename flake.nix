@@ -7,6 +7,7 @@
       nixpkgs,
       systems,
       treefmt-nix,
+      pre-commit-hooks,
     }:
     let
       eachSystem = f: nixpkgs.lib.genAttrs (import systems) (system: f nixpkgs.legacyPackages.${system});
@@ -54,7 +55,11 @@
           zstd
         ];
 
+        buildInputs = self.checks.x86_64-linux.pre-commit-check.enabledPackages;
+
         shellHook = ''
+          ${self.checks.x86_64-linux.pre-commit-check.shellHook}
+
           alias v='ls -alhF --color'
           alias kc='kubectl'
         '';
@@ -65,7 +70,15 @@
 
       # for `nix flake check`
       checks = eachSystem (pkgs: {
-        formatting = treefmtEval.${pkgs.system}.config.build.check self;
+        pre-commit-check = pre-commit-hooks.lib.${pkgs.system}.run {
+          src = ./.;
+          hooks = {
+            treefmt = {
+              enable = true;
+              package = pkgs.lib.mkBefore treefmtEval.${pkgs.system}.config.build.wrapper;
+            };
+          };
+        };
       });
     };
 
@@ -73,5 +86,7 @@
     nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
     treefmt-nix.url = "github:numtide/treefmt-nix";
     treefmt-nix.inputs.nixpkgs.follows = "nixpkgs";
+    pre-commit-hooks.url = "github:cachix/pre-commit-hooks.nix";
+    pre-commit-hooks.inputs.nixpkgs.follows = "nixpkgs";
   };
 }
