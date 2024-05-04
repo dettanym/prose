@@ -73,6 +73,30 @@
         pre-commit-check = pre-commit-hooks.lib.${pkgs.system}.run {
           src = ./.;
           hooks = {
+            regenerate-pre-commit-config = {
+              enable = true;
+              name = "Regenerate `.pre-commit-config.yaml` file";
+              files = "\\.pre-commit-config\\.yaml$";
+              entry =
+                let
+                  script = pkgs.writeShellScript "pre-commit-config-update.sh" ''
+                    CURRENT="$(readlink -sf .pre-commit-config.yaml)"
+                    nix develop --offline --quiet >/dev/null 2>&1 -c echo ""
+                    NEW="$(readlink -sf .pre-commit-config.yaml)"
+
+                    if [[ "''${CURRENT}" != "''${NEW}" ]]; then
+                      echo "Regenerated \`.pre-commit-config.yaml\` file. Need to re-run commit."
+                      exit 1
+                    fi
+                  '';
+                in
+                script.outPath;
+              pass_filenames = false;
+              fail_fast = true;
+              require_serial = true;
+              always_run = true;
+            };
+
             treefmt = {
               enable = true;
               package = pkgs.lib.mkBefore treefmtEval.${pkgs.system}.config.build.wrapper;
