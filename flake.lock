@@ -16,26 +16,9 @@
         "type": "github"
       }
     },
-    "pipenv_2023_10_24_nixpkgs": {
-      "locked": {
-        "lastModified": 1699713542,
-        "narHash": "sha256-2o5Ta4qxK6nKfEeu4WInpWu1svntpGZWCSf4SXf4S7o=",
-        "owner": "nixos",
-        "repo": "nixpkgs",
-        "rev": "2039ace2f4008fb413834b8f236462ba1f02a458",
-        "type": "github"
-      },
-      "original": {
-        "owner": "nixos",
-        "repo": "nixpkgs",
-        "rev": "2039ace2f4008fb413834b8f236462ba1f02a458",
-        "type": "github"
-      }
-    },
     "root": {
       "inputs": {
         "nixpkgs": "nixpkgs",
-        "pipenv_2023_10_24_nixpkgs": "pipenv_2023_10_24_nixpkgs",
         "systems": "systems",
         "treefmt-nix": "treefmt-nix"
       }
