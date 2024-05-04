@@ -51,6 +51,7 @@
           (python3.withPackages (ps: [
             ps.matplotlib
             ps.numpy
+            ps.srsly
           ]))
           pipenv
           ripgrep
