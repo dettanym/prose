@@ -146,7 +146,7 @@ To investigate whether _Presidio_ has long latencies of 100ms or more, we want
 to analyze the traces. So, we ran vegeta mode for 1 iteration in 60req/s for 10s
 against prose-filter variant.
 
-`"2024-05-02T16:20:42-04:00"`
+- `"2024-05-02T16:20:42-04:00"    # "istio"+"prose-filter"; vegeta mode; 1 run; 60,100req/s`
 
 For example, we found that Presidio took around 70ms + 15ms + 50ms = 135ms when
 the response latency was around 170ms. The mean was 370ms. We can safely say
@@ -161,9 +161,11 @@ So next steps: we should run the sequential `curl` mode on `shiver`. It might
 also be relevant to run Presidio separately (in a Docker container) and measure
 response latencies in both the `curl` and `vegeta` modes.
 
-`traces-1714682252555.json` includes zipped traces for this run.
+`_trace_dumps/traces-1714682252555.json.zst` includes zipped traces for this
+run.
 
-`2024-05-03T00:27:26-04:00`:
+- `"2024-05-03T00:27:26-04:00"    # "istio"+"prose-filter"; vegeta mode; 1 run; 60,100req/s`
+  - includes trace dump in `_trace_dumps/traces-1714713825594.json.zst` file.
 
 This covers a sequential run over the same parameters as above: 1 iteration in
 60req/s for 10s against prose-filter variant and istio variant.
@@ -172,11 +174,11 @@ We note that all latencies are slightly larger for the sequential case;
 presumably this is because the services are not facing high load (?) E.g. Istio
 has a max of 97ms while it earlier only saw a max of 70ms. We found that
 Prose-filter had the same pattern as in the vegeta attack mode. Prose-filter
-still shows latencies from 100ms--1000ms. Based on the traces
-(`traces-1714713825594.json`), Presidio caused a significant fraction of these
-times e.g. for a 437ms response, it took up 165ms + 15ms + 80ms = 260ms. Out of
-a 180ms response, it took up 35ms + 9ms + 48ms ~=95ms. That is, it continues to
-take around or even slightly over half the total response time.
+still shows latencies from 100ms--1000ms. Based on the traces, Presidio caused a
+significant fraction of these times e.g. for a 437ms response, it took up
+165ms + 15ms + 80ms = 260ms. Out of a 180ms response, it took up 35ms + 9ms +
+48ms ~=95ms. That is, it continues to take around or even slightly over half the
+total response time.
 
 Importantly, in the sequential case, only one Presidio replica processes a
 request at a time. Whereas in the vegeta mode, multiple Presidio replicas could
@@ -208,6 +210,24 @@ resource contention between the service pods and Presidio pods.
 
 Our effort might be better spent identifying what's taking Presidio so long and
 whether we can e.g. hash or memoize the results safely.
+
+- `"2024-05-05T01:33:47-04:00"    # "prose-filter-8ec667ab"; vegeta mode; 1 run; 60req/s`
+  - includes trace dump in `_trace_dumps/traces-1714887319600.json.zst` file.
+  - results above are for filter with constant delay of 20ms instead of calling
+    presidio
+- `"2024-05-05T02:10:21-04:00"    # "prose-filter-8ec667ab"; vegeta mode; 1 run; 60req/s`
+  - includes trace dump in `_trace_dumps/traces-1714889493965.json.zst` file.
+  - includes trace dump of presidio calls in
+    `_trace_dumps/traces-1714889557643.json.zst` file. all presidio calls have
+    failed, so potentially we haven't executed the test correctly.
+  - results above are for filter and presidio, while presidio and bookinfo are
+    attacked at the same time.
+- `"2024-05-05T02:27:38-04:00"    # "prose-filter-8ec667ab"; vegeta mode; 1 run; 60req/s`
+  - includes trace dump in `_trace_dumps/traces-1714890702184.json.zst` file.
+  - includes trace dump of presidio calls in
+    `_trace_dumps/traces-1714890641043.json.zst` file.
+  - results above are for filter and presidio under attack. added content-type
+    header to presidio attack.
 
 ### All test runs from `"moone"`
 
