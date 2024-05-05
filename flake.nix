@@ -76,7 +76,6 @@
             regenerate-pre-commit-config = {
               enable = true;
               name = "Regenerate `.pre-commit-config.yaml` file";
-              files = "\\.pre-commit-config\\.yaml$";
               entry =
                 let
                   script = pkgs.writeShellScript "pre-commit-config-update.sh" ''
@@ -91,9 +90,7 @@
                   '';
                 in
                 script.outPath;
-              pass_filenames = false;
               fail_fast = true;
-              require_serial = true;
               always_run = true;
             };
 
