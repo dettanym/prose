@@ -12,23 +12,7 @@ const warmup_duration = "10s" satisfies DURATION
 const warmup_rate = "100" satisfies RATE
 
 const duration = "10s" satisfies DURATION
-const rates = new Set([
-  "1000",
-  "800",
-  "600",
-  "400",
-  "200",
-  "180",
-  "160",
-  "140",
-  "120",
-  warmup_rate,
-  "80",
-  "60",
-  "40",
-  "20",
-  "10",
-]) satisfies Iterable<RATE>
+const rates = new Set(["60"]) satisfies Iterable<RATE>
 
 const bookinfo_variants = new Set([
   "plain",
@@ -43,15 +27,9 @@ const bookinfo_variants = new Set([
  * than one rate value. That is because with one variant, there is some weird
  * behavior where each second attack fails for most of the requests.
  */
-const test_only = new Set<VARIANT>([
-  "plain",
-  "istio",
-  "passthrough-filter",
-  "tooling-filter",
-  "prose-filter",
-])
+const test_only = new Set<VARIANT>(["prose-filter"])
 
-const TEST_RUNS = 10
+const TEST_RUNS = 1
 
 const INGRESS_IP = "192.168.49.21"
 
@@ -216,12 +194,26 @@ function generate_metadata({
     warmupsFileSuffix: ".warmups.json.zst",
     resultsFileSuffix: ".results.json.zst",
     summaryFileSuffix: ".summary.json",
+    presidioWarmupsFileSuffix: ".presidio.warmups.json.zst",
+    presidioResultsFileSuffix: ".presidio.results.json.zst",
+    presidioSummaryFileSuffix: ".presidio.summary.json",
     req: {
       method: "GET",
       url: "https://" + INGRESS_IP + "/productpage?u=test",
       header: {
         Host: [workload_name + ".my-example.com"],
       },
+    },
+    presidioReq: {
+      method: "POST",
+      url: "http://192.168.49.24:3000/batchanalyze",
+      body: Buffer.from(
+        JSON.stringify({
+          json_to_analyze: {
+            person: "Bob Bobovich Bobovsky",
+          },
+        }),
+      ).toString("base64"),
     },
     warmupOptions: {
       duration: warmup_duration,
@@ -297,22 +289,51 @@ async function run_test(
     `${test_run_index}${metadata.summaryFileSuffix}`,
   )
 
+  const presidio_warmups_file = path.join(
+    test_results_dir,
+    `${test_run_index}${metadata.presidioWarmupsFileSuffix}`,
+  )
+  const presidio_results_file = path.join(
+    test_results_dir,
+    `${test_run_index}${metadata.presidioResultsFileSuffix}`,
+  )
+  const presidio_summary_file = path.join(
+    test_results_dir,
+    `${test_run_index}${metadata.presidioSummaryFileSuffix}`,
+  )
+
   if (metadata.testMode === "vegeta") {
     echo`  - Warm-up '${metadata.workloadInfo.variant}' variant`
-    await $`
-      echo ${JSON.stringify(metadata.req)} \
-        | vegeta attack ${vegeta_attack_params(metadata.warmupOptions)} \
-        | vegeta encode --to json \
-        | zstd -c -T0 --ultra -20 - >${warmups_file}
-    `
+    await Promise.all([
+      $`
+        echo ${JSON.stringify(metadata.req)} \
+          | vegeta attack ${vegeta_attack_params(metadata.warmupOptions)} \
+          | vegeta encode --to json \
+          | zstd -c -T0 --ultra -20 - >${warmups_file}
+      `,
+      $`
+        echo ${JSON.stringify(metadata.presidioReq)} \
+          | vegeta attack ${vegeta_attack_params(metadata.warmupOptions)} \
+          | vegeta encode --to json \
+          | zstd -c -T0 --ultra -20 - >${presidio_warmups_file}
+      `,
+    ])
 
     echo`  - Testing '${metadata.workloadInfo.variant}' variant`
-    await $`
-      echo ${JSON.stringify(metadata.req)} \
-        | vegeta attack ${vegeta_attack_params(metadata.testOptions)} \
-        | vegeta encode --to json \
-        | zstd -c -T0 --ultra -20 - >${results_file}
-    `
+    await Promise.all([
+      $`
+        echo ${JSON.stringify(metadata.req)} \
+          | vegeta attack ${vegeta_attack_params(metadata.testOptions)} \
+          | vegeta encode --to json \
+          | zstd -c -T0 --ultra -20 - >${results_file}
+      `,
+      $`
+        echo ${JSON.stringify(metadata.presidioReq)} \
+          | vegeta attack ${vegeta_attack_params(metadata.testOptions)} \
+          | vegeta encode --to json \
+          | zstd -c -T0 --ultra -20 - >${presidio_results_file}
+      `,
+    ])
   } else if (metadata.testMode === "serial") {
     const fetch_params = [
       metadata.req.url,
@@ -378,11 +399,18 @@ async function run_test(
   }
 
   echo`  - Report for '${metadata.workloadInfo.variant}' variant`
-  await $`
-    zstd -c -d ${results_file} \
-      | vegeta report -type json \
-      | jq -M >${summary_file}
-  `
+  await Promise.all([
+    $`
+      zstd -c -d ${results_file} \
+        | vegeta report -type json \
+        | jq -M >${summary_file}
+    `,
+    $`
+      zstd -c -d ${presidio_results_file} \
+        | vegeta report -type json \
+        | jq -M >${presidio_summary_file}
+    `,
+  ])
 
   echo`  - Scaling down deployments for '${metadata.workloadInfo.variant}' variant`
   await scale_deployments(metadata.workloadInfo.namespace, 0)
