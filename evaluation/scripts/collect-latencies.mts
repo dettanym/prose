@@ -207,6 +207,9 @@ function generate_metadata({
     presidioReq: {
       method: "POST",
       url: "http://192.168.49.24:3000/batchanalyze",
+      header: {
+        "Content-Type": ["application/json"],
+      },
       body: Buffer.from(
         JSON.stringify({
           json_to_analyze: {
