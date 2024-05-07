@@ -204,63 +204,44 @@ function generate_metadata({
         Host: [workload_name + ".my-example.com"],
       },
     },
-    presidioReq: {
+    presidioReqTemplate: {
       method: "POST",
       url: "http://192.168.49.24:3000/batchanalyze",
       header: {
         "Content-Type": ["application/json"],
       },
-      body: Buffer.from(
-        JSON.stringify({
-          json_to_analyze: {
-            key_a: { key_a1: "My phone number is 212-121-1424" },
-            key_b: ["www.abc.com"],
-            key_c: 3,
-            names: [
-              "James Bond",
-              "Clark Kent",
-              "Hakeem Olajuwon",
-              "No name here!",
-            ],
-            users: [
-              {
-                id: 1,
-                name: "John Doe",
-                email: "john.doe@example.com",
-                address: {
-                  street: "123 Main St",
-                  city: "Anytown",
-                  state: "CA",
-                  postal_code: "12345",
-                },
-              },
-              {
-                id: 2,
-                name: "Jane Smith",
-                email: "jane.smith@example.com",
-                address: {
-                  street: "456 Elm St",
-                  city: "Somewhere",
-                  state: "TX",
-                  postal_code: "67890",
-                },
-              },
-              {
-                id: 3,
-                name: "Alice Johnson",
-                email: "alice.johnson@example.com",
-                address: {
-                  street: "789 Pine St",
-                  city: "Elsewhere",
-                  state: "NY",
-                  postal_code: "11223",
-                },
-              },
-            ],
-          },
-        }),
-      ).toString("base64"),
     },
+    presidioReqBodies: [
+      {
+        "ISBN-10": "1234567890",
+        "ISBN-13": "123-1234567890",
+        author: "William Shakespeare",
+        id: 0,
+        language: "English",
+        pages: 200,
+        publisher: "PublisherA",
+        type: "paperback",
+        year: 1595,
+      },
+      {
+        clustername: "null",
+        id: "0",
+        podname: "reviews-v3-77d94bd94b-jffmj",
+        reviews: [
+          {
+            rating: { color: "red", stars: 5 },
+            reviewer: "Reviewer1",
+            text: "An extremely entertaining play by Shakespeare. The slapstick humour is refreshing!",
+          },
+          {
+            rating: { color: "red", stars: 4 },
+            reviewer: "Reviewer2",
+            text: "Absolutely fun and entertaining. The play lacks thematic depth when compared to other plays by Shakespeare.",
+          },
+        ],
+      },
+      { id: 0, ratings: { Reviewer1: 5, Reviewer2: 4 } },
+    ],
     warmupOptions: {
       duration: warmup_duration,
       rate: warmup_rate,
@@ -335,18 +316,28 @@ async function run_test(
     `${test_run_index}${metadata.summaryFileSuffix}`,
   )
 
-  const presidio_warmups_file = path.join(
-    test_results_dir,
-    `${test_run_index}${metadata.presidioWarmupsFileSuffix}`,
-  )
-  const presidio_results_file = path.join(
-    test_results_dir,
-    `${test_run_index}${metadata.presidioResultsFileSuffix}`,
-  )
-  const presidio_summary_file = path.join(
-    test_results_dir,
-    `${test_run_index}${metadata.presidioSummaryFileSuffix}`,
-  )
+  const presidio_data = metadata.presidioReqBodies.map((data, i) => ({
+    warmups_file: path.join(
+      test_results_dir,
+      `${test_run_index}.req_${i}${metadata.presidioWarmupsFileSuffix}`,
+    ),
+    results_file: path.join(
+      test_results_dir,
+      `${test_run_index}.req_${i}${metadata.presidioResultsFileSuffix}`,
+    ),
+    summary_file: path.join(
+      test_results_dir,
+      `${test_run_index}.req_${i}${metadata.presidioSummaryFileSuffix}`,
+    ),
+    req: {
+      ...metadata.presidioReqTemplate,
+      body: Buffer.from(
+        JSON.stringify({
+          json_to_analyze: data,
+        }),
+      ).toString("base64"),
+    },
+  }))
 
   if (metadata.testMode === "vegeta") {
     echo`  - Warm-up '${metadata.workloadInfo.variant}' variant`
@@ -357,12 +348,14 @@ async function run_test(
           | vegeta encode --to json \
           | zstd -c -T0 --ultra -20 - >${warmups_file}
       `,
-      $`
-        echo ${JSON.stringify(metadata.presidioReq)} \
-          | vegeta attack ${vegeta_attack_params(metadata.warmupOptions)} \
-          | vegeta encode --to json \
-          | zstd -c -T0 --ultra -20 - >${presidio_warmups_file}
-      `,
+      ...presidio_data.map(
+        ({ warmups_file, req }) => $`
+          echo ${JSON.stringify(req)} \
+            | vegeta attack ${vegeta_attack_params(metadata.warmupOptions)} \
+            | vegeta encode --to json \
+            | zstd -c -T0 --ultra -20 - >${warmups_file}
+        `,
+      ),
     ])
 
     echo`  - Testing '${metadata.workloadInfo.variant}' variant`
@@ -373,12 +366,14 @@ async function run_test(
           | vegeta encode --to json \
           | zstd -c -T0 --ultra -20 - >${results_file}
       `,
-      $`
-        echo ${JSON.stringify(metadata.presidioReq)} \
-          | vegeta attack ${vegeta_attack_params(metadata.testOptions)} \
-          | vegeta encode --to json \
-          | zstd -c -T0 --ultra -20 - >${presidio_results_file}
-      `,
+      ...presidio_data.map(
+        ({ results_file, req }) => $`
+          echo ${JSON.stringify(req)} \
+            | vegeta attack ${vegeta_attack_params(metadata.testOptions)} \
+            | vegeta encode --to json \
+            | zstd -c -T0 --ultra -20 - >${results_file}
+        `,
+      ),
     ])
   } else if (metadata.testMode === "serial") {
     const fetch_params = [
@@ -451,11 +446,13 @@ async function run_test(
         | vegeta report -type json \
         | jq -M >${summary_file}
     `,
-    $`
-      zstd -c -d ${presidio_results_file} \
-        | vegeta report -type json \
-        | jq -M >${presidio_summary_file}
-    `,
+    ...presidio_data.map(
+      ({ results_file, summary_file }) => $`
+        zstd -c -d ${results_file} \
+          | vegeta report -type json \
+          | jq -M >${summary_file}
+      `,
+    ),
   ])
 
   echo`  - Scaling down deployments for '${metadata.workloadInfo.variant}' variant`
