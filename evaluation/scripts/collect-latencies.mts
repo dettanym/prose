@@ -213,7 +213,50 @@ function generate_metadata({
       body: Buffer.from(
         JSON.stringify({
           json_to_analyze: {
-            person: "Bob Bobovich Bobovsky",
+            key_a: { key_a1: "My phone number is 212-121-1424" },
+            key_b: ["www.abc.com"],
+            key_c: 3,
+            names: [
+              "James Bond",
+              "Clark Kent",
+              "Hakeem Olajuwon",
+              "No name here!",
+            ],
+            users: [
+              {
+                id: 1,
+                name: "John Doe",
+                email: "john.doe@example.com",
+                address: {
+                  street: "123 Main St",
+                  city: "Anytown",
+                  state: "CA",
+                  postal_code: "12345",
+                },
+              },
+              {
+                id: 2,
+                name: "Jane Smith",
+                email: "jane.smith@example.com",
+                address: {
+                  street: "456 Elm St",
+                  city: "Somewhere",
+                  state: "TX",
+                  postal_code: "67890",
+                },
+              },
+              {
+                id: 3,
+                name: "Alice Johnson",
+                email: "alice.johnson@example.com",
+                address: {
+                  street: "789 Pine St",
+                  city: "Elsewhere",
+                  state: "NY",
+                  postal_code: "11223",
+                },
+              },
+            ],
           },
         }),
       ).toString("base64"),
