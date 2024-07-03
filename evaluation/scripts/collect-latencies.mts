@@ -37,8 +37,6 @@ type SupportedTestModes = "vegeta" | "serial"
 
 /*--- PROGRAM --------------------------------------------------------*/
 
-$.verbose = false
-
 // The `env.sh` injects the original `CWD` location from which the script was
 // executed as the first argument. Current cwd was changed by `env.sh` to the
 // folder containing the current file, so here we are turning it back.
@@ -385,7 +383,10 @@ async function run_test(
             .map(([k, vs]) => [k, vs[0] ?? null] as const)
             .filter((x): x is [string, string] => x[1] != null),
         ),
-        agent: new Agent({ rejectUnauthorized: false }),
+        // Type hack to prevent TS from complaining about an unknown field. It
+        // appears that the underlying package still supports `agent` option,
+        // even though it does not show up in types.
+        ["agent" as never]: new Agent({ rejectUnauthorized: false }),
       },
     ] satisfies Parameters<typeof fetch>
     const base_vegeta_result = {
