@@ -3,8 +3,18 @@
 import "@js-joda/timezone"
 
 import { $, echo, fs, os, path, updateArgv, sleep, argv, fetch } from "zx"
-import { Duration, Instant, ZonedDateTime, ZoneId } from "@js-joda/core"
+import { Duration, ZonedDateTime } from "@js-joda/core"
 import { Agent } from "https"
+
+import { absurd, range, typeCheck } from "./code/common.mjs"
+import { get_test_results_dir } from "./code/dir.mjs"
+import {
+  current_micro_timestamp,
+  current_timestamp,
+  format_zoned_timestamp,
+  parse_duration,
+  show_duration,
+} from "./code/time.mjs"
 
 /*--- PARAMETERS -----------------------------------------------------*/
 
@@ -57,6 +67,7 @@ await (async function main() {
 
   const test_results_dir = await get_test_results_dir(
     PRJ_ROOT,
+    "bookinfo",
     hostname,
     timestamp,
   )
@@ -563,23 +574,6 @@ function serial_runs_amount({
   return parse_duration(duration) * parseInt(rate)
 }
 
-async function get_test_results_dir(
-  PRJ_ROOT: string,
-  hostname: string,
-  timestamp: string,
-) {
-  const test_run_results_dir = path.join(
-    PRJ_ROOT,
-    "evaluation/vegeta/bookinfo",
-    hostname,
-    timestamp,
-  )
-
-  await fs.mkdirp(test_run_results_dir)
-
-  return (...segments: string[]) => path.join(test_run_results_dir, ...segments)
-}
-
 async function vegeta_fields_from_fetch_result(
   result: Awaited<ReturnType<typeof fetch>>,
 ) {
@@ -632,88 +626,6 @@ function sorted_vegeta_result(
     result[key] = incoming[key]
   }
   return result as VegetaResultFormat
-}
-
-function format_zoned_timestamp(ts: ZonedDateTime): string {
-  return ts.toOffsetDateTime().toString()
-}
-
-function current_timestamp() {
-  return format_zoned_timestamp(ZonedDateTime.now().withNano(0))
-}
-
-function current_micro_timestamp() {
-  // if a version of node does not have 'performance' global variable, try
-  // 'microtime' package: https://www.npmjs.com/package/microtime
-  const nowMicros = (performance.now() + performance.timeOrigin) * 1000
-
-  return ZonedDateTime.ofInstant(
-    Instant.ofEpochMicro(nowMicros),
-    ZoneId.systemDefault(),
-  )
-}
-
-function show_duration(dur: Duration) {
-  if (dur.seconds() === 0) {
-    return "0s"
-  }
-
-  const duration_value = dur.abs()
-
-  const h = duration_value.toHours()
-  const m = duration_value.minusHours(h).toMinutes()
-  const s = duration_value.minusHours(h).minusMinutes(m).seconds()
-
-  const sign = dur.isNegative() ? "-" : ""
-  const values = dropRightWhile(
-    dropLeftWhile(
-      [
-        [h, "h"],
-        [m, "m"],
-        [s, "s"],
-      ],
-      ([v]) => v === 0,
-    ),
-    ([v]) => v === 0,
-  ).reduce((acc, [value, unit]) => acc + value + unit, "")
-
-  return sign + values
-}
-
-function parse_duration(duration: string): number {
-  if (/\d+s/.test(duration)) {
-    return parseInt(duration.slice(0, -1))
-  }
-
-  throw new Error(`Unknown duration: "${duration}".`)
-}
-
-function range(start: number, stop: number, step = 1) {
-  return Array.from(
-    { length: (stop - start) / step + 1 },
-    (_, index) => start + index * step,
-  )
-}
-
-function dropLeftWhile<T>(
-  array: ReadonlyArray<T>,
-  predicate: (item: T) => boolean,
-): ReadonlyArray<T> {
-  const i = array.findIndex((_) => !predicate(_))
-  return i > -1 ? array.slice(i) : array
-}
-
-function dropRightWhile<T>(
-  array: ReadonlyArray<T>,
-  predicate: (item: T) => boolean,
-): ReadonlyArray<T> {
-  const i = array.findLastIndex((_) => !predicate(_))
-  return i > -1 ? array.slice(0, i + 1) : array
-}
-
-function typeCheck(_: true): void {}
-function absurd<A>(_: never): A {
-  throw new Error("Called `absurd` function which should be uncallable")
 }
 
 // matches stored vegeta format, so we can reuse the same processing scripts
