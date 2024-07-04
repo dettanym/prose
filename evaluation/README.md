@@ -32,3 +32,31 @@
    Replace the IP address with the K8s gateway's external IP address found using the command above. _You can continue to browse the web as usual; this configuration simply ensures that my-example.com is resolved by your local DNS resolver._ This configuration file can be removed once you've turned minikube off.
 
 5. Be happy! [Work on your cluster](../README.md#work-on-the-cluster).
+
+## General analysis steps
+
+### Test e2e the entire stack
+
+1. Run the cluster (use `./scripts/start-minikube-cluster.sh`)
+   1. Note, we run latest version of our components when testing the cluster. We
+      can pick specific versions of our components, but it requires digging for
+      image version settings in `./kubernetes/`, changing and committing these
+      values, since our setup is done using [flux](https://fluxcd.io/).
+   2. We might consider changing our test scripts so the deployment is created
+      outside of flux and then we can select specific versions of components to
+      test.
+2. Collect latencies
+   1. Adjust settings in `./scripts/collect-latencies.mts`
+   2. Run that script (can pass `--test-mode vegeta|serial`)
+   3. Results will get collected in `./vegeta/bookinfo/<hostname>/<timestamp>/`
+3. Plot cumulative results
+   1. Adjust settings in `./scripts/plot-througput-graphs.py` to include newly
+      generated results with hostname and timestamp from above
+   2. Run that script
+   3. Graphs will be generated in `./vegeta/bookinfo/_graphs/bookinfo_*`
+4. Inspect specific run results
+   1. Adjust settings in `./scripts/inspect-specific-results.py` to point at
+      specific result for inspection
+   2. Run that script
+   3. Graphs will be generated in
+      `./vegeta/bookinfo/_graphs/results_inspection_*`
