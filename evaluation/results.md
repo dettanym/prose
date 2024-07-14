@@ -229,6 +229,24 @@ whether we can e.g. hash or memoize the results safely.
   - results above are for filter and presidio under attack. added content-type
     header to presidio attack.
 
+We ran few more experiments, but haven't recorded setup or results.
+Reconstructing from data, it appears we changed prose filter such that it is not
+calling presidio pod in these tests, but in parallel we are sending requests to
+presidio pod. This way we have independent load profiles on each of the pods in
+the analysis.
+
+- `"2024-05-07T16:51:37-04:00"    # "prose-filter-8ec667ab"; vegeta mode; 1 run; 60req/s`
+  - Here we send a very small and simple body to presidio for analysis
+- `"2024-05-07T18:44:39-04:00"    # "prose-filter-8ec667ab"; vegeta mode; 1 run; 60req/s`
+  - Here we are sending 3 requests to presidio for each request through prose
+    filter. Since we are running prose attack at 60req/s, we are effectively
+    running presidio attack at 180req/s. The three requests that we send
+    represent 3 different body sizes that we extracted from the actual
+    application in the analysis.
+- `"2024-05-07T19:15:48-04:00"    # "prose-filter-8ec667ab"; vegeta mode; 1 run; 20req/s`
+  - Setup similar to experiment above, but we are sending requests through prose
+    filter at 20req/s, thus effectively sending 60req/s to presidio pods.
+
 ### All test runs from `"moone"`
 
 This host contains some random attempts.
