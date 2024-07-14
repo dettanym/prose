@@ -1,8 +1,5 @@
-{ pkgs, options, ... }:
+{ config }:
 {
-  # Used to find the project root
-  projectRootFile = "flake.nix";
-
   settings.global.excludes = [ ".archive/**" ];
 
   programs.statix.enable = true;
@@ -42,7 +39,7 @@
   programs.prettier.excludes = [
     "pnpm-lock.yaml"
     "charts/*/templates/*.yaml"
-  ] ++ options.programs.biome.includes.default;
+  ] ++ config.programs.biome.includes;
 
   programs.shellcheck.enable = true;
   programs.shfmt.enable = true;
