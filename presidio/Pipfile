@@ -6,6 +6,7 @@ name = "pypi"
 [packages]
 flake8 = "*"
 flask = "*"
+flask-caching = "*"
 opentelemetry-api = "*"
 opentelemetry-exporter-otlp-proto-http = "*"
 opentelemetry-instrumentation-flask = "*"
