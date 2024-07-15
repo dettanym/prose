@@ -90,6 +90,34 @@ interest_points = {
             "plots for prose-filter variant (sequential case) with request rate 60req/s after warmup, 1st run",
             "2024-05-03T00:27:26-04:00/60/prose-filter/1.results.json.zst",
         ),
+        (
+            "presidio performance (with tiny body) at effective request rate 180req/s after warmup, 1st run",
+            "2024-05-07T16:51:37-04:00/60/prose-filter-8ec667ab/1.presidio.results.json.zst",
+        ),
+        (
+            "presidio performance (with medium body from bookinfo) at effective request rate 180req/s after warmup, 1st run",
+            "2024-05-07T18:44:39-04:00/60/prose-filter-8ec667ab/1.req_0.presidio.results.json.zst",
+        ),
+        (
+            "presidio performance (with larger body from bookinfo) at effective request rate 180req/s after warmup, 1st run",
+            "2024-05-07T18:44:39-04:00/60/prose-filter-8ec667ab/1.req_1.presidio.results.json.zst",
+        ),
+        (
+            "presidio performance (with small body from bookinfo) at effective request rate 180req/s after warmup, 1st run",
+            "2024-05-07T18:44:39-04:00/60/prose-filter-8ec667ab/1.req_2.presidio.results.json.zst",
+        ),
+        (
+            "presidio performance (with medium body from bookinfo) at effective request rate 60req/s after warmup, 1st run",
+            "2024-05-07T19:15:48-04:00/20/prose-filter-8ec667ab/1.req_0.presidio.results.json.zst",
+        ),
+        (
+            "presidio performance (with larger body from bookinfo) at effective request rate 60req/s after warmup, 1st run",
+            "2024-05-07T19:15:48-04:00/20/prose-filter-8ec667ab/1.req_1.presidio.results.json.zst",
+        ),
+        (
+            "presidio performance (with small body from bookinfo) at effective request rate 60req/s after warmup, 1st run",
+            "2024-05-07T19:15:48-04:00/20/prose-filter-8ec667ab/1.req_2.presidio.results.json.zst",
+        ),
     ],
     "moone": [
         (
