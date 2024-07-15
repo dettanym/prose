@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Tuple
 
 from flask import Flask, Response, jsonify, request
+from flask_caching import Cache
 from presidio_analyzer.analyzer_engine import AnalyzerEngine
 from presidio_analyzer.analyzer_request import AnalyzerRequest
 from presidio_analyzer.batch_analyzer_engine import BatchAnalyzerEngine
@@ -51,15 +52,24 @@ WELCOME_MESSAGE = r"""
 class Server:
     """HTTP Server for calling Presidio Analyzer."""
 
-    def __init__(self):
+    def __init__(self, settings):
         fileConfig(Path(Path(__file__).parent, LOGGING_CONF_FILE))
         self.logger = logging.getLogger("presidio-analyzer")
         self.logger.setLevel(os.environ.get("LOG_LEVEL", self.logger.level))
+        print("enable cache:  " + str(settings["enable_cache"]))
+        self.cache = Cache(
+            config=(
+                {"CACHE_TYPE": "SimpleCache"}
+                if settings["enable_cache"]
+                else {"CACHE_TYPE": "NullCache", "CACHE_NO_NULL_WARNING": True}
+            )
+        )
         self.app = Flask(__name__)
         self.logger.info("Starting analyzer engine")
         self.engine = AnalyzerEngine()
         self.batch_analyzer = BatchAnalyzerEngine(analyzer_engine=self.engine)
         self.batch_anonymizer = BatchAnonymizerEngine()
+        self.cache.init_app(self.app)
         self.logger.info(WELCOME_MESSAGE)
 
         @self.app.route("/health")
@@ -139,6 +149,7 @@ class Server:
         def http_exception(e):
             return jsonify(error=e.description), e.code
 
+        @self.cache.cached()
         @self.app.route("/batchanalyze", methods=["POST"])
         def batch_analyze() -> Tuple[Response, int]:
             """Execute the batch analyzer function."""

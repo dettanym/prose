@@ -15,6 +15,9 @@ DEFAULT_PORT = "3000"
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", DEFAULT_PORT))
+    enable_cache = (
+        os.environ.get("PRESIDIO_ENABLE_CACHE") or "false"
+    ).lower() != "false"
 
     processor = BatchSpanProcessor(OTLPSpanExporter())
 
@@ -29,7 +32,11 @@ if __name__ == "__main__":
 
     trace.set_tracer_provider(provider)
 
-    server = Server()
+    server = Server(
+        {
+            "enable_cache": enable_cache,
+        }
+    )
     FlaskInstrumentor().instrument_app(
         server.app,
         excluded_urls="/health",
