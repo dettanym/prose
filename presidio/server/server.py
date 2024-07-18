@@ -158,6 +158,27 @@ class Server:
                         "to analyze."
                     )
 
+                params = {}
+                if (
+                    "analyze_params" in request_obj
+                    and request_obj["analyze_params"] is not None
+                ):
+                    params = request_obj["analyze_params"]
+                    if "input_dict" in params:
+                        if params["input_dict"] is not None:
+                            raise Exception(
+                                "Cannot pass `input_dict` via `analyze_params`"
+                            )
+                        else:
+                            del params["input_dict"]
+                    if "language" in params:
+                        if params["language"] is not None:
+                            raise Exception(
+                                "Cannot pass `language` in `analyze_params`"
+                            )
+                        else:
+                            del params["language"]
+
                 # Note that this function implementation already adds the key as additional 'context'
                 # for the decision (see batch_analyzer_engine.py line 96)
                 recognizer_result_list = self.batch_analyzer.analyze_dict(
@@ -165,6 +186,7 @@ class Server:
                         request_obj["json_to_analyze"]
                     ),
                     language="en",
+                    **params,
                 )
 
                 unique_pii_list = extract_data_types_from_results(
