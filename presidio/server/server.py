@@ -145,7 +145,6 @@ class Server:
             # Parse the request params
             try:
                 request_obj = request.get_json()
-                print(request_obj["json_to_analyze"], type(request_obj))
                 if (
                     "json_to_analyze" not in request_obj
                     or request_obj["json_to_analyze"] is None
@@ -163,7 +162,6 @@ class Server:
                     ),
                     language="en",
                 )
-                print(recognizer_result_list)
 
                 unique_pii_list = extract_data_types_from_results(
                     recognizer_result_list
