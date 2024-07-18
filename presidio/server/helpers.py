@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from typing import Any, Iterator, Set
 
 from presidio_analyzer import DictAnalyzerResult, RecognizerResult
@@ -29,9 +30,9 @@ def convert_all_lists_to_dicts(data: Any) -> Any:
     raise TypeError("Unknown type of incoming data: " + str(type(data)))
 
 
-def extract_data_types_from_results(
+def extract_recognizer_results(
     dict_results: Iterator[DictAnalyzerResult],
-) -> Set[str]:
+) -> Set[RecognizerResult]:
     """
     Extract `entity_type` fields from all nested `RecognizerResult` types within
     the incoming tree structure of `DictAnalyzerResult`.
@@ -55,11 +56,11 @@ def extract_data_types_from_results(
             # `entity_type` from it.
             for item in recognizer_results:
                 if isinstance(item, RecognizerResult):
-                    final.add(item.entity_type)
+                    final.add(item)
                 elif isinstance(item, list):
                     for rr in item:
                         if isinstance(rr, RecognizerResult):
-                            final.add(rr.entity_type)
+                            final.add(rr)
                         else:
                             raise TypeError("Unknown type of result: " + str(type(rr)))
                 else:
@@ -72,3 +73,20 @@ def extract_data_types_from_results(
             raise TypeError("Unknown type of result: " + str(type(recognizer_results)))
 
     return final
+
+
+@dataclass
+class RecognizerResultDict:
+    entity_type: str
+    start: int
+    end: int
+    score: float
+
+
+def map_recognizer_result_to_dict(rr: RecognizerResult) -> RecognizerResultDict:
+    return RecognizerResultDict(
+        entity_type=rr.entity_type,
+        start=rr.start,
+        end=rr.end,
+        score=rr.score,
+    )

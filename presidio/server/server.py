@@ -14,7 +14,11 @@ from presidio_analyzer.batch_analyzer_engine import BatchAnalyzerEngine
 from presidio_anonymizer import BatchAnonymizerEngine
 from werkzeug.exceptions import HTTPException
 
-from .helpers import convert_all_lists_to_dicts, extract_data_types_from_results
+from .helpers import (
+    convert_all_lists_to_dicts,
+    extract_recognizer_results,
+    map_recognizer_result_to_dict,
+)
 
 data_items_set = [
     "CREDIT_CARD",
@@ -191,12 +195,15 @@ class Server:
                     **params,
                 )
 
-                unique_pii_list = extract_data_types_from_results(
-                    recognizer_result_list
-                )
-
+                recognizer_results = extract_recognizer_results(recognizer_result_list)
                 unique_valid_pii_list = [
-                    pii for pii in unique_pii_list if pii in data_items_set
+                    (
+                        rr.entity_type
+                        if request_obj["entire_recognizer_result"] is not True
+                        else map_recognizer_result_to_dict(rr)
+                    )
+                    for rr in recognizer_results
+                    if rr.entity_type in data_items_set
                 ]
 
                 return jsonify(unique_valid_pii_list), 200
