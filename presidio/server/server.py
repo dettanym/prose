@@ -179,12 +179,14 @@ class Server:
                         else:
                             del params["language"]
 
+                converted = convert_all_lists_to_dicts(request_obj["json_to_analyze"])
+                if not isinstance(converted, dict):
+                    converted = {"_": converted}
+
                 # Note that this function implementation already adds the key as additional 'context'
                 # for the decision (see batch_analyzer_engine.py line 96)
                 recognizer_result_list = self.batch_analyzer.analyze_dict(
-                    input_dict=convert_all_lists_to_dicts(
-                        request_obj["json_to_analyze"]
-                    ),
+                    input_dict=converted,
                     language="en",
                     **params,
                 )
