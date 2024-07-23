@@ -6,43 +6,45 @@ import { inspect } from "node:util"
 /*--- PARAMETERS -----------------------------------------------------*/
 
 const sample_texts_with_pii = [
-  extract_pii`
-    Hello, my name is ${pii("David Johnson", "PERSON")} and I live in ${pii(
-      "Maine",
-      "LOCATION",
-    )}.
-    My credit card number is ${pii(
-      "4095-2609-9393-4932",
-      "CREDIT_CARD",
-    )} and my crypto wallet id is ${pii(
-      "16Yeky6GMjeNkAiNcBY7ZhrLoMSgg1BoyZ",
-      "CRYPTO",
-    )}.
-    On ${pii("September 18", "DATE_TIME")} I visited ${pii(
-      "microsoft.com",
-      "URL",
-    )} and sent an email to ${pii(
-      "test@presidio.site",
-      "EMAIL_ADDRESS",
-    )}, from the IP ${pii("192.168.0.1", "IP_ADDRESS")}.
-    My passport: ${pii("191280342", "US_PASSPORT")} and my phone number: ${pii(
-      "(212) 555-1234",
-      "PHONE_NUMBER",
-    )}.
-    This is a valid International Bank Account Number: ${pii(
-      "IL150120690000003111111",
-      "IBAN_CODE",
-    )}.
-    Can you please check the status on bank account ${pii(
-      "954567876544",
-      "US_BANK_NUMBER",
-    )}?
-    ${pii("Kate", "PERSON")}'s social security number is ${pii(
-      "078-05-1126",
-      "US_SSN",
-    )}.
-    Her driver license? it is ${pii("1234567A", "US_DRIVER_LICENSE")}.
-  `,
+  // sentences from huggingface example: https://huggingface.co/spaces/presidio/presidio_demo
+  extract_pii`Hello, my name is ${pii(
+    "David Johnson",
+    "PERSON",
+  )} and I live in ${pii("Maine", "LOCATION")}.`,
+  extract_pii`My credit card number is ${pii(
+    "4095-2609-9393-4932",
+    "CREDIT_CARD",
+  )} and my crypto wallet id is ${pii(
+    "16Yeky6GMjeNkAiNcBY7ZhrLoMSgg1BoyZ",
+    "CRYPTO",
+  )}.`,
+  extract_pii`On ${pii("September 18", "DATE_TIME")} I visited ${pii(
+    "microsoft.com",
+    "URL",
+  )} and sent an email to ${pii(
+    "test@presidio.site",
+    "EMAIL_ADDRESS",
+  )}, from the IP ${pii("192.168.0.1", "IP_ADDRESS")}.`,
+  extract_pii`My passport: ${pii(
+    "191280342",
+    "US_PASSPORT",
+  )} and my phone number: ${pii("(212) 555-1234", "PHONE_NUMBER")}.`,
+  extract_pii`This is a valid International Bank Account Number: ${pii(
+    "IL150120690000003111111",
+    "IBAN_CODE",
+  )}.`,
+  extract_pii`Can you please check the status on bank account ${pii(
+    "954567876544",
+    "US_BANK_NUMBER",
+  )}?`,
+  extract_pii`${pii("Kate", "PERSON")}'s social security number is ${pii(
+    "078-05-1126",
+    "US_SSN",
+  )}.`,
+  extract_pii`Her driver license? it is ${pii(
+    "1234567A",
+    "US_DRIVER_LICENSE",
+  )}.`,
 ]
 
 /*--- PROGRAM --------------------------------------------------------*/
