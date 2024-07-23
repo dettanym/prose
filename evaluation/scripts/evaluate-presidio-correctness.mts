@@ -56,6 +56,8 @@ $.cwd = process.argv.at(2) as string
 updateArgv(process.argv.slice(3))
 
 await (async function main() {
+  validateData(sample_texts_with_pii)
+
   for (const { text: sample_text, expected_pii } of sample_texts_with_pii) {
     const response = (await fetch("http://localhost:3000/batchanalyze", {
       method: "POST",
@@ -126,6 +128,22 @@ function extract_pii(
   )
 }
 
+function validateData(data: Array<ReturnType<typeof extract_pii>>) {
+  const indexes = data
+    .map((d, i) => (findOverlaps(d.expected_pii).length > 0 ? i : null))
+    .filter((x) => x != null)
+    .join(", ")
+
+  if (indexes.length > 0) {
+    throw new Error(
+      // The algorithm searching for matches between expected data and response
+      // from presidio does not account for the overlaps of PII objects in the
+      // input data.
+      `Incorrect input data: overlaps found at indices: ${indexes}`,
+    )
+  }
+}
+
 function hasOverlap(a: Range, b: Range): boolean {
   return a.start <= b.end && b.start <= a.end
 }
@@ -155,11 +173,9 @@ function overlap(a: Range, b: Range): Range | null {
   return start <= end ? { start, end } : null
 }
 
-function findOverlaps(data: PresidioResponse): Array<{
-  first: RecognizerResult
-  second: RecognizerResult
-  intersection: Range
-}> {
+function findOverlaps<T extends Range>(
+  data: Array<T>,
+): Array<{ first: T; second: T; intersection: Range }> {
   const final = []
 
   for (let i = 0; i < data.length - 1; i++) {
