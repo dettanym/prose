@@ -67,7 +67,7 @@ await (async function main() {
       }),
     }).then((_) => _.json())) as PresidioResponse
 
-    echo`${inspect(response)}`
+    echo`${inspect(findMatchingRanges(expected_pii, response))}`
 
     for (const { first, second, intersection } of findOverlaps(response)) {
       echo`
@@ -126,6 +126,22 @@ function extract_pii(
   )
 }
 
+function hasOverlap(a: Range, b: Range): boolean {
+  return a.start <= b.end && b.start <= a.end
+}
+
+function equalOverlap(a: Range, b: Range): boolean {
+  return a.start === b.start && a.end === b.end
+}
+
+function nestedOverlap(a: Range, b: Range): Range | null {
+  return b.start <= a.start && a.end <= b.end
+    ? { start: a.start, end: a.end }
+    : a.start <= b.start && b.end <= a.end
+      ? { start: b.start, end: b.end }
+      : null
+}
+
 type RecognizerResult = {
   entity_type: string
   score: number
@@ -158,4 +174,82 @@ function findOverlaps(data: PresidioResponse): Array<{
   return final
 }
 
+type ExpectedRecognizedMatch = {
+  readonly value: string
+  readonly entity_type: string
+  readonly score: number
+} & Range
+type OverlappedMatch = {
+  readonly expected: ExpectedPII
+  readonly found: RecognizerResult
+  readonly overlap: Range
+}
+
+function findMatchingRanges(
+  expected: Array<ExpectedPII>,
+  found: Array<RecognizerResult>,
+): {
+  // true positive
+  exact_matches: Array<ExpectedRecognizedMatch>
+  // false negative
+  missed_pii: Array<ExpectedPII>
+  // false positive
+  mismatched_entity_type: Array<ExpectedRecognizedMatch>
+  // part of some other PII. false positive
+  nested_pii: Array<OverlappedMatch>
+  // reusing data from other PII, shouldn't happen. false positive
+  overlapping_pii: Array<OverlappedMatch>
+  // false positive
+  extra_found_pii: Array<RecognizerResult>
+} {
+  const _expected: Array<ExpectedPII | null> = [...expected]
+  const _found: Array<RecognizerResult | null> = [...found]
+
+  const exact_matches = [] as Array<ExpectedRecognizedMatch>
+  const mismatched_entity_type = [] as Array<ExpectedRecognizedMatch>
+  const nested_pii = [] as Array<OverlappedMatch>
+  const overlapping_pii = [] as Array<OverlappedMatch>
+
+  for (let i = 0; i < _expected.length; i++) {
+    const e = _expected[i]
+    if (!e) continue
+
+    for (let j = 0; j < _found.length; j++) {
+      const f = _found[j]
+      if (!f) continue
+
+      if (equalOverlap(e, f)) {
+        _expected[i] = null
+        _found[j] = null
+
+        if (e.entity_type === f.entity_type) {
+          exact_matches.push({ ...e, score: f.score })
+        } else {
+          mismatched_entity_type.push({ ...f, value: e.value })
+        }
+      } else if (hasOverlap(e, f)) {
+        _found[j] = null
+
+        let o: Range | null
+        if ((o = nestedOverlap(e, f))) {
+          nested_pii.push({ expected: e, found: f, overlap: o })
+        } else if ((o = overlap(e, f))) {
+          overlapping_pii.push({ expected: e, found: f, overlap: o })
+        } else {
+          throw new Error("absurd")
+        }
+      } else {
+      }
+    }
+  }
+
+  return {
+    exact_matches,
+    missed_pii: _expected.filter((v) => v != null),
+    mismatched_entity_type,
+    nested_pii,
+    overlapping_pii,
+    extra_found_pii: _found.filter((v) => v != null),
+  }
+}
 //</editor-fold>
