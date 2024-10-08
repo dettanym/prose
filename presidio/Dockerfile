@@ -1,4 +1,4 @@
-FROM python:3.11-slim
+FROM python:3.13-slim@sha256:eb37f58646a901dc7727cf448cae36daaefaba79de33b5058dab79aa4c04aefb
 
 ARG NLP_CONF_FILE=server/conf/default.yaml
 
