@@ -2,6 +2,7 @@
 
 import { $, echo, updateArgv } from "zx"
 import { inspect } from "node:util"
+import assert from "node:assert/strict"
 
 /*--- PARAMETERS -----------------------------------------------------*/
 
@@ -85,10 +86,75 @@ await (async function main() {
         intersection.end,
       )}"`
     }
+
+    echo``
+
+    for (const found of response) {
+      if (
+        !expected_pii.some(
+          (v) => equalOverlap(found, v) && found.entity_type === v.entity_type,
+        )
+      ) {
+        echo`extra from presidio server (${found.entity_type}):
+        "${sample_text.slice(found.start, found.end)}"`
+      }
+    }
+  }
+
+  // call presidio with json object
+  const x = {
+    users: [
+      {
+        id: 1,
+        username: "alice",
+        name: "Alice Alisovna Alisovskaya",
+        gender: "male",
+        phone: "(123) 234-3456",
+      },
+      {
+        id: 2,
+        username: "bob",
+        name: "Bob Bobovich Bobovsky",
+        gender: "unspecified",
+        phone: "(987) 876-7654",
+      },
+    ],
+    purchases: [
+      {
+        id: 1,
+        userId: 1,
+        creditCard: "1234 2345 3456 4567",
+        item: { type: "book", title: "1984" },
+      },
+      {
+        id: 2,
+        userId: 2,
+        creditCard: "9876 8765 7654 6543",
+        item: { type: "book", title: "The Trial" },
+      },
+      {
+        id: 3,
+        userId: 1,
+        creditCard: "1234 2345 3456 4567",
+        item: { type: "movie", title: "Children of Men" },
+      },
+    ],
   }
 })()
 
 //<editor-fold desc="--- HELPERS --------------------------------------------------------">
+
+function callPresidio(json_to_analyze: unknown): Promise<PresidioResponse> {
+  return fetch("http://localhost:3000/batchanalyze", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      entire_recognizer_result: true,
+      analyze_params: { score_threshold: 0.1 },
+      json_to_analyze,
+    }),
+  }).then((_) => _.json()) as Promise<PresidioResponse>
+}
 
 type Range = {
   readonly start: number
@@ -230,9 +296,15 @@ function findMatchingRanges(
     const e = _expected[i]
     if (!e) continue
 
+    const matched_indices = []
+
     for (let j = 0; j < _found.length; j++) {
       const f = _found[j]
       if (!f) continue
+
+      if (hasOverlap(e, f)) {
+        matched_indices.push(j)
+      }
 
       if (equalOverlap(e, f)) {
         _expected[i] = null
@@ -269,3 +341,73 @@ function findMatchingRanges(
   }
 }
 //</editor-fold>
+
+// tests
+function tests() {
+  for (const t of [
+    // exact
+    {
+      a: { start: 1, end: 2 },
+      b: { start: 1, end: 2 },
+      r: { start: 1, end: 2 },
+      o: true,
+    },
+    // outside
+    {
+      a: { start: 1, end: 3 },
+      b: { start: 4, end: 6 },
+      r: null,
+      o: false,
+    },
+    {
+      a: { start: 4, end: 6 },
+      b: { start: 1, end: 3 },
+      r: null,
+      o: false,
+    },
+    // overlapping
+    {
+      a: { start: 1, end: 3 },
+      b: { start: 2, end: 4 },
+      r: { start: 2, end: 3 },
+      o: true,
+    },
+    {
+      a: { start: 2, end: 4 },
+      b: { start: 1, end: 3 },
+      r: { start: 2, end: 3 },
+      o: true,
+    },
+    // nested
+    {
+      a: { start: 1, end: 4 },
+      b: { start: 2, end: 3 },
+      r: { start: 2, end: 3 },
+      o: true,
+    },
+    {
+      a: { start: 2, end: 3 },
+      b: { start: 1, end: 4 },
+      r: { start: 2, end: 3 },
+      o: true,
+    },
+  ]) {
+    assert.deepEqual(overlap(t.a, t.b), t.r)
+    assert.deepEqual(hasOverlap(t.a, t.b), t.o)
+  }
+
+  for (const t of [
+    {
+      a: { start: 1, end: 2 },
+      b: { start: 1, end: 2 },
+      r: true,
+    },
+    {
+      a: { start: 1, end: 2 },
+      b: { start: 1, end: 3 },
+      r: false,
+    },
+  ]) {
+    assert.deepEqual(equalOverlap(t.a, t.b), t.r)
+  }
+}
