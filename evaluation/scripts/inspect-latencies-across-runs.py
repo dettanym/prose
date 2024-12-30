@@ -6,6 +6,7 @@ import subprocess
 from itertools import zip_longest
 from os.path import join
 
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 import numpy.core.records as rec
@@ -86,6 +87,8 @@ def main(*args, **kwargs):
 
     data_location = join(PRJ_ROOT, "evaluation/vegeta/bookinfo")
     graphs_location = join(PRJ_ROOT, "evaluation/vegeta/bookinfo/_graphs")
+
+    mpl.rcParams["svg.hashsalt"] = "fixed-salt"
 
     for hostname, hostname_data in interest_points.items():
         for i, (title, results_in_a_run) in enumerate(hostname_data):

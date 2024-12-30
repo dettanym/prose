@@ -6,6 +6,8 @@ from os import makedirs
 from os.path import join
 from typing import Dict, List, Tuple
 
+import matplotlib as mpl
+
 from .code.data import Bookinfo_Variants, check_loaded_variants, load_folders
 from .code.plot import plot_and_save_results
 
@@ -154,6 +156,8 @@ def main(*args, **kwargs):
 
     data_location = join(PRJ_ROOT, "evaluation/vegeta/bookinfo")
     graphs_location = join(PRJ_ROOT, "evaluation/vegeta/bookinfo/_graphs")
+
+    mpl.rcParams["svg.hashsalt"] = "fixed-salt"
 
     makedirs(graphs_location, exist_ok=True)
 

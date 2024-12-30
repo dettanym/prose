@@ -5,6 +5,7 @@ import json
 import subprocess
 from os.path import join
 
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 import numpy.core.records as rec
@@ -160,6 +161,8 @@ def unpack_data(hostname, result_path):
 
     return jq.communicate()[0].decode("utf-8").strip()
 
+
+mpl.rcParams["svg.hashsalt"] = "fixed-salt"
 
 for hostname, hostname_data in interest_points.items():
     for i, (title, result_path) in enumerate(hostname_data):
