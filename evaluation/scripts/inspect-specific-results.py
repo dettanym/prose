@@ -71,6 +71,10 @@ interest_points = {
             "2024-04-26T01:47:38-04:00/60/envoy/1.results.json.zst",
         ),
         (
+            "plots for filter-traces-opa-singleton variant with request rate 60req/s after warmup, 1st run",
+            "2024-04-26T01:47:38-04:00/60/filter-traces-opa-singleton/1.results.json.zst",
+        ),
+        (
             "plots for prose-filter variant with request rate 60req/s after warmup, 1st run",
             "2024-04-26T01:47:38-04:00/60/filter/1.results.json.zst",
         ),
