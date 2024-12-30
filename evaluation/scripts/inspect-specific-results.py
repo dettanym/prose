@@ -91,7 +91,7 @@ interest_points = {
             "2024-05-03T00:27:26-04:00/60/prose-filter/1.results.json.zst",
         ),
         (
-            "presidio performance (with tiny body) at effective request rate 180req/s after warmup, 1st run",
+            "presidio performance (with tiny body) with request rate 60req/s after warmup, 1st run",
             "2024-05-07T16:51:37-04:00/60/prose-filter-8ec667ab/1.presidio.results.json.zst",
         ),
         (
