@@ -6,7 +6,7 @@ import { $, echo, fs, os, path, updateArgv, sleep, argv, fetch } from "zx"
 import { Duration, ZonedDateTime } from "@js-joda/core"
 import { Agent } from "https"
 
-import { absurd, range, typeCheck } from "./code/common.mjs"
+import { absurd, clamp, range, typeCheck } from "./code/common.mjs"
 import { get_test_results_dir } from "./code/dir.mjs"
 import {
   current_micro_timestamp,
@@ -19,7 +19,8 @@ import {
 /*--- PARAMETERS -----------------------------------------------------*/
 
 const warmup_duration = "10s" satisfies DURATION
-const warmup_rate = "100" satisfies RATE
+const min_warmup_rate = "0" satisfies RATE
+const max_warmup_rate = "100" satisfies RATE
 
 const duration = "10s" satisfies DURATION
 const rates = new Set([
@@ -32,7 +33,7 @@ const rates = new Set([
   "160",
   "140",
   "120",
-  warmup_rate,
+  "100",
   "80",
   "60",
   "40",
@@ -90,7 +91,7 @@ await (async function main() {
   )
 
   const metadata_map = new Map<RATE, Map<VARIANT, METADATA>>()
-  for (const rate of new Set<RATE>([warmup_rate, ...rates])) {
+  for (const rate of rates) {
     const map = new Map<VARIANT, METADATA>()
 
     for (const variant of test_only) {
@@ -100,7 +101,8 @@ await (async function main() {
           test_mode,
           rate,
           variant,
-          warmup_rate,
+          min_warmup_rate,
+          max_warmup_rate,
           warmup_duration,
           duration,
           hostname,
@@ -195,7 +197,8 @@ function generate_metadata({
   test_mode,
   rate,
   variant,
-  warmup_rate,
+  min_warmup_rate,
+  max_warmup_rate,
   warmup_duration,
   duration,
   timestamp,
@@ -205,7 +208,8 @@ function generate_metadata({
   test_mode: SupportedTestModes
   rate: string
   variant: VARIANT
-  warmup_rate: string
+  min_warmup_rate: RATE
+  max_warmup_rate: RATE
   warmup_duration: string
   duration: string
   timestamp: string
@@ -230,11 +234,16 @@ function generate_metadata({
    *   - `3.2`: This variant is similar to `3.1` except it runs multiple stress
    *     test streams at the same time. The amount is equivalent to the size of
    *     `presidioReqBodies` array.
+   * - `4`: Adds support for variable warmup rate, bound by `min_warmup_rate`
+   *   and `max_warmup_rate`. Also removes stress test of presidio introduced in
+   *   `3.1` and `3.2`.
    */
   return {
-    version: "3",
+    version: "4",
     testMode: test_mode,
     timestamp,
+    min_warmup_rate,
+    max_warmup_rate,
     warmupsFileSuffix: ".warmups.json.zst",
     resultsFileSuffix: ".results.json.zst",
     summaryFileSuffix: ".summary.json",
@@ -247,7 +256,10 @@ function generate_metadata({
     },
     warmupOptions: {
       duration: warmup_duration,
-      rate: warmup_rate,
+      rate: clamp(
+        parseInt(min_warmup_rate),
+        parseInt(max_warmup_rate),
+      )(Math.floor(parseInt(rate) / 2)).toString(),
     },
     testOptions: {
       duration,

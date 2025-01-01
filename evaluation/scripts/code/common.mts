@@ -26,3 +26,8 @@ export function typeCheck(_: true): void {}
 export function absurd<A>(_: never): A {
   throw new Error("Called `absurd` function which should be uncallable")
 }
+
+export function clamp(min: number, max: number) {
+  return (value: number): number =>
+    value <= min ? min : value >= max ? max : value
+}
