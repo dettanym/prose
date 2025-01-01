@@ -1,4 +1,4 @@
-#!/usr/bin/env -S bash -c '"$(dirname $(readlink -f "$0"))/../env.sh" python "$0" "$@"'
+#!/usr/bin/env -S bash -c '"$(dirname $(readlink -f "$0"))/../env.sh" python -m "scripts" '"'#!'"' -- "$0" "$@"'
 # shellcheck disable=SC2096
 
 import json
@@ -11,15 +11,6 @@ import numpy as np
 import numpy.core.records as rec
 
 ns_to_ms = 1_000_000
-
-PRJ_ROOT = (
-    subprocess.run(["git", "rev-parse", "--show-toplevel"], stdout=subprocess.PIPE)
-    .stdout.decode("utf-8")
-    .strip()
-)
-
-data_location = join(PRJ_ROOT, "evaluation/vegeta/bookinfo")
-graphs_location = join(PRJ_ROOT, "evaluation/vegeta/bookinfo/_graphs")
 
 interest_points = {
     "shiver": [
@@ -145,11 +136,11 @@ interest_points = {
 }
 
 
-def unpack_data(hostname, result_path):
+def unpack_data(path: str) -> str:
     # based on https://docs.python.org/3/library/subprocess.html#replacing-shell-pipeline
 
     zstd = subprocess.Popen(
-        ["zstd", "-c", "-d", join(data_location, hostname, result_path)],
+        ["zstd", "-c", "-d", path],
         stdout=subprocess.PIPE,
     )
     jq = subprocess.Popen(
@@ -162,53 +153,63 @@ def unpack_data(hostname, result_path):
     return jq.communicate()[0].decode("utf-8").strip()
 
 
-mpl.rcParams["svg.hashsalt"] = "fixed-salt"
+def main(*args, **kwargs):
+    PRJ_ROOT = (
+        subprocess.run(["git", "rev-parse", "--show-toplevel"], stdout=subprocess.PIPE)
+        .stdout.decode("utf-8")
+        .strip()
+    )
 
-for hostname, hostname_data in interest_points.items():
-    for i, (title, result_path) in enumerate(hostname_data):
-        data_content = unpack_data(hostname, result_path)
+    data_location = join(PRJ_ROOT, "evaluation/vegeta/bookinfo")
+    graphs_location = join(PRJ_ROOT, "evaluation/vegeta/bookinfo/_graphs")
 
-        data = rec.fromrecords(
-            list(
-                sorted(
-                    map(
-                        lambda d: (d["seq"], d["latency"] / 1_000_000),
-                        json.loads(data_content),
+    mpl.rcParams["svg.hashsalt"] = "fixed-salt"
+
+    for hostname, hostname_data in interest_points.items():
+        for i, (title, result_path) in enumerate(hostname_data):
+            data_content = unpack_data(join(data_location, hostname, result_path))
+
+            data = rec.fromrecords(
+                list(
+                    sorted(
+                        map(
+                            lambda d: (d["seq"], d["latency"] / 1_000_000),
+                            json.loads(data_content),
+                        ),
+                        key=lambda d: d[0],
                     ),
-                    key=lambda d: d[0],
                 ),
-            ),
-            names="seq,latency",
-        )
-        cdf_data = np.sort(data.latency)
+                names="seq,latency",
+            )
+            cdf_data = np.sort(data.latency)
 
-        nrows = 1
-        ncols = 3
-        fig, (cumulative, seq_lat, distribution) = plt.subplots(
-            nrows=nrows,
-            ncols=ncols,
-            figsize=(ncols * 6.4, nrows * 4.8),
-        )
+            nrows = 1
+            ncols = 3
+            fig, (cumulative, seq_lat, distribution) = plt.subplots(
+                nrows=nrows,
+                ncols=ncols,
+                figsize=(ncols * 6.4, nrows * 4.8),
+            )
 
-        cumulative.plot(cdf_data, np.arange(cdf_data.size) / cdf_data.size)
-        cumulative.set_xlabel("response latency (ms)")
-        cumulative.set_ylabel("CDF")
+            cumulative.plot(cdf_data, np.arange(cdf_data.size) / cdf_data.size)
+            cumulative.set_xlabel("response latency (ms)")
+            cumulative.set_ylabel("CDF")
 
-        seq_lat.plot(data.seq, data.latency)
-        seq_lat.set_xlabel("request sequence number")
-        seq_lat.set_ylabel("response latency (ms)")
+            seq_lat.plot(data.seq, data.latency)
+            seq_lat.set_xlabel("request sequence number")
+            seq_lat.set_ylabel("response latency (ms)")
 
-        distribution.hist(data.latency, bins=100)
-        distribution.set_xlabel("response latency (ms)")
-        distribution.set_ylabel("number of requests")
+            distribution.hist(data.latency, bins=100)
+            distribution.set_xlabel("response latency (ms)")
+            distribution.set_ylabel("number of requests")
 
-        fig.suptitle(title)
+            fig.suptitle(title)
 
-        fig.savefig(
-            join(
-                graphs_location,
-                "results_inspection_" + hostname + "_" + str(i + 1) + ".svg",
-            ),
-            format="svg",
-        )
-        plt.close(fig)
+            fig.savefig(
+                join(
+                    graphs_location,
+                    "results_inspection_" + hostname + "_" + str(i + 1) + ".svg",
+                ),
+                format="svg",
+            )
+            plt.close(fig)
