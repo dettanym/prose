@@ -22,7 +22,23 @@ const warmup_duration = "10s" satisfies DURATION
 const warmup_rate = "100" satisfies RATE
 
 const duration = "10s" satisfies DURATION
-const rates = new Set(["60"]) satisfies Iterable<RATE>
+const rates = new Set([
+  "1000",
+  "800",
+  "600",
+  "400",
+  "200",
+  "180",
+  "160",
+  "140",
+  "120",
+  warmup_rate,
+  "80",
+  "60",
+  "40",
+  "20",
+  "10",
+]) satisfies Iterable<RATE>
 
 const bookinfo_variants = new Set([
   "plain",
@@ -37,9 +53,9 @@ const bookinfo_variants = new Set([
  * than one rate value. That is because with one variant, there is some weird
  * behavior where each second attack fails for most of the requests.
  */
-const test_only = new Set<VARIANT>(["prose-filter"])
+const test_only = new Set<VARIANT>(["istio", "prose-filter"])
 
-const TEST_RUNS = 1
+const TEST_RUNS = 10
 
 const INGRESS_IP = "192.168.49.21"
 
@@ -203,9 +219,6 @@ function generate_metadata({
     warmupsFileSuffix: ".warmups.json.zst",
     resultsFileSuffix: ".results.json.zst",
     summaryFileSuffix: ".summary.json",
-    presidioWarmupsFileSuffix: ".presidio.warmups.json.zst",
-    presidioResultsFileSuffix: ".presidio.results.json.zst",
-    presidioSummaryFileSuffix: ".presidio.summary.json",
     req: {
       method: "GET",
       url: "https://" + INGRESS_IP + "/productpage?u=test",
@@ -213,44 +226,6 @@ function generate_metadata({
         Host: [workload_name + ".my-example.com"],
       },
     },
-    presidioReqTemplate: {
-      method: "POST",
-      url: "http://192.168.49.24:3000/batchanalyze",
-      header: {
-        "Content-Type": ["application/json"],
-      },
-    },
-    presidioReqBodies: [
-      {
-        "ISBN-10": "1234567890",
-        "ISBN-13": "123-1234567890",
-        author: "William Shakespeare",
-        id: 0,
-        language: "English",
-        pages: 200,
-        publisher: "PublisherA",
-        type: "paperback",
-        year: 1595,
-      },
-      {
-        clustername: "null",
-        id: "0",
-        podname: "reviews-v3-77d94bd94b-jffmj",
-        reviews: [
-          {
-            rating: { color: "red", stars: 5 },
-            reviewer: "Reviewer1",
-            text: "An extremely entertaining play by Shakespeare. The slapstick humour is refreshing!",
-          },
-          {
-            rating: { color: "red", stars: 4 },
-            reviewer: "Reviewer2",
-            text: "Absolutely fun and entertaining. The play lacks thematic depth when compared to other plays by Shakespeare.",
-          },
-        ],
-      },
-      { id: 0, ratings: { Reviewer1: 5, Reviewer2: 4 } },
-    ],
     warmupOptions: {
       duration: warmup_duration,
       rate: warmup_rate,
@@ -325,29 +300,6 @@ async function run_test(
     `${test_run_index}${metadata.summaryFileSuffix}`,
   )
 
-  const presidio_data = metadata.presidioReqBodies.map((data, i) => ({
-    warmups_file: path.join(
-      test_results_dir,
-      `${test_run_index}.req_${i}${metadata.presidioWarmupsFileSuffix}`,
-    ),
-    results_file: path.join(
-      test_results_dir,
-      `${test_run_index}.req_${i}${metadata.presidioResultsFileSuffix}`,
-    ),
-    summary_file: path.join(
-      test_results_dir,
-      `${test_run_index}.req_${i}${metadata.presidioSummaryFileSuffix}`,
-    ),
-    req: {
-      ...metadata.presidioReqTemplate,
-      body: Buffer.from(
-        JSON.stringify({
-          json_to_analyze: data,
-        }),
-      ).toString("base64"),
-    },
-  }))
-
   if (metadata.testMode === "vegeta") {
     echo`  - Warm-up '${metadata.workloadInfo.variant}' variant`
     await Promise.all([
@@ -357,14 +309,6 @@ async function run_test(
           | vegeta encode --to json \
           | zstd -c -T0 --ultra -20 - >${warmups_file}
       `,
-      ...presidio_data.map(
-        ({ warmups_file, req }) => $`
-          echo ${JSON.stringify(req)} \
-            | vegeta attack ${vegeta_attack_params(metadata.warmupOptions)} \
-            | vegeta encode --to json \
-            | zstd -c -T0 --ultra -20 - >${warmups_file}
-        `,
-      ),
     ])
 
     echo`  - Testing '${metadata.workloadInfo.variant}' variant`
@@ -375,14 +319,6 @@ async function run_test(
           | vegeta encode --to json \
           | zstd -c -T0 --ultra -20 - >${results_file}
       `,
-      ...presidio_data.map(
-        ({ results_file, req }) => $`
-          echo ${JSON.stringify(req)} \
-            | vegeta attack ${vegeta_attack_params(metadata.testOptions)} \
-            | vegeta encode --to json \
-            | zstd -c -T0 --ultra -20 - >${results_file}
-        `,
-      ),
     ])
   } else if (metadata.testMode === "serial") {
     const fetch_params = [
@@ -458,13 +394,6 @@ async function run_test(
         | vegeta report -type json \
         | jq -M >${summary_file}
     `,
-    ...presidio_data.map(
-      ({ results_file, summary_file }) => $`
-        zstd -c -d ${results_file} \
-          | vegeta report -type json \
-          | jq -M >${summary_file}
-      `,
-    ),
   ])
 
   echo`  - Scaling down deployments for '${metadata.workloadInfo.variant}' variant`

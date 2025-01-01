@@ -2,13 +2,10 @@ apiVersion: v1
 kind: Service
 metadata:
   name: presidio
-  annotations:
-    metallb.universe.tf/loadBalancerIPs: "${METALLB_PRESIDIO}"
 spec:
   selector:
     app: presidio
-  type: LoadBalancer
-  externalTrafficPolicy: Local
+  type: ClusterIP
   ports:
     - port: 3000
       targetPort: http
