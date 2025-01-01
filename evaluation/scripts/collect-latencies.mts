@@ -212,6 +212,24 @@ function generate_metadata({
   INGRESS_IP: string
 }) {
   const workload_name = get_resource_name(variant)
+  /**
+   * Each of the version bumps includes changes to the shape of the metadata
+   * object. The shape changes when the current shape does not support features
+   * we need during the evaluation.
+   *
+   * - `1`: Initial test script. When the `version` field is missing in the
+   *   object, we assume it is version `1`.
+   * - `2`: Runs warmup using vegeta before each test run.
+   * - `3`: Adds support for different test modes - `'vegeta'` and `'serial'`.
+   *   These sub-variants were added retroactively, so they do not exist in git
+   *   history.
+   *   - `3.1`: This variant includes the warmup and the test of presidio
+   *     service. This version runs one presidio stress test stream during the
+   *     `prose-filter` stress test.
+   *   - `3.2`: This variant is similar to `3.1` except it runs multiple stress
+   *     test streams at the same time. The amount is equivalent to the size of
+   *     `presidioReqBodies` array.
+   */
   return {
     version: "3",
     testMode: test_mode,
