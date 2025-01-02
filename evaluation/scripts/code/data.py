@@ -1,12 +1,9 @@
 import json
+from collections.abc import Generator
 from fnmatch import fnmatchcase
 from os import listdir
 from os.path import isdir, isfile, join
 from typing import Any, Dict, List, Literal
-
-Variant = str
-RequestRate = str
-Summary = Dict[str, Any]
 
 Bookinfo_Variants = Literal[
     # current
@@ -25,18 +22,21 @@ Bookinfo_Variants = Literal[
     "filter-traces-opa",
 ]
 
+Variant = str
+RequestRate = str
+Filename = str
+Summary = Dict[str, Any]
+
 
 def _get_dir_names(directory: str) -> List[str]:
     return [f for f in listdir(directory) if isdir(join(directory, f))]
 
 
-def load_folders(
+def find_matching_files(
     data_location: str,
     include_timestamps: List[str],
     exclude_patterns: List[str],
-) -> Dict[Variant, Dict[RequestRate, List[Summary]]]:
-    all_results: Dict[Variant, Dict[RequestRate, List[Summary]]] = dict()
-
+) -> Generator[tuple[Variant, RequestRate, Filename], None, None]:
     for timestamp in include_timestamps:
         results_dir = join(data_location, timestamp)
         if not isdir(results_dir):
@@ -67,30 +67,18 @@ def load_folders(
                         + "'"
                     )
 
-                variant_results = all_results.get(variant, dict())
-                summaries = variant_results.get(rate, [])
-
                 for run_file in listdir(run_results_dir):
-                    if not (
-                        isfile(join(run_results_dir, run_file))
+                    file = join(run_results_dir, run_file)
+                    rel_file = join(timestamp, rate, variant, run_file)
+
+                    if (
+                        isfile(file)
                         and run_file.endswith(summary_suffix)
-                    ) or any(
-                        fnmatchcase(join(timestamp, rate, variant, run_file), pat)
-                        for pat in exclude_patterns
+                        and not any(
+                            fnmatchcase(rel_file, pat) for pat in exclude_patterns
+                        )
                     ):
-                        continue
-
-                    with open(
-                        join(run_results_dir, run_file), "r"
-                    ) as summary_file_content:
-                        summary = json.load(summary_file_content)
-
-                    summaries.append(summary)
-
-                variant_results[rate] = summaries
-                all_results[variant] = variant_results
-
-    return all_results
+                        yield variant, rate, rel_file
 
 
 def merge_dict(a: dict, b: dict, _path: List[str] = []) -> dict:
@@ -109,6 +97,27 @@ def merge_dict(a: dict, b: dict, _path: List[str] = []) -> dict:
             raise Exception("Conflict at " + ".".join(_path + [str(key)]))
 
     return a
+
+
+def load_folders(
+    data_location: str,
+    include_timestamps: List[str],
+    exclude_patterns: List[str],
+) -> Dict[Variant, Dict[RequestRate, List[Summary]]]:
+    all_results: Dict[Variant, Dict[RequestRate, List[Summary]]] = dict()
+
+    for variant, rate, file in find_matching_files(
+        data_location,
+        include_timestamps,
+        exclude_patterns,
+    ):
+        with open(join(data_location, file), "r") as summary_file_content:
+            merge_dict(
+                all_results,
+                {variant: {rate: [json.load(summary_file_content)]}},
+            )
+
+    return all_results
 
 
 def check_loaded_variants(
