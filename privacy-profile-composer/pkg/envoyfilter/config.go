@@ -12,6 +12,8 @@ import (
 )
 
 type Config struct {
+	compileTimeConfig compileTimeConfig
+
 	direction     common.SidecarDirection
 	ZipkinUrl     string
 	opaEnforce    bool
@@ -21,8 +23,14 @@ type Config struct {
 	purpose       string
 }
 
+type compileTimeConfig struct {
+	disablePresidioRequests bool
+}
+
 type ConfigParser struct {
 	api.StreamFilterConfigParser
+
+	DisablePresidioRequests bool
 }
 
 func (p *ConfigParser) Parse(any *anypb.Any, callbacks api.ConfigCallbackHandler) (interface{}, error) {
@@ -31,7 +39,11 @@ func (p *ConfigParser) Parse(any *anypb.Any, callbacks api.ConfigCallbackHandler
 		return nil, err
 	}
 
-	conf := &Config{}
+	conf := &Config{
+		compileTimeConfig: compileTimeConfig{
+			disablePresidioRequests: p.DisablePresidioRequests,
+		},
+	}
 
 	if val, ok := configStruct["direction"]; !ok {
 		return nil, fmt.Errorf("missing direction")
@@ -123,6 +135,7 @@ func (p *ConfigParser) Merge(parent interface{}, child interface{}) interface{} 
 	// copy one, do not update parentConfig directly.
 	newConfig := *parentConfig
 
+	newConfig.compileTimeConfig = childConfig.compileTimeConfig
 	newConfig.direction = childConfig.direction
 
 	if childConfig.ZipkinUrl != "" {

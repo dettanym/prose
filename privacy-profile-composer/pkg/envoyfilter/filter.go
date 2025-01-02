@@ -279,7 +279,13 @@ func (f *Filter) processBody(ctx context.Context, body string, isDecode bool) (s
 	}
 
 	// Run Presidio and add tags for PII types or an error from Presidio
-	piiTypes, err := common.PiiAnalysis(ctx, f.config.presidioUrl, f.reqHeaderMetadata.SvcName, jsonBody)
+	piiTypes, err := common.PiiAnalysis(
+		ctx,
+		f.config.compileTimeConfig.disablePresidioRequests,
+		f.config.presidioUrl,
+		f.reqHeaderMetadata.SvcName,
+		jsonBody,
+	)
 	if err != nil {
 		proseTags[PROSE_PRESIDIO_ERROR] = fmt.Sprintf("%s", err)
 		return false, err, proseTags

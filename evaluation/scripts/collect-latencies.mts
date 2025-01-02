@@ -45,6 +45,7 @@ const bookinfo_variants = new Set([
   "istio",
   "passthrough-filter",
   "tooling-filter",
+  "prose-no-presidio-filter",
   "prose-filter",
 ] as const)
 /**

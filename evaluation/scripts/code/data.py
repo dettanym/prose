@@ -14,6 +14,7 @@ Bookinfo_Variants = Literal[
     "istio",
     "passthrough-filter",
     "tooling-filter",
+    "prose-no-presidio-filter",
     "prose-filter",
     # historical
     "prose-filter-97776ef1",

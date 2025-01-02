@@ -6,4 +6,5 @@ resources:
   - ./with-istio
   - ./with-passthrough-filter
   - ./with-prose-filter
+  - ./with-prose-no-presidio-filter
   - ./with-tooling-filter

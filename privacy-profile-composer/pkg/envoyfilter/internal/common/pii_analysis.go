@@ -1,11 +1,14 @@
 package common
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
-	"time"
+	"io"
+	"net/http"
 
+	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -14,7 +17,13 @@ type PresidioDataFormat struct {
 	DerivePurpose string      `json:"derive_purpose,omitempty"`
 }
 
-func PiiAnalysis(ctx context.Context, presidioSvcURL string, svcName string, bufferBytes interface{}) ([]string, error) {
+func PiiAnalysis(
+	ctx context.Context,
+	disablePresidioRequest bool,
+	presidioSvcURL string,
+	svcName string,
+	bufferBytes interface{},
+) ([]string, error) {
 	span, ctx := GlobalTracer.StartSpanFromContext(ctx, "PiiAnalysis")
 	defer span.Finish()
 
@@ -27,7 +36,7 @@ func PiiAnalysis(ctx context.Context, presidioSvcURL string, svcName string, buf
 
 	empty := []string{}
 
-	_, err = json.Marshal(
+	msgString, err := json.Marshal(
 		PresidioDataFormat{
 			JsonToAnalyze: bufferBytes,
 			DerivePurpose: svcName,
@@ -37,7 +46,39 @@ func PiiAnalysis(ctx context.Context, presidioSvcURL string, svcName string, buf
 		return empty, fmt.Errorf("could not convert data for presidio into json: %w", err)
 	}
 
-	time.Sleep(time.Duration(20) * time.Millisecond)
+	if disablePresidioRequest {
+		return empty, nil
+	}
 
-	return empty, nil
+	req, err := http.NewRequest("POST", presidioSvcURL, bytes.NewBuffer(msgString))
+	if err != nil {
+		return empty, fmt.Errorf("could not create new request object: %w", err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	GlobalOtelPropagator.Inject(ctx, propagation.HeaderCarrier(req.Header))
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return empty, fmt.Errorf("presidio post error: %w", err)
+	}
+
+	jsonResp, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return empty, fmt.Errorf("could not read Presidio response, %w", err)
+	}
+
+	err = resp.Body.Close()
+	if err != nil {
+		return empty, fmt.Errorf("could not close presidio response body, %w", err)
+	}
+
+	var unmarshalledData []string
+
+	err = json.Unmarshal(jsonResp, &unmarshalledData)
+	if err != nil {
+		return empty, fmt.Errorf("could not unmarshall response body: %w", err)
+	}
+
+	return unmarshalledData, nil
 }
