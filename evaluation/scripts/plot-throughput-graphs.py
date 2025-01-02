@@ -50,7 +50,7 @@ colors: Dict[Bookinfo_Variants, str] = {
     "istio": "orange",
     "passthrough-filter": "brown",
     "tooling-filter": "pink",
-    "prose-no-presidio-filter": "red",
+    "prose-no-presidio-filter": "cyan",
     "prose-filter": "green",
     # historical
     "prose-filter-97776ef1": "green",
@@ -144,7 +144,7 @@ graphs_to_plot: Dict[str, List[Tuple[str, List[str], List[str]]]] = {
             "Evaluation of filter analyzing request/response body",
             [
                 "2024-04-26T01:47:38-04:00",
-                "2025-01-01T17:34:04-05:00",
+                "2025-01-01T23:56:18-05:00",
             ],
             [],
         ),
@@ -152,18 +152,24 @@ graphs_to_plot: Dict[str, List[Tuple[str, List[str], List[str]]]] = {
             "Evaluation of filter analyzing request/response body",
             [
                 "2024-04-26T01:47:38-04:00",
-                "2025-01-01T17:34:04-05:00",
+                "2025-01-01T23:56:18-05:00",
             ],
             ["*/400/*", "*/600/*", "*/800/*", "*/1000/*"],
         ),
         (
-            "Prose filter with 20ms delay instead of presidio call (high and low request rates)",
-            ["2025-01-01T17:34:04-05:00"],
+            "Prose filter without presidio call (high and low request rates)",
+            [
+                "2025-01-01T17:34:04-05:00",
+                "2025-01-01T23:56:18-05:00",
+            ],
             [],
         ),
         (
-            "Prose filter with 20ms delay instead of presidio call (low request rates)",
-            ["2025-01-01T17:34:04-05:00"],
+            "Prose filter without presidio call (low request rates)",
+            [
+                "2025-01-01T17:34:04-05:00",
+                "2025-01-01T23:56:18-05:00",
+            ],
             ["*/400/*", "*/600/*", "*/800/*", "*/1000/*"],
         ),
     ],

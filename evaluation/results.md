@@ -257,6 +257,12 @@ variants to match quite closely.
 
 - `"2025-01-01T17:34:04-05:00"    # "istio"+"prose-filter-8ec667ab"; vegeta mode; 10 runs; 10,20,40,60,80,100,120,140,160,180,200,400,600,800,1000req/s`
 
+We created a new `prose-no-presidio-filter` variant, which neither calls
+presidio nor has a 20ms delay to emulate the call. We executed the same test as
+above.
+
+- `"2025-01-01T23:56:18-05:00"    # "plain"+"prose-no-presidio-filter"; vegeta mode; 10 runs; 10,20,40,60,80,100,120,140,160,180,200,400,600,800,1000req/s`
+
 ### All test runs from `"moone"`
 
 This host contains some random attempts.
