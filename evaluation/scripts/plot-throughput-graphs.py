@@ -8,7 +8,15 @@ from typing import Dict, List, Tuple
 
 import matplotlib as mpl
 
-from .code.data import Bookinfo_Variants, check_loaded_variants, load_folders
+from .code.data import (
+    Bookinfo_Variants,
+    collect_into_record,
+    find_matching_files,
+    group_by_init,
+    load_json_file,
+    map_known_variants,
+    print_unknown_variants,
+)
 from .code.plot import plot_and_save_results
 
 # Describes mapping from historical data collection to internal bookinfo
@@ -195,6 +203,17 @@ def main(*args, **kwargs):
 
     for hostname, hostname_data in graphs_to_plot.items():
         for i, (title, include, exclude) in enumerate(hostname_data):
+            gen = find_matching_files(
+                join(data_location, hostname),
+                include,
+                exclude,
+            )
+            gen = map_known_variants(bookinfo_variant_mapping, gen)
+            gen = print_unknown_variants(gen)
+            gen = load_json_file(gen)
+            gen = group_by_init(gen)
+            variants = collect_into_record(gen)
+
             plot_and_save_results(
                 graphs_location,
                 hostname,
@@ -202,12 +221,5 @@ def main(*args, **kwargs):
                 title,
                 colors,
                 labels,
-                check_loaded_variants(
-                    bookinfo_variant_mapping,
-                    load_folders(
-                        join(data_location, hostname),
-                        include,
-                        exclude,
-                    ),
-                ),
+                variants,
             )

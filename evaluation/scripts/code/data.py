@@ -3,7 +3,9 @@ from collections.abc import Generator
 from fnmatch import fnmatchcase
 from os import listdir
 from os.path import isdir, isfile, join
-from typing import Any, Dict, List, Literal
+from typing import Any, Dict, List, Literal, TypeVar, TypeVarTuple
+
+from .common import ValuedGenerator
 
 Bookinfo_Variants = Literal[
     # current
@@ -26,6 +28,15 @@ Variant = str
 RequestRate = str
 Filename = str
 Summary = Dict[str, Any]
+
+
+_Rest = TypeVarTuple("_Rest")
+_Init = TypeVarTuple("_Init")
+_Y = TypeVar("_Y")
+_R = TypeVar("_R")
+_A = TypeVar("_A")
+_B = TypeVar("_B")
+_C = TypeVar("_C")
 
 
 def _get_dir_names(directory: str) -> List[str]:
@@ -78,10 +89,10 @@ def find_matching_files(
                             fnmatchcase(rel_file, pat) for pat in exclude_patterns
                         )
                     ):
-                        yield variant, rate, rel_file
+                        yield variant, rate, file
 
 
-def merge_dict(a: dict, b: dict, _path: List[str] = []) -> dict:
+def _merge_dict(a: dict, b: dict, _path: List[str] = []) -> dict:
     # based on https://stackoverflow.com/a/7205107
 
     for key in b:
@@ -92,52 +103,72 @@ def merge_dict(a: dict, b: dict, _path: List[str] = []) -> dict:
         if isinstance(a[key], list) and isinstance(b[key], list):
             a[key] = a[key] + b[key]
         elif isinstance(a[key], dict) and isinstance(b[key], dict):
-            merge_dict(a[key], b[key], _path + [str(key)])
+            _merge_dict(a[key], b[key], _path + [str(key)])
         elif a[key] != b[key]:
             raise Exception("Conflict at " + ".".join(_path + [str(key)]))
 
     return a
 
 
-def load_folders(
-    data_location: str,
-    include_timestamps: List[str],
-    exclude_patterns: List[str],
-) -> Dict[Variant, Dict[RequestRate, List[Summary]]]:
-    all_results: Dict[Variant, Dict[RequestRate, List[Summary]]] = dict()
-
-    for variant, rate, file in find_matching_files(
-        data_location,
-        include_timestamps,
-        exclude_patterns,
-    ):
-        with open(join(data_location, file), "r") as summary_file_content:
-            merge_dict(
-                all_results,
-                {variant: {rate: [json.load(summary_file_content)]}},
-            )
-
-    return all_results
-
-
-def check_loaded_variants(
+def map_known_variants(
     known_variants: Dict[str, Bookinfo_Variants],
-    data: Dict[Variant, Dict[RequestRate, List[Summary]]],
-) -> Dict[Bookinfo_Variants | str, Dict[RequestRate, List[Summary]]]:
-    result = dict()
-    unknown = set()
+    gen: Generator[tuple[Variant, *_Rest], None, None],
+) -> Generator[
+    tuple[Bookinfo_Variants | Variant, *_Rest],
+    None,
+    set[Variant],
+]:
+    unknown: set[Variant] = set()
 
-    for variant, summaries in data.items():
+    for variant, *rest in gen:
         if variant in known_variants:
-            data_to_add = {known_variants[variant]: summaries}
+            yield known_variants[variant], *rest
         else:
             unknown.add(variant)
-            data_to_add = {variant: summaries}
+            yield variant, *rest
 
-        merge_dict(result, data_to_add)
+    return unknown
+
+
+def print_unknown_variants(
+    gen: Generator[_Y, None, set[Variant]],
+) -> Generator[_Y, None, None]:
+    unknown = yield from gen
 
     if len(unknown) > 0:
         print("detected some unknown variants amount data folders:")
         print(unknown)
 
-    return result
+
+def group_by_init(
+    entries: Generator[tuple[*_Init, _A], None, _R],
+) -> Generator[tuple[*_Init, list[_A]], None, _R]:
+    all_results: Dict[tuple[*_Init], List[_A]] = dict()
+    entries = ValuedGenerator(entries)
+
+    for *init, c in entries:
+        _merge_dict(all_results, {tuple(init): [c]})
+
+    for init, cs in all_results.items():
+        yield *init, cs
+
+    return entries.value
+
+
+def collect_into_record(
+    gen: Generator[tuple[_A, _B, _C], None, None],
+) -> dict[_A, dict[_B, _C]]:
+    all_results: dict[_A, dict[_B, _C]] = dict()
+
+    for a, b, c in gen:
+        _merge_dict(all_results, {a: {b: c}})
+
+    return all_results
+
+
+def load_json_file(
+    entries: Generator[tuple[*_Init, Filename], None, None],
+) -> Generator[tuple[*_Init, Summary], None, None]:
+    for *init, file in entries:
+        with open(file, "r") as content:
+            yield *init, json.load(content)
