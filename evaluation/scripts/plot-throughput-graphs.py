@@ -34,6 +34,10 @@ bookinfo_variant_mapping: Dict[str, Bookinfo_Variants] = {
     #   state of filter before this commit. historical record of test results,
     #   since we modified this filter in place.
     "filter-97776ef1": "prose-filter-97776ef1",
+    #   This particular filter behaviour was introduced in `8ec667ab` commit. It
+    #   should be similar to the behaviour of `prose-no-presidio-filter`, except
+    #   this filter adds an extra 20ms to emulate the call to presidio.
+    "prose-filter-8ec667ab": "prose-filter-8ec667ab",
     # deleted
     "filter-passthrough-buffer": "filter-passthrough-buffer",
     "filter-traces": "filter-traces",
@@ -50,6 +54,7 @@ colors: Dict[Bookinfo_Variants, str] = {
     "prose-filter": "green",
     # historical
     "prose-filter-97776ef1": "green",
+    "prose-filter-8ec667ab": "red",
     # deleted
     "filter-passthrough-buffer": "red",
     "filter-traces": "cyan",
@@ -65,6 +70,7 @@ labels: Dict[Bookinfo_Variants, str] = {
     "prose-filter": "K8s + Istio + Prose",
     # historical
     "prose-filter-97776ef1": "K8s + Istio + Prose (opa per request)",
+    "prose-filter-8ec667ab": "K8s + Istio + Prose - Presidio (replaced by 20ms delay)",
     # deleted
     "filter-passthrough-buffer": "K8s + Istio + PassthroughFilter with Data Buffer",
     "filter-traces": "K8s + Istio + PassthroughFilter with Buffer and Traces",

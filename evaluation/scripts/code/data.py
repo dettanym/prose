@@ -18,6 +18,7 @@ Bookinfo_Variants = Literal[
     "prose-filter",
     # historical
     "prose-filter-97776ef1",
+    "prose-filter-8ec667ab",
     # deleted
     "filter-passthrough-buffer",
     "filter-traces",
