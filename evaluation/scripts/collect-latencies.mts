@@ -55,7 +55,13 @@ const bookinfo_variants = new Set([
  * than one rate value. That is because with one variant, there is some weird
  * behavior where each second attack fails for most of the requests.
  */
-const test_only = new Set<VARIANT>(["plain", "prose-no-presidio-filter"])
+const test_only = new Set<VARIANT>([
+  "plain",
+  "istio",
+  "passthrough-filter",
+  "prose-no-presidio-filter",
+  "prose-filter",
+])
 
 const TEST_RUNS = 10
 
