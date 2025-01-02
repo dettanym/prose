@@ -9,6 +9,7 @@ from typing import Dict, List, Tuple
 import matplotlib as mpl
 
 from .code.data import (
+    Averaging_Method,
     Bookinfo_Variants,
     collect_tuple_into_record,
     compute_stats_per_variant,
@@ -16,10 +17,9 @@ from .code.data import (
     find_matching_files,
     group_by_first,
     group_by_init,
-    load_json_file,
     map_known_variants,
+    pick_and_process_files,
     print_unknown_variants,
-    process_summary_json_content,
 )
 from .code.plot import plot_and_save_results
 
@@ -89,10 +89,11 @@ labels: Dict[Bookinfo_Variants, str] = {
     "filter-traces-opa": "K8s + Istio + PassthroughFilter with Buffer, Traces and OPA instance created",
 }
 
-graphs_to_plot: Dict[str, List[Tuple[str, List[str], List[str]]]] = {
+graphs_to_plot: Dict[str, List[Tuple[str, Averaging_Method, List[str], List[str]]]] = {
     "shiver": [
         (
             "Original evaluation (collector script v1)",
+            "vegeta-summaries",
             [
                 "2024-03-30T16:28:22-04:00",
                 "2024-03-31T18:54:37-04:00",
@@ -106,6 +107,7 @@ graphs_to_plot: Dict[str, List[Tuple[str, List[str], List[str]]]] = {
         ),
         (
             "Original evaluation, but focusing on smaller request rates (collector script v1)",
+            "vegeta-summaries",
             [
                 "2024-03-31T22:39:07-04:00",
                 "2024-04-01T01:52:20-04:00",
@@ -115,6 +117,7 @@ graphs_to_plot: Dict[str, List[Tuple[str, List[str], List[str]]]] = {
         ),
         (
             "Comparison of all test variants (old and new runs), focusing on smaller request rates",
+            "vegeta-summaries",
             [
                 "2024-03-31T22:39:07-04:00",
                 "2024-04-01T01:52:20-04:00",
@@ -127,6 +130,7 @@ graphs_to_plot: Dict[str, List[Tuple[str, List[str], List[str]]]] = {
         ),
         (
             "Comparison of all non-exponential variants, focusing on smaller request rates",
+            "vegeta-summaries",
             [
                 "2024-03-31T22:39:07-04:00",
                 "2024-04-01T01:52:20-04:00",
@@ -139,21 +143,25 @@ graphs_to_plot: Dict[str, List[Tuple[str, List[str], List[str]]]] = {
         ),
         (
             "Most interesting variants (only new runs), under high request rates",
+            "vegeta-summaries",
             ["2024-04-17T00:47:50-04:00"],
             [],
         ),
         (
             "Evaluation of interesting variants across high and low request rates. Includes pod warmup stage",
+            "vegeta-summaries",
             ["2024-04-17T23:03:57-04:00"],
             [],
         ),
         (
             "Evaluation of interesting variants across low request rates. Includes pod warmup stage",
+            "vegeta-summaries",
             ["2024-04-17T23:03:57-04:00"],
             ["*/400/*", "*/600/*", "*/800/*", "*/1000/*"],
         ),
         (
             "Evaluation of filter analyzing request/response body",
+            "vegeta-summaries",
             [
                 "2024-04-26T01:47:38-04:00",
                 "2025-01-01T23:56:18-05:00",
@@ -162,6 +170,7 @@ graphs_to_plot: Dict[str, List[Tuple[str, List[str], List[str]]]] = {
         ),
         (
             "Evaluation of filter analyzing request/response body",
+            "vegeta-summaries",
             [
                 "2024-04-26T01:47:38-04:00",
                 "2025-01-01T23:56:18-05:00",
@@ -170,6 +179,7 @@ graphs_to_plot: Dict[str, List[Tuple[str, List[str], List[str]]]] = {
         ),
         (
             "Prose filter without presidio call (high and low request rates)",
+            "vegeta-summaries",
             [
                 "2025-01-01T17:34:04-05:00",
                 "2025-01-01T23:56:18-05:00",
@@ -178,6 +188,7 @@ graphs_to_plot: Dict[str, List[Tuple[str, List[str], List[str]]]] = {
         ),
         (
             "Prose filter without presidio call (low request rates)",
+            "all-raw-data",
             [
                 "2025-01-01T17:34:04-05:00",
                 "2025-01-01T23:56:18-05:00",
@@ -206,7 +217,7 @@ def main(*args, **kwargs):
     makedirs(graphs_location, exist_ok=True)
 
     for hostname, hostname_data in graphs_to_plot.items():
-        for i, (title, include, exclude) in enumerate(hostname_data):
+        for i, (title, avg_method, include, exclude) in enumerate(hostname_data):
             gen = find_matching_files(
                 join(data_location, hostname),
                 include,
@@ -214,8 +225,7 @@ def main(*args, **kwargs):
             )
             gen = map_known_variants(bookinfo_variant_mapping, gen)
             gen = print_unknown_variants(gen)
-            gen = load_json_file(gen)
-            gen = process_summary_json_content(gen)
+            gen = pick_and_process_files(avg_method, gen)
             gen = group_by_init(gen)
             gen = convert_list_to_np_array(gen)
             gen = compute_stats_per_variant(gen)

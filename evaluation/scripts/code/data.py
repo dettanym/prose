@@ -3,11 +3,12 @@ from collections.abc import Generator
 from fnmatch import fnmatchcase
 from os import listdir
 from os.path import isdir, isfile, join
-from typing import Any, Dict, List, Literal, TypeVar, TypeVarTuple
+from typing import Dict, List, Literal, TypeVar, TypeVarTuple
 
 import numpy as np
 
 from .common import ValuedGenerator
+from .pipe_processes import pipe_processes
 
 Bookinfo_Variants = Literal[
     # current
@@ -29,8 +30,11 @@ Bookinfo_Variants = Literal[
 Variant = str
 RequestRate = str
 Filename = str
-Summary = Dict[str, Any]
 
+Result_Type = Literal["summary", "results"]
+Averaging_Method = Literal["vegeta-summaries", "all-raw-data"]
+
+ns_to_s = 1000 * 1000 * 1000  # seconds in nanoseconds
 
 _Rest = TypeVarTuple("_Rest")
 _Init = TypeVarTuple("_Init")
@@ -49,7 +53,7 @@ def find_matching_files(
     data_location: str,
     include_timestamps: List[str],
     exclude_patterns: List[str],
-) -> Generator[tuple[Variant, RequestRate, Filename], None, None]:
+) -> Generator[tuple[Variant, RequestRate, Result_Type, Filename], None, None]:
     for timestamp in include_timestamps:
         results_dir = join(data_location, timestamp)
         if not isdir(results_dir):
@@ -70,6 +74,7 @@ def find_matching_files(
 
                 loaded_rate = metadata["testOptions"]["rate"]
                 summary_suffix = metadata.get("summaryFileSuffix", ".summary.json")
+                results_suffix = metadata.get("resultsFileSuffix", ".results.json.zst")
 
                 if loaded_rate != rate:
                     raise ValueError(
@@ -86,12 +91,24 @@ def find_matching_files(
 
                     if (
                         isfile(file)
-                        and run_file.endswith(summary_suffix)
+                        and (
+                            run_file.endswith(summary_suffix)
+                            or run_file.endswith(results_suffix)
+                        )
                         and not any(
                             fnmatchcase(rel_file, pat) for pat in exclude_patterns
                         )
                     ):
-                        yield variant, rate, file
+                        yield (
+                            variant,
+                            rate,
+                            (
+                                "summary"
+                                if run_file.endswith(summary_suffix)
+                                else "results"
+                            ),
+                            file,
+                        )
 
 
 def _merge_dict(a: dict, b: dict, _path: List[str] = []) -> dict:
@@ -178,21 +195,43 @@ def collect_tuple_into_record(
     return {k: v for (k, v) in entries}
 
 
-def load_json_file(
-    entries: Generator[tuple[*_Init, Filename], None, None],
-) -> Generator[tuple[*_Init, Summary], None, None]:
-    for *init, file in entries:
-        with open(file, "r") as content:
-            yield *init, json.load(content)
+def _load_and_process_summary_json_file(file: Filename) -> float:
+    with open(file, "r") as content:
+        data = json.load(content)
+        return data["latencies"]["mean"] / ns_to_s
 
 
-def process_summary_json_content(
-    entries: Generator[tuple[*_Init, Summary], None, None],
+def _load_and_process_results_file(
+    file: Filename,
+) -> Generator[float, None, None]:
+    stdout, _ = pipe_processes(
+        ["zstd", "-c", "-d", file],
+        ["jq", "--slurp", "map(.latency)"],
+    )
+    stdout = stdout.strip() if stdout is not None else ""
+
+    return (latency / ns_to_s for latency in json.loads(stdout))
+
+
+def pick_and_process_files(
+    avg_method: Averaging_Method,
+    entries: Generator[tuple[*_Init, Result_Type, Filename], None, None],
 ) -> Generator[tuple[*_Init, float], None, None]:
-    ns_to_s = 1000 * 1000 * 1000  # seconds in nanoseconds
-
-    for *init, summary in entries:
-        yield *init, (summary["latencies"]["mean"] / ns_to_s)
+    if avg_method == "vegeta-summaries":
+        return (
+            (*init, _load_and_process_summary_json_file(filename))
+            for (*init, result_type, filename) in entries
+            if result_type == "summary"
+        )
+    elif avg_method == "all-raw-data":
+        return (
+            (*init, latency)
+            for (*init, result_type, filename) in entries
+            if result_type == "results"
+            for latency in _load_and_process_results_file(filename)
+        )
+    else:
+        raise ValueError(f"unknown averaging method passed: {avg_method}")
 
 
 def convert_list_to_np_array(
