@@ -2,7 +2,7 @@ import subprocess
 from typing import List
 
 
-def pipe_processes(*programs: List[str], stdin=None) -> (str, str):
+def pipe_processes(*programs: List[str], stdin=None) -> (str | None, str | None):
     # based on https://docs.python.org/3/library/subprocess.html#replacing-shell-pipeline
 
     if len(programs) == 0:

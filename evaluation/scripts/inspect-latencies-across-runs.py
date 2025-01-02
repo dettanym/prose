@@ -68,14 +68,16 @@ interest_points = {
 
 
 def unpack_data(path):
-    return pipe_processes(
+    stdout, _ = pipe_processes(
         ["zstd", "-c", "-d", path],
         [
             "jq",
             "--slurp",
             "map({ latency, seq, timestamp })",
         ],
-    )[0].strip()
+    )
+
+    return stdout.strip() if stdout is not None else ""
 
 
 def main(*args, **kwargs):
