@@ -142,12 +142,28 @@ graphs_to_plot: Dict[str, List[Tuple[str, List[str], List[str]]]] = {
         ),
         (
             "Evaluation of filter analyzing request/response body",
-            ["2024-04-26T01:47:38-04:00"],
+            [
+                "2024-04-26T01:47:38-04:00",
+                "2025-01-01T17:34:04-05:00",
+            ],
             [],
         ),
         (
             "Evaluation of filter analyzing request/response body",
-            ["2024-04-26T01:47:38-04:00"],
+            [
+                "2024-04-26T01:47:38-04:00",
+                "2025-01-01T17:34:04-05:00",
+            ],
+            ["*/400/*", "*/600/*", "*/800/*", "*/1000/*"],
+        ),
+        (
+            "Prose filter with 20ms delay instead of presidio call (high and low request rates)",
+            ["2025-01-01T17:34:04-05:00"],
+            [],
+        ),
+        (
+            "Prose filter with 20ms delay instead of presidio call (low request rates)",
+            ["2025-01-01T17:34:04-05:00"],
             ["*/400/*", "*/600/*", "*/800/*", "*/1000/*"],
         ),
     ],

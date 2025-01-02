@@ -247,6 +247,16 @@ the analysis.
   - Setup similar to experiment above, but we are sending requests through prose
     filter at 20req/s, thus effectively sending 60req/s to presidio pods.
 
+We ran the full test with all rates against the `prose-filter-8ec667ab` variant
+(the variant of `prose-filter` that instead of querying presidio has a constant
+20ms delay). In this run we used static warmup rate of `100req/s`. This result
+can be plotted on the same graph together with `"2024-04-26T01:47:38-04:00"` for
+direct comparison. Since we always have to have more than one filter variant
+under the test, we also included `"istio"` variant. We were expecting these two
+variants to match quite closely.
+
+- `"2025-01-01T17:34:04-05:00"    # "istio"+"prose-filter-8ec667ab"; vegeta mode; 10 runs; 10,20,40,60,80,100,120,140,160,180,200,400,600,800,1000req/s`
+
 ### All test runs from `"moone"`
 
 This host contains some random attempts.
