@@ -5,6 +5,8 @@ from os import listdir
 from os.path import isdir, isfile, join
 from typing import Any, Dict, List, Literal, TypeVar, TypeVarTuple
 
+import numpy as np
+
 from .common import ValuedGenerator
 
 Bookinfo_Variants = Literal[
@@ -155,15 +157,25 @@ def group_by_init(
     return entries.value
 
 
-def collect_into_record(
-    gen: Generator[tuple[_A, _B, _C], None, None],
-) -> dict[_A, dict[_B, _C]]:
-    all_results: dict[_A, dict[_B, _C]] = dict()
+def group_by_first(
+    entries: Generator[tuple[_A, *_Rest], None, _R],
+) -> Generator[tuple[_A, List[tuple[*_Rest]]], None, _R]:
+    results: Dict[_A, List[tuple[*_Rest]]] = dict()
+    entries = ValuedGenerator(entries)
 
-    for a, b, c in gen:
-        _merge_dict(all_results, {a: {b: c}})
+    for a, *rest in entries:
+        _merge_dict(results, {a: [tuple(rest)]})
 
-    return all_results
+    for a, data in results.items():
+        yield a, data
+
+    return entries.value
+
+
+def collect_tuple_into_record(
+    entries: Generator[tuple[_A, _B], None, None],
+) -> Dict[_A, _B]:
+    return {k: v for (k, v) in entries}
 
 
 def load_json_file(
@@ -172,3 +184,35 @@ def load_json_file(
     for *init, file in entries:
         with open(file, "r") as content:
             yield *init, json.load(content)
+
+
+def process_summary_json_content(
+    entries: Generator[tuple[*_Init, Summary], None, None],
+) -> Generator[tuple[*_Init, float], None, None]:
+    ns_to_s = 1000 * 1000 * 1000  # seconds in nanoseconds
+
+    for *init, summary in entries:
+        yield *init, (summary["latencies"]["mean"] / ns_to_s)
+
+
+def convert_list_to_np_array(
+    entries: Generator[tuple[*_Init, list[float]], None, None],
+) -> Generator[tuple[*_Init, np.ndarray], None, None]:
+    for *init, data in entries:
+        yield *init, np.asarray(data)
+
+
+def compute_stats_per_variant(
+    entries: Generator[
+        tuple[Bookinfo_Variants | Variant, RequestRate, np.ndarray],
+        None,
+        None,
+    ],
+) -> Generator[
+    tuple[Bookinfo_Variants | Variant, int, np.floating, np.floating],
+    None,
+    None,
+]:
+    for variant, rate, latencies in entries:
+        if len(latencies) != 0:
+            yield variant, int(rate), np.mean(latencies), np.std(latencies)

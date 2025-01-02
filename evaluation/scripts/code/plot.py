@@ -6,9 +6,7 @@ from matplotlib import pyplot as plt
 from matplotlib import ticker as ticker
 from numpy.core import records as rec
 
-from .data import Bookinfo_Variants, RequestRate, Summary
-
-ns_to_s = 1000 * 1000 * 1000  # milliseconds in nanoseconds
+from .data import Bookinfo_Variants
 
 
 def plot_and_save_results(
@@ -20,23 +18,13 @@ def plot_and_save_results(
     labels: Dict[Bookinfo_Variants, str],
     results: Dict[
         Bookinfo_Variants | str,
-        Dict[RequestRate, List[Summary]],
+        List[tuple[int, np.floating, np.floating]],
     ],
 ):
     locator = ticker.MaxNLocator(nbins=11)
     fig, (ax_lin, ax_log) = plt.subplots(nrows=1, ncols=2, figsize=(12.8, 4.8))
 
-    for variant, variant_results in results.items():
-        data = []
-        for rate, summary_objects in variant_results.items():
-            if len(summary_objects) == 0:
-                continue
-
-            summaries = np.asarray(
-                [summary["latencies"]["mean"] / ns_to_s for summary in summary_objects]
-            )
-            data.append((int(rate), np.mean(summaries), np.std(summaries)))
-
+    for variant, data in results.items():
         if len(data) == 0:
             continue
 

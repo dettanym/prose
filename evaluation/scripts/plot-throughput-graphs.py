@@ -10,12 +10,16 @@ import matplotlib as mpl
 
 from .code.data import (
     Bookinfo_Variants,
-    collect_into_record,
+    collect_tuple_into_record,
+    compute_stats_per_variant,
+    convert_list_to_np_array,
     find_matching_files,
+    group_by_first,
     group_by_init,
     load_json_file,
     map_known_variants,
     print_unknown_variants,
+    process_summary_json_content,
 )
 from .code.plot import plot_and_save_results
 
@@ -211,8 +215,12 @@ def main(*args, **kwargs):
             gen = map_known_variants(bookinfo_variant_mapping, gen)
             gen = print_unknown_variants(gen)
             gen = load_json_file(gen)
+            gen = process_summary_json_content(gen)
             gen = group_by_init(gen)
-            variants = collect_into_record(gen)
+            gen = convert_list_to_np_array(gen)
+            gen = compute_stats_per_variant(gen)
+            gen = group_by_first(gen)
+            variants = collect_tuple_into_record(gen)
 
             plot_and_save_results(
                 graphs_location,
