@@ -93,6 +93,24 @@ def load_folders(
     return all_results
 
 
+def merge_dict(a: dict, b: dict, _path: List[str] = []) -> dict:
+    # based on https://stackoverflow.com/a/7205107
+
+    for key in b:
+        if key not in a:
+            a[key] = b[key]
+            continue
+
+        if isinstance(a[key], list) and isinstance(b[key], list):
+            a[key] = a[key] + b[key]
+        elif isinstance(a[key], dict) and isinstance(b[key], dict):
+            merge_dict(a[key], b[key], _path + [str(key)])
+        elif a[key] != b[key]:
+            raise Exception("Conflict at " + ".".join(_path + [str(key)]))
+
+    return a
+
+
 def check_loaded_variants(
     known_variants: Dict[str, Bookinfo_Variants],
     data: Dict[Variant, Dict[RequestRate, List[Summary]]],
@@ -102,10 +120,12 @@ def check_loaded_variants(
 
     for variant, summaries in data.items():
         if variant in known_variants:
-            result[known_variants[variant]] = summaries
+            data_to_add = {known_variants[variant]: summaries}
         else:
             unknown.add(variant)
-            result[variant] = summaries
+            data_to_add = {variant: summaries}
+
+        merge_dict(result, data_to_add)
 
     if len(unknown) > 0:
         print("detected some unknown variants amount data folders:")
