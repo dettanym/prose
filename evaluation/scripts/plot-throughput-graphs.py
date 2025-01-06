@@ -181,6 +181,7 @@ graphs_to_plot: Dict[str, List[Tuple[str, Averaging_Method, List[str], List[str]
             "vegeta-summaries",
             [
                 "2024-04-26T01:47:38-04:00",
+                "2025-01-01T17:34:04-05:00",
                 "2025-01-01T23:56:18-05:00",
             ],
             [],
@@ -190,6 +191,7 @@ graphs_to_plot: Dict[str, List[Tuple[str, Averaging_Method, List[str], List[str]
             "vegeta-summaries",
             [
                 "2024-04-26T01:47:38-04:00",
+                "2025-01-01T17:34:04-05:00",
                 "2025-01-01T23:56:18-05:00",
             ],
             ["*/400/*", "*/600/*", "*/800/*", "*/1000/*"],
@@ -210,6 +212,30 @@ graphs_to_plot: Dict[str, List[Tuple[str, Averaging_Method, List[str], List[str]
                 "2025-01-01T17:34:04-05:00",
                 "2025-01-01T23:56:18-05:00",
             ],
+            ["*/400/*", "*/600/*", "*/800/*", "*/1000/*"],
+        ),
+        (
+            "All variants with variable load rate (from summaries, high and low req rates)",
+            "vegeta-summaries",
+            ["2025-01-02T11:48:47-05:00"],
+            [],
+        ),
+        (
+            "All variants with variable load rate (from summaries, low req rates)",
+            "vegeta-summaries",
+            ["2025-01-02T11:48:47-05:00"],
+            ["*/400/*", "*/600/*", "*/800/*", "*/1000/*"],
+        ),
+        (
+            "All variants with variable load rate (from raw data, high and low req rates)",
+            "all-raw-data",
+            ["2025-01-02T11:48:47-05:00"],
+            [],
+        ),
+        (
+            "All variants with variable load rate (from raw data, low req rates)",
+            "all-raw-data",
+            ["2025-01-02T11:48:47-05:00"],
             ["*/400/*", "*/600/*", "*/800/*", "*/1000/*"],
         ),
     ],

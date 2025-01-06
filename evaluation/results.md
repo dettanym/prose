@@ -263,6 +263,10 @@ above.
 
 - `"2025-01-01T23:56:18-05:00"    # "plain"+"prose-no-presidio-filter"; vegeta mode; 10 runs; 10,20,40,60,80,100,120,140,160,180,200,400,600,800,1000req/s`
 
+We implemented variable warmup rate functionality and tested all filters again.
+
+- `"2025-01-02T11:48:47-05:00"    # "plain"+"istio"+"passthrough-filter"+"prose-no-presidio-filter"+"prose-filter"; vegeta mode; 10 runs; 10,20,40,60,80,100,120,140,160,180,200,400,600,800,1000req/s; variable warmup rate`
+
 ### All test runs from `"moone"`
 
 This host contains some random attempts.
