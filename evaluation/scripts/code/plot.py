@@ -14,6 +14,7 @@ def plot_and_save_results(
     hostname: str,
     i: int,
     title: str,
+    variant_order: List[Bookinfo_Variants],
     colors: Dict[Bookinfo_Variants, str],
     labels: Dict[Bookinfo_Variants, str],
     results: Dict[
@@ -34,7 +35,20 @@ def plot_and_save_results(
         figsize=(ncols * 6.4, nrows * 4.8),
     )
 
-    for variant, data in results.items():
+    results = dict(results)
+    sorted_results = []
+    for variant in variant_order:
+        if variant in results:
+            data = results.pop(variant)
+            sorted_results.append((variant, data))
+
+    if len(results) > 0:
+        print(
+            "Results have some unknown variants that were not plotted: "
+            + ",".join(results.keys())
+        )
+
+    for variant, data in sorted_results:
         if len(data) == 0:
             continue
 
@@ -68,10 +82,23 @@ def plot_and_save_results(
     ax_log.set_xlabel("Load (req/s)")
     ax_log.set_ylabel("Mean response latency (s)")
 
+    success_rates = dict(success_rates)
+    sorted_success_rates = []
+    for variant in variant_order:
+        if variant in success_rates:
+            data = success_rates.pop(variant)
+            sorted_success_rates.append((variant, data))
+
+    if len(success_rates) > 0:
+        print(
+            "Success rates have some unknown variants that were not plotted: "
+            + ",".join(success_rates.keys())
+        )
+
     bar_width = 0.15
     ticks_are_set = False
 
-    for j, (variant, data) in enumerate(success_rates.items()):
+    for j, (variant, data) in enumerate(sorted_success_rates):
         variant_data = rec.fromrecords(
             sorted(data, key=lambda v: v[0]),
             names="rate,success",

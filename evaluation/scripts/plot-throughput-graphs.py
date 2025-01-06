@@ -57,6 +57,22 @@ bookinfo_variant_mapping: Dict[str, Bookinfo_Variants] = {
     "filter-traces-opa": "filter-traces-opa",
 }
 
+variant_order: List[Bookinfo_Variants] = [
+    # current
+    "plain",
+    "istio",
+    "passthrough-filter",
+    "tooling-filter",
+    "prose-no-presidio-filter",
+    "prose-filter",
+    # historical
+    "prose-filter-97776ef1",
+    "prose-filter-8ec667ab",
+    # deleted
+    "filter-passthrough-buffer",
+    "filter-traces",
+    "filter-traces-opa",
+]
 colors: Dict[Bookinfo_Variants, str] = {
     # current
     "plain": "blue",
@@ -244,6 +260,7 @@ def main(*args, **kwargs):
                 hostname,
                 i + 1,
                 title,
+                variant_order,
                 colors,
                 labels,
                 latencies,
