@@ -113,11 +113,12 @@ def plot_and_save_results(
 
         ax_error_rate.bar(
             x + j * bar_width,
-            1 - variant_data.success,
+            (1 - variant_data.success) * 100,
             width=bar_width,
             color=colors.get(variant),
         )
 
+    ax_error_rate.set_yscale("log")
     ax_error_rate.set_xlabel("Load (req/s)")
     ax_error_rate.set_ylabel("Mean error rate (%)")
 
