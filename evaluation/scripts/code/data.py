@@ -31,8 +31,14 @@ Variant = str
 RequestRate = str
 Filename = str
 
-Result_Type = Literal["summary", "results"]
 Averaging_Method = Literal["vegeta-summaries", "all-raw-data"]
+Result_Type = Literal["summary", "results"]
+Produced_Latency_Type = Literal[
+    "summary-latency",
+    "raw-latency",
+]
+Produced_Other_Types = Literal["summary-success-rate"]
+Produced_Data_Type = Produced_Latency_Type | Produced_Other_Types
 
 ns_to_s = 1000 * 1000 * 1000  # seconds in nanoseconds
 
@@ -216,22 +222,42 @@ def _load_and_process_results_file(
 def pick_and_process_files(
     avg_method: Averaging_Method,
     entries: Generator[tuple[*_Init, Result_Type, Filename], None, None],
-) -> Generator[tuple[*_Init, float], None, None]:
-    if avg_method == "vegeta-summaries":
-        return (
-            (*init, _load_and_process_summary_json_file(filename))
-            for (*init, result_type, filename) in entries
-            if result_type == "summary"
-        )
-    elif avg_method == "all-raw-data":
-        return (
-            (*init, latency)
-            for (*init, result_type, filename) in entries
-            if result_type == "results"
-            for latency in _load_and_process_results_file(filename)
-        )
-    else:
-        raise ValueError(f"unknown averaging method passed: {avg_method}")
+) -> Generator[tuple[*_Init, Produced_Data_Type, float], None, None]:
+    for *init, result_type, filename in entries:
+        if result_type == "summary":
+            with open(filename, "r") as content:
+                data = json.load(content)
+
+            yield *init, "summary-success-rate", data["success"]
+
+            if avg_method == "vegeta-summaries":
+                yield *init, "summary-latency", data["latencies"]["mean"] / ns_to_s
+
+        elif result_type == "results":
+            if avg_method == "all-raw-data":
+                for latency in _load_and_process_results_file(filename):
+                    yield *init, "raw-latency", latency
+
+        else:
+            raise ValueError(f"unknown result_type: '{result_type}'")
+
+
+def split_latencies_from_iterator(
+    entries: Generator[tuple[*_Init, Produced_Data_Type, _A], None, None],
+) -> tuple[
+    Generator[tuple[*_Init, _A], None, None],
+    Generator[tuple[*_Init, _A], None, None],
+]:
+    latencies = []
+    other = []
+
+    for *init, data_type, value in entries:
+        if data_type == "summary-latency" or data_type == "raw-latency":
+            latencies.append((*init, value))
+        else:
+            other.append((*init, value))
+
+    return iter(latencies), iter(other)
 
 
 def convert_list_to_np_array(

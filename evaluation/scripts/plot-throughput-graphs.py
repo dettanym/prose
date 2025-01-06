@@ -20,6 +20,7 @@ from .code.data import (
     map_known_variants,
     pick_and_process_files,
     print_unknown_variants,
+    split_latencies_from_iterator,
 )
 from .code.plot import plot_and_save_results
 
@@ -228,9 +229,15 @@ def main(*args, **kwargs):
             gen = pick_and_process_files(avg_method, gen)
             gen = group_by_init(gen)
             gen = convert_list_to_np_array(gen)
-            gen = compute_stats_per_variant(gen)
-            gen = group_by_first(gen)
-            variants = collect_tuple_into_record(gen)
+            (latencies, success_rates) = split_latencies_from_iterator(gen)
+
+            latencies = compute_stats_per_variant(latencies)
+            latencies = group_by_first(latencies)
+            latencies = collect_tuple_into_record(latencies)
+
+            success_rates = compute_stats_per_variant(success_rates)
+            success_rates = group_by_first(success_rates)
+            success_rates = collect_tuple_into_record(success_rates)
 
             plot_and_save_results(
                 graphs_location,
@@ -239,5 +246,6 @@ def main(*args, **kwargs):
                 title,
                 colors,
                 labels,
-                variants,
+                latencies,
+                success_rates,
             )

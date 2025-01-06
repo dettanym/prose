@@ -20,9 +20,19 @@ def plot_and_save_results(
         Bookinfo_Variants | str,
         List[tuple[int, np.floating, np.floating]],
     ],
+    success_rates: Dict[
+        Bookinfo_Variants | str,
+        List[tuple[int, np.floating, np.floating]],
+    ],
 ):
     locator = ticker.MaxNLocator(nbins=11)
-    fig, (ax_lin, ax_log) = plt.subplots(nrows=1, ncols=2, figsize=(12.8, 4.8))
+    nrows = 1
+    ncols = 3
+    fig, (ax_lin, ax_log, ax_error_rate) = plt.subplots(
+        nrows=nrows,
+        ncols=ncols,
+        figsize=(ncols * 6.4, nrows * 4.8),
+    )
 
     for variant, data in results.items():
         if len(data) == 0:
@@ -57,6 +67,32 @@ def plot_and_save_results(
     ax_log.set_yscale("log")
     ax_log.set_xlabel("Load (req/s)")
     ax_log.set_ylabel("Mean response latency (s)")
+
+    bar_width = 0.15
+    ticks_are_set = False
+
+    for j, (variant, data) in enumerate(success_rates.items()):
+        variant_data = rec.fromrecords(
+            sorted(data, key=lambda v: v[0]),
+            names="rate,success",
+        )
+
+        x = np.arange(len(data))
+
+        if not ticks_are_set:
+            ticks_are_set = True
+            ax_error_rate.set_xticks(x)
+            ax_error_rate.set_xticklabels(variant_data.rate, minor=False, rotation=45)
+
+        ax_error_rate.bar(
+            x + j * bar_width,
+            1 - variant_data.success,
+            width=bar_width,
+            color=colors.get(variant),
+        )
+
+    ax_error_rate.set_xlabel("Load (req/s)")
+    ax_error_rate.set_ylabel("Mean error rate (%)")
 
     fig.suptitle(title)
     fig.legend(title="Variants")
