@@ -133,6 +133,7 @@ await (async function main() {
 
   echo`* start managing presidio`
   await $`flux suspend kustomization cluster-apps-prose-system-prose`
+  await $`flux suspend kustomization cluster-apps-prose-system-presidio`
   await scale_specific_deployments(0, "prose-system", "presidio")
 
   echo`* suspend everything before the test`
@@ -161,6 +162,7 @@ await (async function main() {
   echo`* stop managing presidio`
   await scale_specific_deployments(1, "prose-system", "presidio")
   await $`flux resume kustomization --wait=false cluster-apps-prose-system-prose`
+  await $`flux resume kustomization --wait=false cluster-apps-prose-system-presidio`
 
   const completion_time = current_timestamp()
   echo`* Completed at ${completion_time}`
