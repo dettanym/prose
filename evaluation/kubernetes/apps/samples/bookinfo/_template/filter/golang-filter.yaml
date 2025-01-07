@@ -63,7 +63,7 @@ spec:
                     10.244.0.0/16
                   - # service range
                     10.96.0.0/12
-                presidio_url: http://presidio.prose-system.svc.cluster.local:3000/batchanalyze
+                presidio_url: "${presidio_url:=http://presidio.prose-system.svc.cluster.local:3000/batchanalyze}"
                 zipkin_url: http://zipkin.prose-system.svc.cluster.local:9411/api/v2/spans
                 opa_enforce: false
                 opa_config: |
@@ -160,7 +160,7 @@ spec:
                     10.244.0.0/16
                   - # service range
                     10.96.0.0/12
-                presidio_url: http://presidio.prose-system.svc.cluster.local:3000/batchanalyze
+                presidio_url: "${presidio_url:=http://presidio.prose-system.svc.cluster.local:3000/batchanalyze}"
                 zipkin_url: http://zipkin.prose-system.svc.cluster.local:9411/api/v2/spans
                 opa_enforce: false
                 opa_config: |

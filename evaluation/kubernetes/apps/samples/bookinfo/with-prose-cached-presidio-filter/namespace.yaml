@@ -1,0 +1,8 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: bookinfo-with-prose-cached-presidio-filter
+  labels:
+    kustomize.toolkit.fluxcd.io/prune: disabled
+    istio-injection: enabled

@@ -1,0 +1,89 @@
+---
+apiVersion: v1
+kind: List
+extra:
+  filterName: &filterName prose
+  name: &name bookinfo-with-prose-cached-presidio-filter
+
+  baseSpec: &baseSpec
+    targetNamespace: *name
+    prune: true
+    sourceRef:
+      kind: GitRepository
+      name: prose-k8s-home-ops
+    wait: true
+    interval: 30m
+    retryInterval: 1m
+    timeout: 3m
+
+  filterSpec: &filterSpec
+    <<: *baseSpec
+    dependsOn:
+      - name: cluster-apps-istio-system-istiod
+    path: ./evaluation/kubernetes/apps/samples/bookinfo/_template/filter
+
+  baseFilterVars: &baseFilterVars
+    filter_name: *filterName
+    presidio_url: http://cached-presidio.prose-system.svc.cluster.local:3000/batchanalyze
+
+items:
+  - apiVersion: kustomize.toolkit.fluxcd.io/v1
+    kind: Kustomization
+    metadata:
+      name: *name
+      namespace: flux-system
+    spec:
+      <<: *baseSpec
+      dependsOn:
+        - name: bookinfo-envoy-prose-cached-presidio-filter-details
+        - name: bookinfo-envoy-prose-cached-presidio-filter-ratings
+        - name: bookinfo-envoy-prose-cached-presidio-filter-reviews
+        - name: bookinfo-envoy-prose-cached-presidio-filter-productpage
+      path: ./evaluation/kubernetes/apps/samples/bookinfo/_template/app
+      postBuild:
+        substitute:
+          ingress_name: *name
+  - apiVersion: kustomize.toolkit.fluxcd.io/v1
+    kind: Kustomization
+    metadata:
+      name: bookinfo-envoy-prose-cached-presidio-filter-details
+      namespace: flux-system
+    spec:
+      <<: *filterSpec
+      postBuild:
+        substitute:
+          <<: *baseFilterVars
+          app: details
+  - apiVersion: kustomize.toolkit.fluxcd.io/v1
+    kind: Kustomization
+    metadata:
+      name: bookinfo-envoy-prose-cached-presidio-filter-ratings
+      namespace: flux-system
+    spec:
+      <<: *filterSpec
+      postBuild:
+        substitute:
+          <<: *baseFilterVars
+          app: ratings
+  - apiVersion: kustomize.toolkit.fluxcd.io/v1
+    kind: Kustomization
+    metadata:
+      name: bookinfo-envoy-prose-cached-presidio-filter-reviews
+      namespace: flux-system
+    spec:
+      <<: *filterSpec
+      postBuild:
+        substitute:
+          <<: *baseFilterVars
+          app: reviews
+  - apiVersion: kustomize.toolkit.fluxcd.io/v1
+    kind: Kustomization
+    metadata:
+      name: bookinfo-envoy-prose-cached-presidio-filter-productpage
+      namespace: flux-system
+    spec:
+      <<: *filterSpec
+      postBuild:
+        substitute:
+          <<: *baseFilterVars
+          app: productpage

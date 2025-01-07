@@ -5,6 +5,7 @@ resources:
   - ./plain
   - ./with-istio
   - ./with-passthrough-filter
+  - ./with-prose-cached-presidio-filter
   - ./with-prose-filter
   - ./with-prose-no-presidio-filter
   - ./with-tooling-filter

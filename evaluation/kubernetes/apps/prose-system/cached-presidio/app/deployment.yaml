@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cached-presidio
+spec:
+  selector:
+    matchLabels:
+      app: cached-presidio
+  template:
+    metadata:
+      labels:
+        app: cached-presidio
+    spec:
+      containers:
+        - name: presidio
+          image: ghcr.io/dettanym/prose-presidio:main
+          imagePullPolicy: Always
+          env:
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://otlp.prose-system.svc.cluster.local:4318
+            - name: PRESIDIO_ENABLE_CACHE
+              value: "true"
+          resources:
+            requests:
+              cpu: 10m
+              memory: 500Mi
+            limits:
+              memory: 3Gi
+          ports:
+            - name: http
+              containerPort: 3000
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http

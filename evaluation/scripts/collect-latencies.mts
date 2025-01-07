@@ -47,6 +47,7 @@ const bookinfo_variants = new Set([
   "passthrough-filter",
   "tooling-filter",
   "prose-no-presidio-filter",
+  "prose-cached-presidio-filter",
   "prose-filter",
 ] as const)
 /**
@@ -55,13 +56,7 @@ const bookinfo_variants = new Set([
  * than one rate value. That is because with one variant, there is some weird
  * behavior where each second attack fails for most of the requests.
  */
-const test_only = new Set<VARIANT>([
-  "plain",
-  "istio",
-  "passthrough-filter",
-  "prose-no-presidio-filter",
-  "prose-filter",
-])
+const test_only = new Set<VARIANT>(["plain", "prose-cached-presidio-filter"])
 
 const TEST_RUNS = 10
 
@@ -132,8 +127,11 @@ await (async function main() {
   }
 
   echo`* start managing presidio`
-  await $`flux suspend kustomization cluster-apps-prose-system-prose`
-  await $`flux suspend kustomization cluster-apps-prose-system-presidio`
+  await Promise.all([
+    $`flux suspend kustomization cluster-apps-prose-system-prose`,
+    $`flux suspend kustomization cluster-apps-prose-system-presidio`,
+    $`flux suspend kustomization cluster-apps-prose-system-cached-presidio`,
+  ])
   await scale_specific_deployments(0, "prose-system", "presidio")
 
   echo`* suspend everything before the test`
@@ -161,8 +159,11 @@ await (async function main() {
 
   echo`* stop managing presidio`
   await scale_specific_deployments(1, "prose-system", "presidio")
-  await $`flux resume kustomization --wait=false cluster-apps-prose-system-prose`
-  await $`flux resume kustomization --wait=false cluster-apps-prose-system-presidio`
+  await Promise.all([
+    $`flux resume kustomization --wait=false cluster-apps-prose-system-prose`,
+    $`flux resume kustomization --wait=false cluster-apps-prose-system-presidio`,
+    $`flux resume kustomization --wait=false cluster-apps-prose-system-cached-presidio`,
+  ])
 
   const completion_time = current_timestamp()
   echo`* Completed at ${completion_time}`
@@ -294,11 +295,18 @@ async function run_test(
   // we will not bring all these pods down at the end of the test, but rather
   // restart them when needed. It means that this scale command would only
   // actually do something once at the beginning of the test.
-  await scale_specific_deployments(
-    metadata.workloadInfo.test_replicas,
-    "prose-system",
-    "presidio",
-  )
+  await Promise.all([
+    scale_specific_deployments(
+      metadata.workloadInfo.test_replicas,
+      "prose-system",
+      "presidio",
+    ),
+    scale_specific_deployments(
+      metadata.workloadInfo.test_replicas,
+      "prose-system",
+      "cached-presidio",
+    ),
+  ])
 
   echo`  - Scaling up deployments for '${metadata.workloadInfo.variant}' variant`
   await scale_deployments(
@@ -309,6 +317,9 @@ async function run_test(
   if (metadata.workloadInfo.variant === "prose-filter") {
     echo`  - Restarting presidio`
     await restart_pods("prose-system", "presidio")
+  } else if (metadata.workloadInfo.variant === "prose-cached-presidio-filter") {
+    echo`  - Restarting presidio`
+    await restart_pods("prose-system", "cached-presidio")
   }
 
   await sleep("1s")
@@ -323,6 +334,11 @@ async function run_test(
       metadata.workloadInfo.test_replicas,
       "prose-system",
       "presidio",
+    ),
+    wait_until_ready(
+      metadata.workloadInfo.test_replicas,
+      "prose-system",
+      "cached-presidio",
     ),
   ])
 

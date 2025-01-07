@@ -41,6 +41,8 @@ bookinfo_variant_mapping: Dict[str, Bookinfo_Variants] = {
     #
     "prose-no-presidio-filter": "prose-no-presidio-filter",
     #
+    "prose-cached-presidio-filter": "prose-cached-presidio-filter",
+    #
     "filter": "prose-filter",
     "prose-filter": "prose-filter",
     # historical
@@ -64,6 +66,7 @@ variant_order: List[Bookinfo_Variants] = [
     "passthrough-filter",
     "tooling-filter",
     "prose-no-presidio-filter",
+    "prose-cached-presidio-filter",
     "prose-filter",
     # historical
     "prose-filter-97776ef1",
@@ -80,6 +83,7 @@ colors: Dict[Bookinfo_Variants, str] = {
     "passthrough-filter": "brown",
     "tooling-filter": "pink",
     "prose-no-presidio-filter": "cyan",
+    "prose-cached-presidio-filter": "pink",
     "prose-filter": "green",
     # historical
     "prose-filter-97776ef1": "green",
@@ -96,6 +100,7 @@ labels: Dict[Bookinfo_Variants, str] = {
     "passthrough-filter": "K8s + Istio + PassthroughFilter",
     "tooling-filter": "K8s + Istio + PassthroughFilter with Buffer, Traces and singleton OPA instance",
     "prose-no-presidio-filter": "K8s + Istio + Prose - Presidio",
+    "prose-cached-presidio-filter": "K8s + Istio + Prose (Presidio with cache)",
     "prose-filter": "K8s + Istio + Prose",
     # historical
     "prose-filter-97776ef1": "K8s + Istio + Prose (opa per request)",
