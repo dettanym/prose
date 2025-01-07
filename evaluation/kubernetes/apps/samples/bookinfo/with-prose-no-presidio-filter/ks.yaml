@@ -22,6 +22,9 @@ extra:
       - name: cluster-apps-istio-system-istiod
     path: ./evaluation/kubernetes/apps/samples/bookinfo/_template/filter
 
+  baseFilterVars: &baseFilterVars
+    filter_name: *filterName
+
 items:
   - apiVersion: kustomize.toolkit.fluxcd.io/v1
     kind: Kustomization
@@ -48,7 +51,7 @@ items:
       <<: *filterSpec
       postBuild:
         substitute:
-          filter_name: *filterName
+          <<: *baseFilterVars
           app: details
   - apiVersion: kustomize.toolkit.fluxcd.io/v1
     kind: Kustomization
@@ -59,7 +62,7 @@ items:
       <<: *filterSpec
       postBuild:
         substitute:
-          filter_name: *filterName
+          <<: *baseFilterVars
           app: ratings
   - apiVersion: kustomize.toolkit.fluxcd.io/v1
     kind: Kustomization
@@ -70,7 +73,7 @@ items:
       <<: *filterSpec
       postBuild:
         substitute:
-          filter_name: *filterName
+          <<: *baseFilterVars
           app: reviews
   - apiVersion: kustomize.toolkit.fluxcd.io/v1
     kind: Kustomization
@@ -81,5 +84,5 @@ items:
       <<: *filterSpec
       postBuild:
         substitute:
-          filter_name: *filterName
+          <<: *baseFilterVars
           app: productpage
