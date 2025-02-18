@@ -21,6 +21,8 @@ from .code.data import (
     pick_and_process_files,
     print_unknown_variants,
     split_latencies_from_iterator,
+    split_rates_from_iterator,
+    stats_group_collect,
 )
 from .code.plot import plot_and_save_results
 
@@ -312,15 +314,22 @@ def main(*args, **kwargs):
             gen = pick_and_process_files(avg_method, gen)
             gen = group_by_init(gen)
             gen = convert_list_to_np_array(gen)
-            (latencies, success_rates) = split_latencies_from_iterator(gen)
+            (latencies, rates) = split_latencies_from_iterator(gen)
+            (
+                success_rates,
+                st_200_rates,
+                st_0_rates,
+                st_503_rates,
+                st_other_rates,
+                extras,
+            ) = split_rates_from_iterator(rates)
 
-            latencies = compute_stats_per_variant(latencies)
-            latencies = group_by_first(latencies)
-            latencies = collect_tuple_into_record(latencies)
-
-            success_rates = compute_stats_per_variant(success_rates)
-            success_rates = group_by_first(success_rates)
-            success_rates = collect_tuple_into_record(success_rates)
+            latencies = stats_group_collect(latencies)
+            success_rates = stats_group_collect(success_rates)
+            st_200_rates = stats_group_collect(st_200_rates)
+            st_0_rates = stats_group_collect(st_0_rates)
+            st_503_rates = stats_group_collect(st_503_rates)
+            st_other_rates = stats_group_collect(st_other_rates)
 
             run_graphs_location = join(
                 graphs_location,

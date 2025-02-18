@@ -3,7 +3,7 @@ from collections.abc import Generator
 from fnmatch import fnmatchcase
 from os import listdir
 from os.path import isdir, isfile, join
-from typing import Dict, List, Literal, TypeVar, TypeVarTuple
+from typing import Dict, List, Literal, Never, TypeVar, TypeVarTuple
 
 import numpy as np
 
@@ -38,7 +38,13 @@ Produced_Latency_Type = Literal[
     "summary-latency",
     "raw-latency",
 ]
-Produced_Other_Types = Literal["summary-success-rate"]
+Produced_Other_Types = Literal[
+    "summary-success-rate",
+    "summary-200-rate",
+    "summary-0-rate",
+    "summary-503-rate",
+    "summary-other-rate",
+]
 Produced_Data_Type = Produced_Latency_Type | Produced_Other_Types
 
 ns_to_s = 1000 * 1000 * 1000  # seconds in nanoseconds
@@ -229,7 +235,17 @@ def pick_and_process_files(
             with open(filename, "r") as content:
                 data = json.load(content)
 
+            st_200 = data["status_codes"].get("200", 0)
+            st_0 = data["status_codes"].get("0", 0)
+            st_503 = data["status_codes"].get("503", 0)
+            total = data["requests"]
+            st_other = total - (st_200 + st_0 + st_503)
+
             yield *init, "summary-success-rate", data["success"]
+            yield *init, "summary-200-rate", ((st_200) / total)
+            yield *init, "summary-0-rate", ((st_0) / total)
+            yield *init, "summary-503-rate", (st_503 / total)
+            yield *init, "summary-other-rate", (st_other / total)
 
             if avg_method == "vegeta-summaries":
                 yield *init, "summary-latency", data["latencies"]["mean"] / ns_to_s
@@ -247,7 +263,7 @@ def split_latencies_from_iterator(
     entries: Generator[tuple[*_Init, Produced_Data_Type, _A], None, None],
 ) -> tuple[
     Generator[tuple[*_Init, _A], None, None],
-    Generator[tuple[*_Init, _A], None, None],
+    Generator[tuple[*_Init, Produced_Other_Types, _A], None, None],
 ]:
     latencies = []
     other = []
@@ -256,9 +272,50 @@ def split_latencies_from_iterator(
         if data_type == "summary-latency" or data_type == "raw-latency":
             latencies.append((*init, value))
         else:
-            other.append((*init, value))
+            other.append((*init, data_type, value))
 
     return iter(latencies), iter(other)
+
+
+def split_rates_from_iterator(
+    entries: Generator[tuple[*_Init, Produced_Other_Types, _A], None, None],
+) -> tuple[
+    Generator[tuple[*_Init, _A], None, None],
+    Generator[tuple[*_Init, _A], None, None],
+    Generator[tuple[*_Init, _A], None, None],
+    Generator[tuple[*_Init, _A], None, None],
+    Generator[tuple[*_Init, _A], None, None],
+    Generator[tuple[*_Init, Never, _A], None, None],
+]:
+    success_rates = []
+    st_200_rates = []
+    st_0_rates = []
+    st_503_rates = []
+    st_other_rates = []
+    other = []
+
+    for *init, data_type, value in entries:
+        if data_type == "summary-success-rate":
+            success_rates.append((*init, value))
+        elif data_type == "summary-200-rate":
+            st_200_rates.append((*init, value))
+        elif data_type == "summary-0-rate":
+            st_0_rates.append((*init, value))
+        elif data_type == "summary-503-rate":
+            st_503_rates.append((*init, value))
+        elif data_type == "summary-other-rate":
+            st_other_rates.append((*init, value))
+        else:
+            other.append((*init, data_type, value))
+
+    return (
+        iter(success_rates),
+        iter(st_200_rates),
+        iter(st_0_rates),
+        iter(st_503_rates),
+        iter(st_other_rates),
+        iter(other),
+    )
 
 
 def convert_list_to_np_array(
@@ -282,3 +339,20 @@ def compute_stats_per_variant(
     for variant, rate, latencies in entries:
         if len(latencies) != 0:
             yield variant, int(rate), np.mean(latencies), np.std(latencies)
+
+
+def stats_group_collect(
+    gen: Generator[
+        tuple[Bookinfo_Variants | Variant, RequestRate, np.ndarray],
+        None,
+        None,
+    ],
+) -> Dict[
+    Bookinfo_Variants | Variant,
+    List[tuple[int, np.floating, np.floating]],
+]:
+    gen = compute_stats_per_variant(gen)
+    gen = group_by_first(gen)
+    gen = collect_tuple_into_record(gen)
+
+    return gen
