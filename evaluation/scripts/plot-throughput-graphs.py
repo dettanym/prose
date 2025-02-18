@@ -322,10 +322,14 @@ def main(*args, **kwargs):
             success_rates = group_by_first(success_rates)
             success_rates = collect_tuple_into_record(success_rates)
 
-            plot_and_save_results(
+            run_graphs_location = join(
                 graphs_location,
-                hostname,
-                i + 1,
+                "bookinfo_" + hostname + "_" + str(i + 1),
+            )
+            makedirs(run_graphs_location, exist_ok=True)
+
+            plot_and_save_results(
+                run_graphs_location,
                 title,
                 variant_order,
                 colors,

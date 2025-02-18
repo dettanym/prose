@@ -11,8 +11,6 @@ from .data import Bookinfo_Variants
 
 def plot_and_save_results(
     graphs_location: str,
-    hostname: str,
-    i: int,
     title: str,
     variant_order: List[Bookinfo_Variants],
     colors: Dict[Bookinfo_Variants, str],
@@ -27,13 +25,10 @@ def plot_and_save_results(
     ],
 ):
     locator = ticker.MaxNLocator(nbins=11)
-    nrows = 1
-    ncols = 3
-    fig, (ax_lin, ax_log, ax_error_rate) = plt.subplots(
-        nrows=nrows,
-        ncols=ncols,
-        figsize=(ncols * 6.4, nrows * 4.8),
-    )
+
+    fig1, ax_lin = plt.subplots()
+    fig2, ax_log = plt.subplots()
+    fig3, ax_error_rate = plt.subplots()
 
     results = dict(results)
     sorted_results = []
@@ -68,6 +63,7 @@ def plot_and_save_results(
             variant_data.x,
             variant_data.y,
             yerr=variant_data.yerr,
+            label=labels.get(variant),
             color=colors.get(variant),
         )
 
@@ -115,6 +111,7 @@ def plot_and_save_results(
             x + j * bar_width,
             (1 - variant_data.success) * 100,
             width=bar_width,
+            label=labels.get(variant),
             color=colors.get(variant),
         )
 
@@ -122,11 +119,20 @@ def plot_and_save_results(
     ax_error_rate.set_xlabel("Load (req/s)")
     ax_error_rate.set_ylabel("Mean error rate (%)")
 
-    fig.suptitle(title)
-    fig.legend(title="Variants")
+    fig1.suptitle(title)
+    fig1.legend(title="Variants")
 
-    fig.savefig(
-        join(graphs_location, "bookinfo_" + hostname + "_" + str(i) + ".svg"),
-        format="svg",
-    )
-    plt.close(fig)
+    fig2.suptitle(title)
+    fig2.legend(title="Variants")
+
+    fig3.suptitle(title)
+    fig3.legend(title="Variants")
+
+    fig1.savefig(join(graphs_location, "01_lin.svg"), format="svg")
+    plt.close(fig1)
+
+    fig2.savefig(join(graphs_location, "02_log.svg"), format="svg")
+    plt.close(fig2)
+
+    fig3.savefig(join(graphs_location, "03_error_rate.svg"), format="svg")
+    plt.close(fig3)
