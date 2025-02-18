@@ -6,12 +6,13 @@ from matplotlib import pyplot as plt
 from matplotlib import ticker as ticker
 from numpy.core import records as rec
 
-from .data import Bookinfo_Variants
+from .data import Averaging_Method, Bookinfo_Variants
 
 
 def plot_and_save_results(
     graphs_location: str,
     title: str,
+    avg_method: Averaging_Method,
     variant_order: List[Bookinfo_Variants],
     colors: Dict[Bookinfo_Variants, str],
     labels: Dict[Bookinfo_Variants, str],
@@ -70,13 +71,21 @@ def plot_and_save_results(
     ax_lin.set_xscale("linear")
     ax_lin.set_yscale("linear")
     ax_lin.set_xlabel("Load (req/s)")
-    ax_lin.set_ylabel("Mean response latency (s)")
+    ax_lin.set_ylabel(
+        "Mean response latency (s)"
+        if avg_method == "vegeta-summaries"
+        else "Response latency (s)"
+    )
     ax_lin.xaxis.set_major_locator(locator)
 
     ax_log.set_xscale("log")
     ax_log.set_yscale("log")
     ax_log.set_xlabel("Load (req/s)")
-    ax_log.set_ylabel("Mean response latency (s)")
+    ax_log.set_ylabel(
+        "Mean response latency (s)"
+        if avg_method == "vegeta-summaries"
+        else "Response latency (s)"
+    )
 
     success_rates = dict(success_rates)
     sorted_success_rates = []

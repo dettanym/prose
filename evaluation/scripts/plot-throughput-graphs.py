@@ -331,6 +331,7 @@ def main(*args, **kwargs):
             plot_and_save_results(
                 run_graphs_location,
                 title,
+                avg_method,
                 variant_order,
                 colors,
                 labels,
