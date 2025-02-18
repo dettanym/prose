@@ -243,6 +243,42 @@ graphs_to_plot: Dict[str, List[Tuple[str, Averaging_Method, List[str], List[str]
             ["2025-01-02T11:48:47-05:00"],
             ["*/400/*", "*/600/*", "*/800/*", "*/1000/*"],
         ),
+        (
+            "All variants with variable load rate with ineffective cached presidio variant (from summaries, high and low req rates)",
+            "vegeta-summaries",
+            [
+                "2025-01-02T11:48:47-05:00",
+                "2025-01-09T23:51:34-05:00",
+            ],
+            [],
+        ),
+        (
+            "All variants with variable load rate with ineffective cached presidio variant (from summaries, low req rates)",
+            "vegeta-summaries",
+            [
+                "2025-01-02T11:48:47-05:00",
+                "2025-01-09T23:51:34-05:00",
+            ],
+            ["*/400/*", "*/600/*", "*/800/*", "*/1000/*"],
+        ),
+        (
+            "All variants with variable load rate with ineffective cached presidio variant (from raw data, high and low req rates)",
+            "all-raw-data",
+            [
+                "2025-01-02T11:48:47-05:00",
+                "2025-01-09T23:51:34-05:00",
+            ],
+            [],
+        ),
+        (
+            "All variants with variable load rate with ineffective cached presidio variant (from raw data, low req rates)",
+            "all-raw-data",
+            [
+                "2025-01-02T11:48:47-05:00",
+                "2025-01-09T23:51:34-05:00",
+            ],
+            ["*/400/*", "*/600/*", "*/800/*", "*/1000/*"],
+        ),
     ],
 }
 
