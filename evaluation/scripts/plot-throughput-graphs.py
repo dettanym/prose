@@ -7,6 +7,8 @@ from os.path import join
 from typing import Dict, List, Tuple
 
 import matplotlib as mpl
+from matplotlib import pyplot as plt
+from scripts.code.plot import plot_latency_graph, sort_data_by_variant_order
 
 from .code.data import (
     Averaging_Method,
@@ -348,3 +350,26 @@ def main(*args, **kwargs):
                 latencies,
                 success_rates,
             )
+
+            sorted_success_latencies, remainder = sort_data_by_variant_order(
+                success_latencies,
+                variant_order,
+            )
+            if len(remainder) > 0:
+                print(
+                    "Results have some unknown variants that were not plotted: "
+                    + ",".join(remainder.keys())
+                )
+
+            fig4 = plot_latency_graph(
+                dict(sorted_success_latencies),
+                title,
+                avg_method,
+                variant_order,
+                colors,
+                labels,
+                "log",
+            )
+
+            fig4.savefig(join(run_graphs_location, "04_log.svg"), format="svg")
+            plt.close(fig4)
