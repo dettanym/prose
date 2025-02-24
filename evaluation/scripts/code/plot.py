@@ -1,47 +1,53 @@
 from os.path import join
-from typing import Dict, List
+from typing import Dict, List, Literal, TypeVar
 
 import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib import ticker as ticker
+from matplotlib.figure import Figure
 from numpy.core import records as rec
 
 from .data import Averaging_Method, Bookinfo_Variants
 
+_A = TypeVar("_A")
 
-def plot_and_save_results(
-    graphs_location: str,
-    title: str,
-    avg_method: Averaging_Method,
+
+def sort_data_by_variant_order(
+    results: Dict[Bookinfo_Variants | str, _A],
     variant_order: List[Bookinfo_Variants],
-    colors: Dict[Bookinfo_Variants, str],
-    labels: Dict[Bookinfo_Variants, str],
+) -> tuple[
+    List[tuple[Bookinfo_Variants, _A]],
+    Dict[str, _A],
+]:
+    remainder = dict(results)
+    sorted_results = []
+
+    for variant in variant_order:
+        if variant in remainder:
+            sorted_results.append((variant, remainder.pop(variant)))
+
+    return sorted_results, remainder
+
+
+def plot_latency_graph(
     results: Dict[
         Bookinfo_Variants | str,
         List[tuple[int, np.floating, np.floating]],
     ],
-    success_rates: Dict[
-        Bookinfo_Variants | str,
-        List[tuple[int, np.floating, np.floating]],
-    ],
-):
-    locator = ticker.MaxNLocator(nbins=11)
+    avg_method: Averaging_Method,
+    title: str,
+    variant_order: List[Bookinfo_Variants],
+    colors: Dict[Bookinfo_Variants, str],
+    labels: Dict[Bookinfo_Variants, str],
+    scale_type: Literal["lin", "log"] = "log",
+) -> Figure:
+    fig, ax = plt.subplots()
 
-    fig1, ax_lin = plt.subplots()
-    fig2, ax_log = plt.subplots()
-    fig3, ax_error_rate = plt.subplots()
-
-    results = dict(results)
-    sorted_results = []
-    for variant in variant_order:
-        if variant in results:
-            data = results.pop(variant)
-            sorted_results.append((variant, data))
-
-    if len(results) > 0:
+    sorted_results, remainder = sort_data_by_variant_order(results, variant_order)
+    if len(remainder) > 0:
         print(
             "Results have some unknown variants that were not plotted: "
-            + ",".join(results.keys())
+            + ",".join(remainder.keys())
         )
 
     for variant, data in sorted_results:
@@ -53,14 +59,7 @@ def plot_and_save_results(
             names="x,y,yerr",
         )
 
-        ax_lin.errorbar(
-            variant_data.x,
-            variant_data.y,
-            yerr=variant_data.yerr,
-            label=labels.get(variant),
-            color=colors.get(variant),
-        )
-        ax_log.errorbar(
+        ax.errorbar(
             variant_data.x,
             variant_data.y,
             yerr=variant_data.yerr,
@@ -68,36 +67,52 @@ def plot_and_save_results(
             color=colors.get(variant),
         )
 
-    ax_lin.set_xscale("linear")
-    ax_lin.set_yscale("linear")
-    ax_lin.set_xlabel("Load (req/s)")
-    ax_lin.set_ylabel(
+    if scale_type == "lin":
+        ax.set_xscale("linear")
+        ax.set_yscale("linear")
+    elif scale_type == "log":
+        ax.set_xscale("log")
+        ax.set_yscale("log")
+    else:
+        raise ValueError(f"unknown scale type: '{scale_type}'")
+
+    ax.set_xlabel("Load (req/s)")
+    ax.set_ylabel(
         "Mean response latency (s)"
         if avg_method == "vegeta-summaries"
         else "Response latency (s)"
     )
-    ax_lin.xaxis.set_major_locator(locator)
 
-    ax_log.set_xscale("log")
-    ax_log.set_yscale("log")
-    ax_log.set_xlabel("Load (req/s)")
-    ax_log.set_ylabel(
-        "Mean response latency (s)"
-        if avg_method == "vegeta-summaries"
-        else "Response latency (s)"
+    if scale_type == "lin":
+        locator = ticker.MaxNLocator(nbins=11)
+        ax.xaxis.set_major_locator(locator)
+
+    fig.suptitle(title)
+    fig.legend(title="Variants")
+
+    return fig
+
+
+def plot_error_graph(
+    results: Dict[
+        Bookinfo_Variants | str,
+        List[tuple[int, np.floating, np.floating]],
+    ],
+    title: str,
+    variant_order: List[Bookinfo_Variants],
+    colors: Dict[Bookinfo_Variants, str],
+    labels: Dict[Bookinfo_Variants, str],
+) -> Figure:
+    fig, ax = plt.subplots()
+
+    sorted_success_rates, remainder = sort_data_by_variant_order(
+        results,
+        variant_order,
     )
-
-    success_rates = dict(success_rates)
-    sorted_success_rates = []
-    for variant in variant_order:
-        if variant in success_rates:
-            data = success_rates.pop(variant)
-            sorted_success_rates.append((variant, data))
-
-    if len(success_rates) > 0:
+    if len(remainder) > 0:
         print(
             "Success rates have some unknown variants that were not plotted: "
-            + ",".join(success_rates.keys())
+            + ",".join(remainder.keys())
         )
 
     bar_width = 0.15
@@ -113,10 +128,10 @@ def plot_and_save_results(
 
         if not ticks_are_set:
             ticks_are_set = True
-            ax_error_rate.set_xticks(x)
-            ax_error_rate.set_xticklabels(variant_data.rate, minor=False, rotation=45)
+            ax.set_xticks(x)
+            ax.set_xticklabels(variant_data.rate, minor=False, rotation=45)
 
-        ax_error_rate.bar(
+        ax.bar(
             x + j * bar_width,
             (1 - variant_data.success) * 100,
             width=bar_width,
@@ -124,24 +139,69 @@ def plot_and_save_results(
             color=colors.get(variant),
         )
 
-    ax_error_rate.set_yscale("log")
-    ax_error_rate.set_xlabel("Load (req/s)")
-    ax_error_rate.set_ylabel("Mean error rate (%)")
+    ax.set_yscale("log")
+    ax.set_xlabel("Load (req/s)")
+    ax.set_ylabel("Mean error rate (%)")
 
-    fig1.suptitle(title)
-    fig1.legend(title="Variants")
+    fig.suptitle(title)
+    fig.legend(title="Variants")
 
-    fig2.suptitle(title)
-    fig2.legend(title="Variants")
+    return fig
 
-    fig3.suptitle(title)
-    fig3.legend(title="Variants")
 
+def plot_everything_and_save_results(
+    graphs_location: str,
+    title: str,
+    avg_method: Averaging_Method,
+    variant_order: List[Bookinfo_Variants],
+    colors: Dict[Bookinfo_Variants, str],
+    labels: Dict[Bookinfo_Variants, str],
+    results: Dict[
+        Bookinfo_Variants | str,
+        List[tuple[int, np.floating, np.floating]],
+    ],
+    success_rates: Dict[
+        Bookinfo_Variants | str,
+        List[tuple[int, np.floating, np.floating]],
+    ],
+):
+    sorted_results, remainder = sort_data_by_variant_order(results, variant_order)
+    if len(remainder) > 0:
+        print(
+            "Results have some unknown variants that were not plotted: "
+            + ",".join(remainder.keys())
+        )
+
+    fig1 = plot_latency_graph(
+        dict(sorted_results),
+        avg_method,
+        title,
+        variant_order,
+        colors,
+        labels,
+        "lin",
+    )
     fig1.savefig(join(graphs_location, "01_lin.svg"), format="svg")
     plt.close(fig1)
 
+    fig2 = plot_latency_graph(
+        dict(sorted_results),
+        avg_method,
+        title,
+        variant_order,
+        colors,
+        labels,
+        "log",
+    )
     fig2.savefig(join(graphs_location, "02_log.svg"), format="svg")
     plt.close(fig2)
 
+    fig3 = plot_error_graph(
+        success_rates,
+        title,
+        variant_order,
+        colors,
+        labels,
+    )
     fig3.savefig(join(graphs_location, "03_error_rate.svg"), format="svg")
     plt.close(fig3)

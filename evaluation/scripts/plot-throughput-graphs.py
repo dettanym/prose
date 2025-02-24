@@ -24,7 +24,7 @@ from .code.data import (
     split_rates_from_iterator,
     stats_group_collect,
 )
-from .code.plot import plot_and_save_results
+from .code.plot import plot_everything_and_save_results
 
 # Describes mapping from historical data collection to internal bookinfo
 # variant names. The values on the left should not change, unless we rename
@@ -338,7 +338,7 @@ def main(*args, **kwargs):
             )
             makedirs(run_graphs_location, exist_ok=True)
 
-            plot_and_save_results(
+            plot_everything_and_save_results(
                 run_graphs_location,
                 title,
                 avg_method,
