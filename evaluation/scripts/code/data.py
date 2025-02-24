@@ -37,6 +37,7 @@ Averaging_Method = Literal["vegeta-summaries", "all-raw-data"]
 Produced_Latency_Type = Literal[
     "summary-latency",
     "raw-latency",
+    "raw-latency-success",
 ]
 Produced_Other_Types = Literal[
     "summary-success-rate",
@@ -210,14 +211,21 @@ def _load_and_process_summary_json_file(file: Filename) -> float:
 
 def _load_and_process_results_file(
     file: Filename,
-) -> Generator[float, None, None]:
+) -> Generator[(int, int, float), None, None]:
     stdout, _ = pipe_processes(
         ["zstd", "-c", "-d", file],
-        ["jq", "--slurp", "map(.latency)"],
+        ["jq", "--slurp", "map({ seq, code, latency })"],
     )
     stdout = stdout.strip() if stdout is not None else ""
 
-    return (latency / ns_to_s for latency in json.loads(stdout))
+    return (
+        (
+            data["seq"],
+            data["code"],
+            data["latency"] / ns_to_s,
+        )
+        for data in json.loads(stdout)
+    )
 
 
 def pick_and_process_files(
@@ -247,8 +255,10 @@ def pick_and_process_files(
 
             case RawResultsFile(filename):
                 if avg_method == "all-raw-data":
-                    for latency in _load_and_process_results_file(filename):
+                    for seq, code, latency in _load_and_process_results_file(filename):
                         yield *init, "raw-latency", latency
+                        if code == 200:
+                            yield *init, "raw-latency-success", latency
 
             case _ as unreachable:
                 assert_never(unreachable)
@@ -258,18 +268,22 @@ def split_latencies_from_iterator(
     entries: Generator[tuple[*_Init, Produced_Data_Type, _A], None, None],
 ) -> tuple[
     Generator[tuple[*_Init, _A], None, None],
+    Generator[tuple[*_Init, _A], None, None],
     Generator[tuple[*_Init, Produced_Other_Types, _A], None, None],
 ]:
-    latencies = []
+    main_latencies = []
+    success_latencies = []
     other = []
 
     for *init, data_type, value in entries:
         if data_type == "summary-latency" or data_type == "raw-latency":
-            latencies.append((*init, value))
+            main_latencies.append((*init, value))
+        elif data_type == "raw-latency-success":
+            success_latencies.append((*init, value))
         else:
             other.append((*init, data_type, value))
 
-    return iter(latencies), iter(other)
+    return iter(main_latencies), iter(success_latencies), iter(other)
 
 
 def split_rates_from_iterator(

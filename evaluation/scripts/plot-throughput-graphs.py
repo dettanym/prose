@@ -314,7 +314,7 @@ def main(*args, **kwargs):
             gen = pick_and_process_files(avg_method, gen)
             gen = group_by_init(gen)
             gen = convert_list_to_np_array(gen)
-            (latencies, rates) = split_latencies_from_iterator(gen)
+            (latencies, success_latencies, rates) = split_latencies_from_iterator(gen)
             (
                 success_rates,
                 st_200_rates,
@@ -325,6 +325,7 @@ def main(*args, **kwargs):
             ) = split_rates_from_iterator(rates)
 
             latencies = stats_group_collect(latencies)
+            success_latencies = stats_group_collect(success_latencies)
             success_rates = stats_group_collect(success_rates)
             st_200_rates = stats_group_collect(st_200_rates)
             st_0_rates = stats_group_collect(st_0_rates)
