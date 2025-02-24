@@ -163,7 +163,7 @@ def print_unknown_variants(
     unknown = yield from gen
 
     if len(unknown) > 0:
-        print("detected some unknown variants amount data folders:")
+        print("detected some unknown variants among data folders:")
         print(unknown)
 
 
