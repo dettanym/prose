@@ -156,7 +156,11 @@ def plot_everything_and_save_results(
     variant_order: List[Bookinfo_Variants],
     colors: Dict[Bookinfo_Variants, str],
     labels: Dict[Bookinfo_Variants, str],
-    results: Dict[
+    all_latencies: Dict[
+        Bookinfo_Variants | str,
+        List[tuple[int, np.floating, np.floating]],
+    ],
+    success_only_latencies: Dict[
         Bookinfo_Variants | str,
         List[tuple[int, np.floating, np.floating]],
     ],
@@ -165,7 +169,7 @@ def plot_everything_and_save_results(
         List[tuple[int, np.floating, np.floating]],
     ],
 ):
-    sorted_results, remainder = sort_data_by_variant_order(results, variant_order)
+    sorted_results, remainder = sort_data_by_variant_order(all_latencies, variant_order)
     if len(remainder) > 0:
         print(
             "Results have some unknown variants that were not plotted: "
@@ -205,3 +209,15 @@ def plot_everything_and_save_results(
     )
     fig3.savefig(join(graphs_location, "03_error_rate.svg"), format="svg")
     plt.close(fig3)
+
+    fig4 = plot_latency_graph(
+        success_only_latencies,
+        avg_method,
+        title,
+        variant_order,
+        colors,
+        labels,
+        "log",
+    )
+    fig4.savefig(join(graphs_location, "04_success_only_log.svg"), format="svg")
+    plt.close(fig4)

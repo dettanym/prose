@@ -346,5 +346,6 @@ def main(*args, **kwargs):
                 colors,
                 labels,
                 latencies,
+                success_latencies,
                 success_rates,
             )
