@@ -3,12 +3,13 @@ from collections.abc import Generator
 from fnmatch import fnmatchcase
 from os import listdir
 from os.path import isdir, isfile, join
-from typing import Dict, List, Literal, Never, TypeVar, TypeVarTuple
+from typing import Dict, List, Literal, Never, TypeVar, TypeVarTuple, assert_never
 
 import numpy as np
 
 from .common import ValuedGenerator
 from .pipe_processes import pipe_processes
+from .types import RawResultsFile, Result_File, SummaryResultFile
 
 Bookinfo_Variants = Literal[
     # current
@@ -33,7 +34,6 @@ RequestRate = str
 Filename = str
 
 Averaging_Method = Literal["vegeta-summaries", "all-raw-data"]
-Result_Type = Literal["summary", "results"]
 Produced_Latency_Type = Literal[
     "summary-latency",
     "raw-latency",
@@ -66,7 +66,7 @@ def find_matching_files(
     data_location: str,
     include_timestamps: List[str],
     exclude_patterns: List[str],
-) -> Generator[tuple[Variant, RequestRate, Result_Type, Filename], None, None]:
+) -> Generator[tuple[Variant, RequestRate, Result_File], None, None]:
     for timestamp in include_timestamps:
         results_dir = join(data_location, timestamp)
         if not isdir(results_dir):
@@ -112,16 +112,10 @@ def find_matching_files(
                             fnmatchcase(rel_file, pat) for pat in exclude_patterns
                         )
                     ):
-                        yield (
-                            variant,
-                            rate,
-                            (
-                                "summary"
-                                if run_file.endswith(summary_suffix)
-                                else "results"
-                            ),
-                            file,
-                        )
+                        if run_file.endswith(summary_suffix):
+                            yield variant, rate, SummaryResultFile(file)
+                        else:
+                            yield variant, rate, RawResultsFile(file)
 
 
 def _merge_dict(a: dict, b: dict, _path: List[str] = []) -> dict:
@@ -228,35 +222,36 @@ def _load_and_process_results_file(
 
 def pick_and_process_files(
     avg_method: Averaging_Method,
-    entries: Generator[tuple[*_Init, Result_Type, Filename], None, None],
+    entries: Generator[tuple[*_Init, Result_File], None, None],
 ) -> Generator[tuple[*_Init, Produced_Data_Type, float], None, None]:
-    for *init, result_type, filename in entries:
-        if result_type == "summary":
-            with open(filename, "r") as content:
-                data = json.load(content)
+    for *init, result_file in entries:
+        match result_file:
+            case SummaryResultFile(filename):
+                with open(filename, "r") as content:
+                    data = json.load(content)
 
-            st_200 = data["status_codes"].get("200", 0)
-            st_0 = data["status_codes"].get("0", 0)
-            st_503 = data["status_codes"].get("503", 0)
-            total = data["requests"]
-            st_other = total - (st_200 + st_0 + st_503)
+                st_200 = data["status_codes"].get("200", 0)
+                st_0 = data["status_codes"].get("0", 0)
+                st_503 = data["status_codes"].get("503", 0)
+                total = data["requests"]
+                st_other = total - (st_200 + st_0 + st_503)
 
-            yield *init, "summary-success-rate", data["success"]
-            yield *init, "summary-200-rate", ((st_200) / total)
-            yield *init, "summary-0-rate", ((st_0) / total)
-            yield *init, "summary-503-rate", (st_503 / total)
-            yield *init, "summary-other-rate", (st_other / total)
+                yield *init, "summary-success-rate", data["success"]
+                yield *init, "summary-200-rate", ((st_200) / total)
+                yield *init, "summary-0-rate", ((st_0) / total)
+                yield *init, "summary-503-rate", (st_503 / total)
+                yield *init, "summary-other-rate", (st_other / total)
 
-            if avg_method == "vegeta-summaries":
-                yield *init, "summary-latency", data["latencies"]["mean"] / ns_to_s
+                if avg_method == "vegeta-summaries":
+                    yield *init, "summary-latency", data["latencies"]["mean"] / ns_to_s
 
-        elif result_type == "results":
-            if avg_method == "all-raw-data":
-                for latency in _load_and_process_results_file(filename):
-                    yield *init, "raw-latency", latency
+            case RawResultsFile(filename):
+                if avg_method == "all-raw-data":
+                    for latency in _load_and_process_results_file(filename):
+                        yield *init, "raw-latency", latency
 
-        else:
-            raise ValueError(f"unknown result_type: '{result_type}'")
+            case _ as unreachable:
+                assert_never(unreachable)
 
 
 def split_latencies_from_iterator(
