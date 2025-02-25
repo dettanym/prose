@@ -24,21 +24,18 @@ const max_warmup_rate = "100" satisfies RATE
 
 const duration = "10s" satisfies DURATION
 const rates = new Set([
-  "1000",
-  "800",
-  "600",
-  "400",
-  "200",
-  "180",
-  "160",
-  "140",
-  "120",
-  "100",
-  "80",
-  "60",
-  "40",
-  "20",
-  "10",
+  "950",
+  "900",
+  "850",
+  "750",
+  "700",
+  "650",
+  "550",
+  "500",
+  "450",
+  "350",
+  "300",
+  "250",
 ]) satisfies Iterable<RATE>
 
 const bookinfo_variants = new Set([
@@ -56,7 +53,13 @@ const bookinfo_variants = new Set([
  * than one rate value. That is because with one variant, there is some weird
  * behavior where each second attack fails for most of the requests.
  */
-const test_only = new Set<VARIANT>(["plain", "prose-cached-presidio-filter"])
+const test_only = new Set<VARIANT>([
+  "plain",
+  "istio",
+  "passthrough-filter",
+  "prose-no-presidio-filter",
+  "prose-filter",
+])
 
 const TEST_RUNS = 10
 
