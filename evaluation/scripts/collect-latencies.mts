@@ -133,6 +133,7 @@ await (async function main() {
     $`flux suspend kustomization cluster-apps-prose-system-cached-presidio`,
   ])
   await scale_specific_deployments(0, "prose-system", "presidio")
+  await scale_specific_deployments(0, "prose-system", "cached-presidio")
 
   echo`* suspend everything before the test`
   for (const variant of bookinfo_variants) {
@@ -158,6 +159,7 @@ await (async function main() {
   }
 
   echo`* stop managing presidio`
+  await scale_specific_deployments(1, "prose-system", "cached-presidio")
   await scale_specific_deployments(1, "prose-system", "presidio")
   await Promise.all([
     $`flux resume kustomization --wait=false cluster-apps-prose-system-prose`,
