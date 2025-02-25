@@ -513,11 +513,11 @@ function wait_until_ready(
 ) {
   // language=sh
   return $`
-    kubectl wait --timeout=1m \
+    kubectl wait --timeout=3m \
       --for='jsonpath={.status.updatedReplicas}=${replicas}' \
       --namespace ${namespace} \
       deployments ${deployment} >/dev/null && \
-    kubectl wait --timeout=5m \
+    kubectl wait --timeout=10m \
       --for='jsonpath={.status.readyReplicas}=${replicas}' \
       --namespace ${namespace} \
       deployments ${deployment} >/dev/null
