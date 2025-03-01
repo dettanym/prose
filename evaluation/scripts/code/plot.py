@@ -15,11 +15,6 @@ _A = TypeVar("_A")
 _Rest = TypeVarTuple("_Rest")
 
 
-hatch_for_503 = ".."
-hatch_for_0 = "//"
-hatch_for_other = "*"
-
-
 def sort_keys_by_variant_order(
     keys: List[Bookinfo_Variants | str],
     variant_order: List[Bookinfo_Variants],
@@ -73,6 +68,39 @@ def include_data_with_rates_in_range(
     range: tuple[int, int],
 ) -> List[tuple[int, *_Rest]]:
     return list(filter(lambda z: range[0] <= z[0] <= range[1], results))
+
+
+def create_patches_for_legend(
+    used_variants: List[Bookinfo_Variants],
+    used_hatches: List[str],
+    variant_order: List[Bookinfo_Variants],
+    colors: Dict[Bookinfo_Variants, str],
+    labels: Dict[Bookinfo_Variants, str],
+    error_hatches: Dict[Response_Code, tuple[int | None, str, str]],
+):
+    variants, remainder = sort_keys_by_variant_order(used_variants, variant_order)
+    if len(remainder) > 0:
+        print(
+            "While constructing patches, there are some unknown variants that were not used: "
+            + ",".join(remainder)
+        )
+
+    patches = [
+        Patch(color=colors.get(variant), label=labels.get(variant))
+        for variant in variants
+    ] + [
+        Patch(fill=False, hatch=hatch, label=label)
+        for (_, hatch, label) in sorted(
+            filter(
+                lambda v: v[0] is not None,
+                error_hatches.values(),
+            ),
+            key=lambda v: v[0],
+        )
+        if hatch in used_hatches
+    ]
+
+    return patches
 
 
 def plot_latency_graph(
@@ -203,8 +231,9 @@ def plot_error_hatch_bar_graph(
     variant_order: List[Bookinfo_Variants],
     colors: Dict[Bookinfo_Variants, str],
     labels: Dict[Bookinfo_Variants, str],
+    hatch_info: Dict[Response_Code, tuple[int | None, str, str]],
     included_rates_range: tuple[int, int] = None,
-):
+) -> Figure:
     barwidth = 10
     y_axes_scaling_factor = 100
 
@@ -238,6 +267,9 @@ def plot_error_hatch_bar_graph(
             + ",".join(remainder.keys())
         )
 
+    plotted_variants = set()
+    plotted_hatches = set()
+
     for j, (variant, records) in enumerate(sorted_data):
         c = colors.get(variant)
 
@@ -259,33 +291,49 @@ def plot_error_hatch_bar_graph(
         st_other_color = lighten_color(c, 1.5**2)
 
         if np.any(st_503_y != 0):
+            hatch_val = hatch_info["503"][1]
+
+            plotted_variants.add(variant)
+            plotted_hatches.add(hatch_val)
+
             ax.bar(
                 x=st_503_results.x + j * barwidth,
                 height=st_503_y,
                 yerr=st_503_y_err,
-                hatch=hatch_for_503,
+                hatch=hatch_val,
                 width=barwidth,
                 color=st_503_color,
                 edgecolor="black",
             )
+
         if np.any(st_0_y != 0):
+            hatch_val = hatch_info["0"][1]
+
+            plotted_variants.add(variant)
+            plotted_hatches.add(hatch_val)
+
             ax.bar(
                 x=st_0_results.x + j * barwidth,
                 height=st_0_y,
                 bottom=st_503_y,
                 yerr=st_0_y_err,
-                hatch=hatch_for_0,
+                hatch=hatch_val,
                 width=barwidth,
                 color=st_0_color,
                 edgecolor="black",
             )
         if np.any(st_other_y != 0):
+            hatch_val = hatch_info["other"][1]
+
+            plotted_variants.add(variant)
+            plotted_hatches.add(hatch_val)
+
             ax.bar(
                 x=st_other_results.x + j * barwidth,
                 height=st_other_y,
                 bottom=st_503_y + st_0_y,
                 yerr=st_other_y_err,
-                hatch=hatch_for_other,
+                hatch=hatch_val,
                 width=barwidth,
                 color=st_other_color,
                 edgecolor="black",
@@ -303,8 +351,14 @@ def plot_error_hatch_bar_graph(
         st_200_rates,
     )
 
-    # patches = create_custom_patches_for_legend()
-    patches = None
+    patches = create_patches_for_legend(
+        list(plotted_variants),
+        list(plotted_hatches),
+        variant_order,
+        colors,
+        labels,
+        hatch_info,
+    )
 
     fig.suptitle(title)
     fig.legend(
@@ -324,6 +378,7 @@ def plot_everything_and_save_results(
     variant_order: List[Bookinfo_Variants],
     colors: Dict[Bookinfo_Variants, str],
     labels: Dict[Bookinfo_Variants, str],
+    error_hatches: Dict[Response_Code, tuple[int | None, str, str]],
     all_latencies: Dict[
         Bookinfo_Variants | str,
         List[tuple[int, np.floating, np.floating]],
@@ -377,6 +432,7 @@ def plot_everything_and_save_results(
         variant_order,
         colors,
         labels,
+        error_hatches,
         included_rates_range=(200, 1000),
     )
     fig3.savefig(join(graphs_location, "03_error_rate.svg"), format="svg")

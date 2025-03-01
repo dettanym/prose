@@ -11,6 +11,7 @@ import matplotlib as mpl
 from .code.data import (
     Averaging_Method,
     Bookinfo_Variants,
+    Response_Code,
     collect_tuple_into_record,
     compute_stats_per_variant,
     convert_list_to_np_array,
@@ -111,6 +112,13 @@ labels: Dict[Bookinfo_Variants, str] = {
     "filter-passthrough-buffer": "K8s + Istio + PassthroughFilter with Data Buffer",
     "filter-traces": "K8s + Istio + PassthroughFilter with Buffer and Traces",
     "filter-traces-opa": "K8s + Istio + PassthroughFilter with Buffer, Traces and OPA instance created",
+}
+error_hatches: Dict[Response_Code, tuple[int | None, str, str]] = {
+    # order, hatch, label
+    "503": (0, "..", "HTTP status code 503"),
+    "0": (1, "//", "HTTP status code 0"),
+    "other": (2, "*", "Other HTTP status codes"),
+    "200": (None, "", ""),
 }
 
 graphs_to_plot: Dict[str, List[Tuple[str, Averaging_Method, List[str], List[str]]]] = {
@@ -345,6 +353,7 @@ def main(*args, **kwargs):
                 variant_order,
                 colors,
                 labels,
+                error_hatches,
                 latencies,
                 success_latencies,
                 success_rates,

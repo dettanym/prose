@@ -48,6 +48,8 @@ Produced_Other_Types = Literal[
 ]
 Produced_Data_Type = Produced_Latency_Type | Produced_Other_Types
 
+Response_Code = Literal["200", "0", "503", "other"]
+
 ns_to_s = 1000 * 1000 * 1000  # seconds in nanoseconds
 
 _Rest = TypeVarTuple("_Rest")
