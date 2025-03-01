@@ -203,7 +203,7 @@ def plot_error_hatch_bar_graph(
     # First extract rate values on x-axis using data.istio.200 value of each tuple
     st_200_rates = sort_and_load_results_into_record(results["plain"]["200"]).x
 
-    fig, axs = plt.subplots(
+    fig, ax = plt.subplots(
         layout="constrained",
         # (6.4, 4.8) is default
         figsize=(8.4, 4.8),
@@ -217,66 +217,66 @@ def plot_error_hatch_bar_graph(
         )
 
     for j, (variant, records) in enumerate(sorted_data):
-        relative_position_around_x_tick = st_200_rates + j * barwidth
-        variant_color = colors.get(variant)
-        variant_color_lightened = lighten_color(variant_color, 1.5)
-        variant_color_lightened_twice = lighten_color(variant_color, 1.5**2)
+        c = colors.get(variant)
 
         # First extract data for each status code
-        st_0_results = sort_and_load_results_into_record(records["0"])
         st_503_results = sort_and_load_results_into_record(records["503"])
-        st_other_results = sort_and_load_results_into_record(records["other"])
-
         # Then each status code is gonna correspond to y_i values.
-        y_0_status = st_0_results.y * y_axes_scaling_factor
-        y_503_status = st_503_results.y * y_axes_scaling_factor
-        y_other_status = st_other_results.y * y_axes_scaling_factor
+        st_503_y = st_503_results.y * y_axes_scaling_factor
+        st_503_y_err = st_503_results.yerr * y_axes_scaling_factor
+        st_503_color = lighten_color(c, 1.5**0)
 
-        y_0_status_err = st_0_results.yerr * y_axes_scaling_factor
-        y_503_status_err = st_503_results.yerr * y_axes_scaling_factor
-        y_other_status_err = st_other_results.yerr * y_axes_scaling_factor
+        st_0_results = sort_and_load_results_into_record(records["0"])
+        st_0_y = st_0_results.y * y_axes_scaling_factor
+        st_0_y_err = st_0_results.yerr * y_axes_scaling_factor
+        st_0_color = lighten_color(c, 1.5**1)
 
-        if np.any(y_503_status != 0):
-            axs.bar(
-                x=relative_position_around_x_tick,
-                height=y_503_status,
-                yerr=y_503_status_err,
+        st_other_results = sort_and_load_results_into_record(records["other"])
+        st_other_y = st_other_results.y * y_axes_scaling_factor
+        st_other_y_err = st_other_results.yerr * y_axes_scaling_factor
+        st_other_color = lighten_color(c, 1.5**2)
+
+        if np.any(st_503_y != 0):
+            ax.bar(
+                x=st_503_results.x + j * barwidth,
+                height=st_503_y,
+                yerr=st_503_y_err,
                 hatch=hatch_for_503,
                 width=barwidth,
-                color=variant_color,
+                color=st_503_color,
                 edgecolor="black",
             )
-        if np.any(y_0_status != 0):
-            axs.bar(
-                x=relative_position_around_x_tick,
-                height=y_0_status,
-                bottom=y_503_status,
-                yerr=y_0_status_err,
+        if np.any(st_0_y != 0):
+            ax.bar(
+                x=st_0_results.x + j * barwidth,
+                height=st_0_y,
+                bottom=st_503_y,
+                yerr=st_0_y_err,
                 hatch=hatch_for_0,
                 width=barwidth,
-                color=variant_color_lightened,
+                color=st_0_color,
                 edgecolor="black",
             )
-        if np.any(y_other_status != 0):
-            axs.bar(
-                x=relative_position_around_x_tick,
-                height=y_other_status,
-                bottom=y_503_status + y_0_status,
-                yerr=y_other_status_err,
+        if np.any(st_other_y != 0):
+            ax.bar(
+                x=st_other_results.x + j * barwidth,
+                height=st_other_y,
+                bottom=st_503_y + st_0_y,
+                yerr=st_other_y_err,
                 hatch=hatch_for_other,
                 width=barwidth,
-                color=variant_color_lightened_twice,
+                color=st_other_color,
                 edgecolor="black",
             )
 
-    axs.set_yscale("log")
-    axs.set_xlabel("Load (req/s)")
-    axs.set_ylabel("Mean error rate (%)")
+    ax.set_yscale("log")
+    ax.set_xlabel("Load (req/s)")
+    ax.set_ylabel("Mean error rate (%)")
 
     if included_rates_range is not None:
-        axs.set_xlim([included_rates_range[0], included_rates_range[1] + 50])
+        ax.set_xlim([included_rates_range[0], included_rates_range[1] + 50])
 
-    axs.set_xticks(
+    ax.set_xticks(
         st_200_rates + math.floor(len(sorted_data) / 2) * barwidth,
         st_200_rates,
     )
