@@ -12,6 +12,15 @@ from .data import Averaging_Method, Bookinfo_Variants
 _A = TypeVar("_A")
 
 
+def sort_and_load_results_into_record(
+    results: List[tuple[int, np.floating, np.floating]],
+) -> rec.recarray:
+    return rec.fromrecords(
+        sorted(results, key=lambda v: v[0]),
+        names="x,y,yerr",
+    )
+
+
 def sort_data_by_variant_order(
     results: Dict[Bookinfo_Variants | str, _A],
     variant_order: List[Bookinfo_Variants],
@@ -54,10 +63,7 @@ def plot_latency_graph(
         if len(data) == 0:
             continue
 
-        variant_data = rec.fromrecords(
-            sorted(data, key=lambda v: v[0]),
-            names="x,y,yerr",
-        )
+        variant_data = sort_and_load_results_into_record(data)
 
         ax.errorbar(
             variant_data.x,
@@ -119,21 +125,20 @@ def plot_error_graph(
     ticks_are_set = False
 
     for j, (variant, data) in enumerate(sorted_success_rates):
-        variant_data = rec.fromrecords(
-            sorted(data, key=lambda v: v[0]),
-            names="rate,success",
-        )
+        variant_data = sort_and_load_results_into_record(data)
+        rate = variant_data.x
+        success = variant_data.y
 
         x = np.arange(len(data))
 
         if not ticks_are_set:
             ticks_are_set = True
             ax.set_xticks(x)
-            ax.set_xticklabels(variant_data.rate, minor=False, rotation=45)
+            ax.set_xticklabels(rate, minor=False, rotation=45)
 
         ax.bar(
             x + j * bar_width,
-            (1 - variant_data.success) * 100,
+            (1 - success) * 100,
             width=bar_width,
             label=labels.get(variant),
             color=colors.get(variant),
