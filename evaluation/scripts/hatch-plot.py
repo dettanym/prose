@@ -444,11 +444,11 @@ def sort_results_by_request_rate(res):
 def main(*args, **kwargs):
     # print("Hello, world!")
     # plot_sample_hatch_plot()
-    plot_mean_error_bar_plot()
+    plot_mean_error_bar_plot(data)
     export_legend()
 
 
-def plot_mean_error_bar_plot():
+def plot_mean_error_bar_plot(data: dict):
     filtered_data = {
         k: {
             k2: filter(
@@ -467,7 +467,7 @@ def plot_mean_error_bar_plot():
     fig, axs = plt.subplots(
         layout="constrained",
         # (6.4, 4.8) is default
-        # figsize=(6.4, 5.2)
+        figsize=(8.4, 4.8),
     )
 
     sorted_data, remainder = sort_data_by_variant_order(filtered_data, variant_order)
@@ -477,7 +477,7 @@ def plot_mean_error_bar_plot():
             + ",".join(remainder.keys())
         )
 
-    barwidth = 30
+    barwidth = 10
     for j, (variant, records) in enumerate(sorted_data):
         # First extract data for each status code
         st_0_results = sort_results_by_request_rate(records["0"])
@@ -541,7 +541,7 @@ def plot_mean_error_bar_plot():
 
     # Two here is floor(number of variants / 2)
     axs.set_xticks(x + 2 * barwidth, x)
-    axs.set_xlim([200, 1200])
+    axs.set_xlim([200, 1050])
     axs.set_xlabel("Load (req/s)")
     axs.set_ylabel("Mean error rate (%)")
     axs.set_title("Mean error rate across load")
