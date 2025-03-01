@@ -20,6 +20,27 @@ hatch_for_0 = "//"
 hatch_for_other = "*"
 
 
+def sort_keys_by_variant_order(
+    keys: List[Bookinfo_Variants | str],
+    variant_order: List[Bookinfo_Variants],
+) -> tuple[
+    List[Bookinfo_Variants],
+    List[str],
+]:
+    remainder = list(keys)
+    sorted_results = []
+
+    for variant in variant_order:
+        try:
+            index = remainder.index(variant)
+            remainder.pop(index)
+            sorted_results.append(variant)
+        except ValueError:
+            pass
+
+    return sorted_results, remainder
+
+
 def sort_data_by_variant_order(
     results: Dict[Bookinfo_Variants | str, _A],
     variant_order: List[Bookinfo_Variants],
@@ -27,12 +48,13 @@ def sort_data_by_variant_order(
     List[tuple[Bookinfo_Variants, _A]],
     Dict[str, _A],
 ]:
-    remainder = dict(results)
-    sorted_results = []
+    sorted_keys, remainder_keys = sort_keys_by_variant_order(
+        list(results.keys()),
+        variant_order,
+    )
 
-    for variant in variant_order:
-        if variant in remainder:
-            sorted_results.append((variant, remainder.pop(variant)))
+    sorted_results = [(variant, results.get(variant)) for variant in sorted_keys]
+    remainder = {variant: results.get(variant) for variant in remainder_keys}
 
     return sorted_results, remainder
 
