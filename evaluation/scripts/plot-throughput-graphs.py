@@ -2,6 +2,7 @@
 # shellcheck disable=SC2096
 
 import subprocess
+import time
 from os import makedirs
 from os.path import join
 from typing import Dict, List, Tuple
@@ -313,6 +314,10 @@ def main(*args, **kwargs):
 
     for hostname, hostname_data in graphs_to_plot.items():
         for i, (title, avg_method, include, exclude) in enumerate(hostname_data):
+            print(f"plotting graph #{i+1}...")
+
+            start = time.time()
+
             gen = find_matching_files(
                 join(data_location, hostname),
                 include,
@@ -351,6 +356,12 @@ def main(*args, **kwargs):
             for variant, data in st_other_rates.items():
                 _merge_dict(final_rates_data, {variant: {"other": data}})
 
+            mid = time.time()
+            print(
+                "finished loading data.",
+                "took: {:.4f} seconds".format(mid - start),
+            )
+
             run_graphs_location = join(
                 graphs_location,
                 "bookinfo_" + hostname + "_" + str(i + 1),
@@ -368,4 +379,10 @@ def main(*args, **kwargs):
                 latencies,
                 success_latencies,
                 final_rates_data,
+            )
+
+            end = time.time()
+            print(
+                "finished plotting everything.",
+                "took: {:.4f} seconds".format(end - mid),
             )
