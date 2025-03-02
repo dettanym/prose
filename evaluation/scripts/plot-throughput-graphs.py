@@ -116,8 +116,8 @@ labels: Dict[Bookinfo_Variants, str] = {
 error_hatches: Dict[Response_Code, tuple[int | None, str, str]] = {
     # order, hatch, label
     "503": (0, "..", "HTTP status code 503"),
-    "0": (1, "//", "HTTP status code 0"),
-    "other": (2, "*", "Other HTTP status codes"),
+    "0": (1, "//", "Client timeout"),
+    "other": (2, "*", "Other HTTP status codes (not 200)"),
     "200": (None, "", ""),
 }
 
