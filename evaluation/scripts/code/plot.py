@@ -1,11 +1,12 @@
 import math
 from os.path import join
-from typing import Dict, List, Literal, TypeVar, TypeVarTuple
+from typing import Dict, List, Literal, Set, TypeVar, TypeVarTuple
 
 import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib import ticker as ticker
 from matplotlib.figure import Figure
+from matplotlib.patches import Patch
 from numpy.core import records as rec
 
 from .common import lighten_color
@@ -114,7 +115,7 @@ def plot_latency_graph(
     colors: Dict[Bookinfo_Variants, str],
     labels: Dict[Bookinfo_Variants, str],
     scale_type: Literal["lin", "log"] = "log",
-) -> Figure:
+) -> tuple[Figure, Set[Bookinfo_Variants]]:
     fig, ax = plt.subplots()
 
     sorted_results, remainder = sort_data_by_variant_order(results, variant_order)
@@ -124,10 +125,13 @@ def plot_latency_graph(
             + ",".join(remainder.keys())
         )
 
+    plotted_variants = set()
+
     for variant, data in sorted_results:
         if len(data) == 0:
             continue
 
+        plotted_variants.add(variant)
         variant_data = sort_and_load_results_into_record(data)
 
         ax.errorbar(
@@ -161,7 +165,7 @@ def plot_latency_graph(
     fig.suptitle(title)
     fig.legend(title="Variants")
 
-    return fig
+    return fig, plotted_variants
 
 
 def plot_error_graph(
@@ -173,7 +177,7 @@ def plot_error_graph(
     variant_order: List[Bookinfo_Variants],
     colors: Dict[Bookinfo_Variants, str],
     labels: Dict[Bookinfo_Variants, str],
-) -> Figure:
+) -> tuple[Figure, Set[Bookinfo_Variants]]:
     fig, ax = plt.subplots()
 
     sorted_success_rates, remainder = sort_data_by_variant_order(
@@ -189,7 +193,11 @@ def plot_error_graph(
     bar_width = 0.15
     ticks_are_set = False
 
+    plotted_variants = set()
+
     for j, (variant, data) in enumerate(sorted_success_rates):
+        plotted_variants.add(variant)
+
         variant_data = sort_and_load_results_into_record(data)
         rate = variant_data.x
         success = variant_data.y
@@ -216,7 +224,7 @@ def plot_error_graph(
     fig.suptitle(title)
     fig.legend(title="Variants")
 
-    return fig
+    return fig, plotted_variants
 
 
 def plot_error_hatch_bar_graph(
@@ -233,7 +241,7 @@ def plot_error_hatch_bar_graph(
     labels: Dict[Bookinfo_Variants, str],
     hatch_info: Dict[Response_Code, tuple[int | None, str, str]],
     included_rates_range: tuple[int, int] = None,
-) -> Figure:
+) -> tuple[Figure, Set[Bookinfo_Variants]]:
     barwidth = 10
     y_axes_scaling_factor = 100
 
@@ -368,7 +376,41 @@ def plot_error_hatch_bar_graph(
         ncol=2,
     )
 
-    return fig
+    return fig, plotted_variants
+
+
+def plot_legend(
+    plotted_variants: List[Bookinfo_Variants],
+    expand: List[int],
+    variant_order: List[Bookinfo_Variants],
+    colors: Dict[Bookinfo_Variants, str],
+    labels: Dict[Bookinfo_Variants, str],
+    error_hatches: Dict[Response_Code, tuple[int | None, str, str]],
+):
+    patches = create_patches_for_legend(
+        plotted_variants,
+        [],
+        variant_order,
+        colors,
+        labels,
+        error_hatches,
+    )
+    legend = plt.legend(
+        title="Variants",
+        handles=patches,
+        loc="lower left",
+        framealpha=1,
+        frameon=True,
+    )
+
+    fig = legend.figure
+    fig.canvas.draw()
+
+    bbox = legend.get_window_extent()
+    bbox = bbox.from_extents(*(bbox.extents + np.array(expand)))
+    bbox = bbox.transformed(fig.dpi_scale_trans.inverted())
+
+    return fig, bbox
 
 
 def plot_everything_and_save_results(
@@ -402,7 +444,7 @@ def plot_everything_and_save_results(
             + ",".join(remainder.keys())
         )
 
-    fig1 = plot_latency_graph(
+    fig1, fig1_plotted_variants = plot_latency_graph(
         dict(sorted_results),
         avg_method,
         title,
@@ -414,7 +456,7 @@ def plot_everything_and_save_results(
     fig1.savefig(join(graphs_location, "01_lin.svg"), format="svg")
     plt.close(fig1)
 
-    fig2 = plot_latency_graph(
+    fig2, fig2_plotted_variants = plot_latency_graph(
         dict(sorted_results),
         avg_method,
         title,
@@ -426,7 +468,7 @@ def plot_everything_and_save_results(
     fig2.savefig(join(graphs_location, "02_log.svg"), format="svg")
     plt.close(fig2)
 
-    fig3 = plot_error_hatch_bar_graph(
+    fig3, fig3_plotted_variants = plot_error_hatch_bar_graph(
         request_rates,
         "Mean error rate across load",  # title,
         variant_order,
@@ -438,7 +480,7 @@ def plot_everything_and_save_results(
     fig3.savefig(join(graphs_location, "03_error_rate.svg"), format="svg")
     plt.close(fig3)
 
-    fig4 = plot_latency_graph(
+    fig4, fig4_plotted_variants = plot_latency_graph(
         success_only_latencies,
         avg_method,
         title,
@@ -449,3 +491,23 @@ def plot_everything_and_save_results(
     )
     fig4.savefig(join(graphs_location, "04_success_only_log.svg"), format="svg")
     plt.close(fig4)
+
+    fig5, fig5_bbox = plot_legend(
+        list(
+            fig1_plotted_variants.union(fig2_plotted_variants)
+            .union(fig3_plotted_variants)
+            .union(fig4_plotted_variants)
+        ),
+        [-5, -5, 5, 5],
+        variant_order,
+        colors,
+        labels,
+        error_hatches,
+    )
+    fig5.savefig(
+        join(graphs_location, "00_legend.svg"),
+        format="svg",
+        dpi="figure",
+        bbox_inches=fig5_bbox,
+    )
+    plt.close(fig5)
