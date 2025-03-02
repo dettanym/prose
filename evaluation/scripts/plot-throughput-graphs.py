@@ -12,6 +12,7 @@ from .code.data import (
     Averaging_Method,
     Bookinfo_Variants,
     Response_Code,
+    _merge_dict,
     collect_tuple_into_record,
     compute_stats_per_variant,
     convert_list_to_np_array,
@@ -340,6 +341,16 @@ def main(*args, **kwargs):
             st_503_rates = stats_group_collect(st_503_rates)
             st_other_rates = stats_group_collect(st_other_rates)
 
+            final_rates_data = {}
+            for variant, data in st_200_rates.items():
+                _merge_dict(final_rates_data, {variant: {"200": data}})
+            for variant, data in st_0_rates.items():
+                _merge_dict(final_rates_data, {variant: {"0": data}})
+            for variant, data in st_503_rates.items():
+                _merge_dict(final_rates_data, {variant: {"503": data}})
+            for variant, data in st_other_rates.items():
+                _merge_dict(final_rates_data, {variant: {"other": data}})
+
             run_graphs_location = join(
                 graphs_location,
                 "bookinfo_" + hostname + "_" + str(i + 1),
@@ -356,5 +367,5 @@ def main(*args, **kwargs):
                 error_hatches,
                 latencies,
                 success_latencies,
-                success_rates,
+                final_rates_data,
             )
