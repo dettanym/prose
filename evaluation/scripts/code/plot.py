@@ -116,7 +116,7 @@ def plot_latency_graph(
     labels: Dict[Bookinfo_Variants, str],
     scale_type: Literal["lin", "log"] = "log",
 ) -> tuple[Figure, Set[Bookinfo_Variants]]:
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(layout="constrained")
 
     sorted_results, remainder = sort_data_by_variant_order(results, variant_order)
     if len(remainder) > 0:
@@ -361,6 +361,7 @@ def plot_error_hatch_bar_graph(
                 edgecolor="black",
             )
 
+    ax.yaxis.set_ticks_position("both")
     ax.set_yscale("log")
     ax.set_xlabel("Load (req/s)")
     ax.set_ylabel("Mean error rate (%)")
