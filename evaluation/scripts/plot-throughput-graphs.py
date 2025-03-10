@@ -1,6 +1,8 @@
 #!/usr/bin/env -S bash -c '"$(dirname $(readlink -f "$0"))/../env.sh" python -m "scripts" '"'#!'"' -- "$0" "$@"'
 # shellcheck disable=SC2096
 
+import os
+import pickle
 import subprocess
 import time
 from os import makedirs
@@ -329,54 +331,93 @@ def main(*args, **kwargs):
 
     data_location = join(PRJ_ROOT, "evaluation/vegeta/bookinfo")
     graphs_location = join(PRJ_ROOT, "evaluation/vegeta/bookinfo/_graphs")
+    cache_location = join(PRJ_ROOT, "evaluation/vegeta/bookinfo/_cache")
 
     mpl.rcParams["svg.hashsalt"] = "fixed-salt"
 
     makedirs(graphs_location, exist_ok=True)
+    makedirs(cache_location, exist_ok=True)
 
     for hostname, hostname_data in graphs_to_plot.items():
         for i, (title, avg_method, include, exclude) in enumerate(hostname_data):
+
+            def load_data():
+                gen = find_matching_files(
+                    join(data_location, hostname),
+                    include,
+                    exclude,
+                )
+                gen = map_known_variants(bookinfo_variant_mapping, gen)
+                gen = print_unknown_variants(gen)
+                gen = pick_and_process_files(avg_method, gen)
+                gen = group_by_init(gen)
+                gen = convert_list_to_np_array(gen)
+                (latencies, success_latencies, rates) = split_latencies_from_iterator(
+                    gen
+                )
+                (
+                    success_rates,
+                    st_200_rates,
+                    st_0_rates,
+                    st_503_rates,
+                    st_other_rates,
+                    extras,
+                ) = split_rates_from_iterator(rates)
+
+                latencies = stats_group_collect(latencies)
+                success_latencies = stats_group_collect(success_latencies)
+                success_rates = stats_group_collect(success_rates)
+                st_200_rates = stats_group_collect(st_200_rates)
+                st_0_rates = stats_group_collect(st_0_rates)
+                st_503_rates = stats_group_collect(st_503_rates)
+                st_other_rates = stats_group_collect(st_other_rates)
+
+                final_rates_data = {}
+                for variant, data in st_200_rates.items():
+                    _merge_dict(final_rates_data, {variant: {"200": data}})
+                for variant, data in st_0_rates.items():
+                    _merge_dict(final_rates_data, {variant: {"0": data}})
+                for variant, data in st_503_rates.items():
+                    _merge_dict(final_rates_data, {variant: {"503": data}})
+                for variant, data in st_other_rates.items():
+                    _merge_dict(final_rates_data, {variant: {"other": data}})
+
+                return (latencies, success_latencies, success_rates, final_rates_data)
+
             print(f"plotting graph #{i+1}...")
 
             start = time.time()
 
-            gen = find_matching_files(
-                join(data_location, hostname),
-                include,
-                exclude,
+            run_cache_location = join(
+                cache_location,
+                "bookinfo_" + hostname + "_" + str(i + 1) + ".pkl",
             )
-            gen = map_known_variants(bookinfo_variant_mapping, gen)
-            gen = print_unknown_variants(gen)
-            gen = pick_and_process_files(avg_method, gen)
-            gen = group_by_init(gen)
-            gen = convert_list_to_np_array(gen)
-            (latencies, success_latencies, rates) = split_latencies_from_iterator(gen)
-            (
-                success_rates,
-                st_200_rates,
-                st_0_rates,
-                st_503_rates,
-                st_other_rates,
-                extras,
-            ) = split_rates_from_iterator(rates)
 
-            latencies = stats_group_collect(latencies)
-            success_latencies = stats_group_collect(success_latencies)
-            success_rates = stats_group_collect(success_rates)
-            st_200_rates = stats_group_collect(st_200_rates)
-            st_0_rates = stats_group_collect(st_0_rates)
-            st_503_rates = stats_group_collect(st_503_rates)
-            st_other_rates = stats_group_collect(st_other_rates)
-
-            final_rates_data = {}
-            for variant, data in st_200_rates.items():
-                _merge_dict(final_rates_data, {variant: {"200": data}})
-            for variant, data in st_0_rates.items():
-                _merge_dict(final_rates_data, {variant: {"0": data}})
-            for variant, data in st_503_rates.items():
-                _merge_dict(final_rates_data, {variant: {"503": data}})
-            for variant, data in st_other_rates.items():
-                _merge_dict(final_rates_data, {variant: {"other": data}})
+            if os.path.isfile(run_cache_location) and os.access(
+                run_cache_location,
+                os.R_OK,
+            ):
+                with open(run_cache_location, "rb") as f:
+                    data = pickle.load(f)
+                latencies = data.latencies
+                success_latencies = data.success_latencies
+                success_rates = data.success_rates
+                final_rates_data = data.final_rates_data
+            else:
+                (latencies, success_latencies, success_rates, final_rates_data) = (
+                    load_data()
+                )
+                with open(run_cache_location, "wb") as f:
+                    pickle.dump(
+                        {
+                            "latencies": latencies,
+                            "success_latencies": success_latencies,
+                            "success_rates": success_rates,
+                            "final_rates_data": final_rates_data,
+                        },
+                        f,
+                        pickle.HIGHEST_PROTOCOL,
+                    )
 
             mid = time.time()
             print(
