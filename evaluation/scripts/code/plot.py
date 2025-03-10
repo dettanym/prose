@@ -162,8 +162,22 @@ def plot_latency_graph(
         locator = ticker.MaxNLocator(nbins=11)
         ax.xaxis.set_major_locator(locator)
 
-    fig.suptitle(title)
-    fig.legend(title="Variants")
+    patches = create_patches_for_legend(
+        list(plotted_variants),
+        [],
+        variant_order,
+        colors,
+        labels,
+        {},
+    )
+
+    fig.suptitle("Response latency across load")
+    fig.legend(
+        handles=patches,
+        title="Variants",
+        loc="outside lower center",
+        ncol=2,
+    )
 
     return fig, plotted_variants
 
