@@ -24,6 +24,7 @@ extra:
 
   baseFilterVars: &baseFilterVars
     filter_name: *filterName
+    hardcoded_pii_types: "PERSON,PHONE_NUMBER,US_BANK_NUMBER,US_DRIVER_LICENSE"
 
 items:
   - apiVersion: kustomize.toolkit.fluxcd.io/v1

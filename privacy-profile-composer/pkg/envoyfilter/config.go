@@ -3,6 +3,7 @@ package envoyfilter
 import (
 	"fmt"
 	"net"
+	"strings"
 
 	xds "github.com/cncf/xds/go/xds/type/v3"
 	"github.com/envoyproxy/envoy/contrib/golang/common/go/api"
@@ -14,13 +15,14 @@ import (
 type Config struct {
 	compileTimeConfig compileTimeConfig
 
-	direction     common.SidecarDirection
-	ZipkinUrl     string
-	opaEnforce    bool
-	OpaConfig     string
-	presidioUrl   string
-	internalCidrs []net.IPNet
-	purpose       string
+	direction         common.SidecarDirection
+	ZipkinUrl         string
+	opaEnforce        bool
+	OpaConfig         string
+	presidioUrl       string
+	internalCidrs     []net.IPNet
+	purpose           string
+	hardcodedPiiTypes *[]string
 }
 
 type compileTimeConfig struct {
@@ -125,6 +127,23 @@ func (p *ConfigParser) Parse(any *anypb.Any, callbacks api.ConfigCallbackHandler
 		conf.purpose = str
 	}
 
+	if piiTypesExist, ok := configStruct["hardcoded_pii_types"]; !ok {
+		conf.hardcodedPiiTypes = nil
+	} else {
+		if disabled, ok := piiTypesExist.(bool); ok {
+			if disabled {
+				return nil, fmt.Errorf("hardcoded_pii_types: unsupported \"true\" value")
+			} else {
+				conf.hardcodedPiiTypes = nil
+			}
+		} else if piiTypes, ok := piiTypesExist.(string); ok {
+			sep := strings.Split(piiTypes, ",")
+			conf.hardcodedPiiTypes = &sep
+		} else {
+			return nil, fmt.Errorf("hardcoded_pii_types: expect false or string while got %T", piiTypes)
+		}
+	}
+
 	return conf, nil
 }
 
@@ -153,6 +172,7 @@ func (p *ConfigParser) Merge(parent interface{}, child interface{}) interface{} 
 	newConfig.opaEnforce = childConfig.opaEnforce
 	newConfig.internalCidrs = childConfig.internalCidrs
 	newConfig.purpose = childConfig.purpose
+	newConfig.hardcodedPiiTypes = childConfig.hardcodedPiiTypes
 
 	return &newConfig
 }

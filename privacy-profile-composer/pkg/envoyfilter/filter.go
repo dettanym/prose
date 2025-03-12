@@ -282,6 +282,7 @@ func (f *Filter) processBody(ctx context.Context, body string, isDecode bool) (s
 	piiTypes, err := common.PiiAnalysis(
 		ctx,
 		f.config.compileTimeConfig.disablePresidioRequests,
+		f.config.hardcodedPiiTypes,
 		f.config.presidioUrl,
 		f.reqHeaderMetadata.SvcName,
 		jsonBody,

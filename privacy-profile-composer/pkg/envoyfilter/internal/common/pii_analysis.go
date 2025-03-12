@@ -20,6 +20,7 @@ type PresidioDataFormat struct {
 func PiiAnalysis(
 	ctx context.Context,
 	disablePresidioRequest bool,
+	hardcodedPiiTypes *[]string,
 	presidioSvcURL string,
 	svcName string,
 	bufferBytes interface{},
@@ -47,7 +48,11 @@ func PiiAnalysis(
 	}
 
 	if disablePresidioRequest {
-		return empty, nil
+		if hardcodedPiiTypes == nil {
+			return empty, nil
+		}
+
+		return *hardcodedPiiTypes, nil
 	}
 
 	req, err := http.NewRequest("POST", presidioSvcURL, bytes.NewBuffer(msgString))

@@ -79,6 +79,7 @@ spec:
                         max_delay_seconds: 3600
                   decision_logs:
                     console: true
+                hardcoded_pii_types: "${hardcoded_pii_types:=false}"
     - applyTo: HTTP_FILTER
       match:
         context: *direction
