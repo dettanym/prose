@@ -60,6 +60,11 @@ bookinfo_variant_mapping: Dict[str, Bookinfo_Variants] = {
     #   should be similar to the behaviour of `prose-no-presidio-filter`, except
     #   this filter adds an extra 20ms to emulate the call to presidio.
     "prose-filter-8ec667ab": "prose-filter-8ec667ab",
+    #   state of the filter before this commit. Before this change, when the
+    #   filter was not using presidio, we were returning an empty list of PII
+    #   types. After this change, the list of PII types is hardcoded and is
+    #   based on the data sent between bookinfo services.
+    "prose-no-presidio-filter-939db60b": "prose-no-presidio-filter-939db60b",
     # deleted
     "filter-passthrough-buffer": "filter-passthrough-buffer",
     "filter-traces": "filter-traces",
@@ -78,6 +83,7 @@ variant_order: List[Bookinfo_Variants] = [
     # historical
     "prose-filter-97776ef1",
     "prose-filter-8ec667ab",
+    "prose-no-presidio-filter-939db60b",
     # deleted
     "filter-passthrough-buffer",
     "filter-traces",
@@ -95,6 +101,7 @@ colors: Dict[Bookinfo_Variants, str] = {
     # historical
     "prose-filter-97776ef1": "green",
     "prose-filter-8ec667ab": "red",
+    "prose-no-presidio-filter-939db60b": "darkcyan",
     # deleted
     "filter-passthrough-buffer": "red",
     "filter-traces": "cyan",
@@ -112,6 +119,7 @@ labels: Dict[Bookinfo_Variants, str] = {
     # historical
     "prose-filter-97776ef1": "K8s + Istio + Prose (opa per request)",
     "prose-filter-8ec667ab": "K8s + Istio + Prose - Presidio (replaced by 20ms delay)",
+    "prose-no-presidio-filter-939db60b": "K8s + Istio + Prose - Presidio (empty PII list)",
     # deleted
     "filter-passthrough-buffer": "K8s + Istio + PassthroughFilter with Data Buffer",
     "filter-traces": "K8s + Istio + PassthroughFilter with Buffer and Traces",
