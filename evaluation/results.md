@@ -267,6 +267,22 @@ We implemented variable warmup rate functionality and tested all filters again.
 
 - `"2025-01-02T11:48:47-05:00"    # "plain"+"istio"+"passthrough-filter"+"prose-no-presidio-filter"+"prose-filter"; vegeta mode; 10 runs; 10,20,40,60,80,100,120,140,160,180,200,400,600,800,1000req/s; variable warmup rate`
 
+We added a new variant where presidio has enabled cache on `/batchanalyze`
+endpoint.
+
+- `"2025-01-09T23:51:34-05:00"    # "plain"+"prose-cached-presidio-filter"; vegeta mode; 10 runs; 10,20,40,60,80,100,120,140,160,180,200,400,600,800,1000req/s; variable warmup rate`
+
+We ran more tests with existing variants but with more granular request rates,
+such that we can have more granular change in the error rates graph.
+
+- `"2025-02-25T11:08:56-05:00"    # "plain"+"istio"+"passthrough-filter"+"prose-no-presidio-filter"+"prose-filter"; vegeta mode; 10 runs; 250,300,350,450,500,550,650,700,750,850,900,950req/s; variable warmup rate`
+
+We reran the entire experiment with all variants with all original and more
+granular request rates. This way we get a brand new baseline without mixing
+results from runs on different dates.
+
+- `"2025-03-13T10:28:49-04:00"    # "plain"+"istio"+"passthrough-filter"+"prose-no-presidio-filter"+"prose-filter"; vegeta mode; 10 runs; 10,20,40,60,80,100,120,140,160,180,200,250,300,350,400,450,500,550,600,650,700,750,800,850,900,950,1000req/s; variable warmup rate`
+
 ### All test runs from `"moone"`
 
 This host contains some random attempts.
