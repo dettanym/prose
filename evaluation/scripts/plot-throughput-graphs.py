@@ -413,10 +413,10 @@ def main(*args, **kwargs):
             ):
                 with open(run_cache_location, "rb") as f:
                     data = pickle.load(f)
-                latencies = data.latencies
-                success_latencies = data.success_latencies
-                success_rates = data.success_rates
-                final_rates_data = data.final_rates_data
+                latencies = data["latencies"]
+                success_latencies = data["success_latencies"]
+                success_rates = data["success_rates"]
+                final_rates_data = data["final_rates_data"]
             else:
                 (latencies, success_latencies, success_rates, final_rates_data) = (
                     load_data()
