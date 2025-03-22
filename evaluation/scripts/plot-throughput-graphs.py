@@ -323,6 +323,12 @@ graphs_to_plot: Dict[str, List[Tuple[str, Averaging_Method, List[str], List[str]
             ],
             ["*/400/*", "*/600/*", "*/800/*", "*/1000/*"],
         ),
+        (
+            "All variants; complete rerun",
+            "all-raw-data",
+            ["2025-03-13T10:28:49-04:00"],
+            [],
+        ),
     ],
 }
 
