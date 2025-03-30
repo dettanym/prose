@@ -1,5 +1,6 @@
 """REST API server for analyzer."""
 
+import json
 import logging
 import os
 from logging.config import fileConfig
@@ -150,7 +151,18 @@ class Server:
             return jsonify(error=e.description), e.code
 
         def make_cache_key():
-            return request.get_data(as_text=True)
+            data = request.get_json()
+            if (
+                data is not None
+                and "json_to_analyze" in data
+                and isinstance(data["json_to_analyze"], dict)
+            ):
+                if "clustername" in data["json_to_analyze"]:
+                    del data["json_to_analyze"]["clustername"]
+                if "podname" in data["json_to_analyze"]:
+                    del data["json_to_analyze"]["podname"]
+
+            return json.dumps(data)
 
         @self.app.route("/batchanalyze", methods=["POST"])
         @self.cache.cached(make_cache_key=make_cache_key)
