@@ -149,8 +149,11 @@ class Server:
         def http_exception(e):
             return jsonify(error=e.description), e.code
 
-        @self.cache.cached()
+        def make_cache_key():
+            return request.get_data(as_text=True)
+
         @self.app.route("/batchanalyze", methods=["POST"])
+        @self.cache.cached(make_cache_key=make_cache_key)
         def batch_analyze() -> Tuple[Response, int]:
             """Execute the batch analyzer function."""
             # Parse the request params
