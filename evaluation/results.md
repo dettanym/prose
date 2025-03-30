@@ -228,6 +228,18 @@ whether we can e.g. hash or memoize the results safely.
     `_trace_dumps/traces-1714890641043.json.zst` file.
   - results above are for filter and presidio under attack. added content-type
     header to presidio attack.
+- `"2024-05-07T16:51:37-04:00"    # "prose-filter-8ec667ab"; vegeta mode; 1 run; 60req/s`
+  - attacks presidio as well, with the bigger request body. see request body
+    here:
+    [ccbb5e8fb50285dbb363784d58a644ae29d8174b](https://github.com/dettanym/prose/commit/ccbb5e8fb50285dbb363784d58a644ae29d8174b)
+- `"2024-05-07T18:44:39-04:00"    # "prose-filter-8ec667ab"; vegeta mode; 1 run; 60req/s`
+  - attacks presidio 3 times as well, with bodies copied from bookinfo requests.
+    This should simulate the fact that presidio is being called between 2 and 3
+    times for each request. The collection script is here:
+    [7619edb91537ee1c54bbd56a5059ffa23b2d09e8](https://github.com/dettanym/prose/commit/7619edb91537ee1c54bbd56a5059ffa23b2d09e8)
+- `"2024-05-07T19:15:48-04:00"    # "prose-filter-8ec667ab"; vegeta mode; 1 run; 20req/s`
+  - same as above, but resulting presidio req rate is effectively 60req/s. so it
+    should be able to handle it.
 
 We ran few more experiments, but haven't recorded setup or results.
 Reconstructing from data, it appears we changed prose filter such that it is not
