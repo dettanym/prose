@@ -87,6 +87,58 @@ interest_points = {
             "2024-05-03T00:27:26-04:00/60/prose-filter/1.results.json.zst",
         ),
         (
+            "prose-filter variant (vegeta mode) which doesn't call presidio",
+            "2024-05-05T01:33:47-04:00/60/prose-filter-8ec667ab/1.results.json.zst",
+        ),
+        (
+            "prose-filter variant (vegeta mode) which doesn't call presidio, but presidio is also attacked by vegeta",
+            "2024-05-05T02:27:38-04:00/60/prose-filter-8ec667ab/1.results.json.zst",
+        ),
+        (
+            "presidio responses during the attack of the prose-filter (vegeta mode) which doesn't call presidio",
+            "2024-05-05T02:27:38-04:00/60/prose-filter-8ec667ab/1.presidio.results.json.zst",
+        ),
+        (
+            "prose-filter variant (vegeta mode) which doesn't call presidio, but presidio is also attacked by vegeta (with big body)",
+            "2024-05-07T16:51:37-04:00/60/prose-filter-8ec667ab/1.results.json.zst",
+        ),
+        (
+            "presidio responses (with big body) during the attack of the prose-filter (vegeta mode) which doesn't call presidio",
+            "2024-05-07T16:51:37-04:00/60/prose-filter-8ec667ab/1.presidio.results.json.zst",
+        ),
+        (
+            "prose-filter variant (vegeta mode) which doesn't call presidio, but presidio is also attacked by vegeta (with big body, and 3 times at once)",
+            "2024-05-07T18:44:39-04:00/60/prose-filter-8ec667ab/1.results.json.zst",
+        ),
+        (
+            "presidio responses (req_0, and 3 times at once) during the attack of the prose-filter (vegeta mode) which doesn't call presidio",
+            "2024-05-07T18:44:39-04:00/60/prose-filter-8ec667ab/1.req_0.presidio.results.json.zst",
+        ),
+        (
+            "presidio responses (req_1, and 3 times at once) during the attack of the prose-filter (vegeta mode) which doesn't call presidio",
+            "2024-05-07T18:44:39-04:00/60/prose-filter-8ec667ab/1.req_1.presidio.results.json.zst",
+        ),
+        (
+            "presidio responses (req_2, and 3 times at once) during the attack of the prose-filter (vegeta mode) which doesn't call presidio",
+            "2024-05-07T18:44:39-04:00/60/prose-filter-8ec667ab/1.req_2.presidio.results.json.zst",
+        ),
+        (
+            "prose-filter variant (vegeta mode) which doesn't call presidio, but presidio is also attacked by vegeta (with big body, and 3 times at once)",
+            "2024-05-07T19:15:48-04:00/20/prose-filter-8ec667ab/1.results.json.zst",
+        ),
+        (
+            "presidio responses (req_0, and 3 times at once) during the attack of the prose-filter (vegeta mode) which doesn't call presidio",
+            "2024-05-07T19:15:48-04:00/20/prose-filter-8ec667ab/1.req_0.presidio.results.json.zst",
+        ),
+        (
+            "presidio responses (req_1, and 3 times at once) during the attack of the prose-filter (vegeta mode) which doesn't call presidio",
+            "2024-05-07T19:15:48-04:00/20/prose-filter-8ec667ab/1.req_1.presidio.results.json.zst",
+        ),
+        (
+            "presidio responses (req_2, and 3 times at once) during the attack of the prose-filter (vegeta mode) which doesn't call presidio",
+            "2024-05-07T19:15:48-04:00/20/prose-filter-8ec667ab/1.req_2.presidio.results.json.zst",
+        ),
+        (
             "presidio performance (with tiny body) with request rate 60req/s after warmup, 1st run",
             "2024-05-07T16:51:37-04:00/60/prose-filter-8ec667ab/1.presidio.results.json.zst",
         ),
