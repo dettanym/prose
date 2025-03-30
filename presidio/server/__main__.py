@@ -8,6 +8,7 @@ from opentelemetry.instrumentation.flask import FlaskInstrumentor
 from opentelemetry.sdk.resources import SERVICE_NAME, Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
+from waitress import serve
 
 from .server import Server
 
@@ -42,4 +43,4 @@ if __name__ == "__main__":
         excluded_urls="/health",
     )
 
-    server.app.run(host="0.0.0.0", port=port)
+    serve(server.app, host="0.0.0.0", port=port)

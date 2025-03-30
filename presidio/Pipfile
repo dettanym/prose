@@ -19,6 +19,7 @@ regex = "==2024.5.15"
 spacy = "==3.7.5"
 tldextract = "==5.1.2"
 typing-extensions = "==4.12.2"
+waitress = "==3.0.2"
 
 [dev-packages]
 black = "==24.4.2"
@@ -26,4 +27,3 @@ flake8-docstrings = "==1.7.0"
 pep8-naming = "==0.14.1"
 pre_commit = "==3.7.1"
 pytest = "==8.2.2"
-
