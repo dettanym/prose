@@ -47,10 +47,8 @@ const bookinfo_variants = new Set([
  * behavior where each second attack fails for most of the requests.
  */
 const test_only = new Set<VARIANT>([
-  "plain",
-  "istio",
-  "passthrough-filter",
   "prose-no-presidio-filter",
+  "prose-cached-presidio-filter",
   "prose-filter",
 ])
 
