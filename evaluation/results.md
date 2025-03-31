@@ -294,6 +294,13 @@ granular request rates. This way we get a brand new baseline without mixing
 results from runs on different dates.
 
 - `"2025-03-13T10:28:49-04:00"    # "plain"+"istio"+"passthrough-filter"+"prose-no-presidio-filter"+"prose-filter"; vegeta mode; 10 runs; 10,20,40,60,80,100,120,140,160,180,200,250,300,350,400,450,500,550,600,650,700,750,800,850,900,950,1000req/s; variable warmup rate`
+- `"2025-03-30T23:44:31-04:00"    # all five variants, including prose-no-presidio-filter`
+  - Results when testing Prose after replacing Presidio's Weurkzerg with
+    Waitress. We see a slight drop in the rate of client timeouts (45 to 30%)
+    --- this may be because we set the connection limit in Waitress.
+- `"2025-03-31T12:24:49-04:00"    # four variants plus prose-cached-presidio-filter, for 200, 400, 600, 800, 1000 for 10 runs in vegeta mode`
+  - We fix the cache. We can see a drop from 30s to about 15s at 1000req/sec. We
+    do not find any client timeouts at all.
 
 ### All test runs from `"moone"`
 
