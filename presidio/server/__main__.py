@@ -43,4 +43,11 @@ if __name__ == "__main__":
         excluded_urls="/health",
     )
 
-    serve(server.app, host="0.0.0.0", port=port)
+    serve(
+        server.app,
+        host="0.0.0.0",
+        port=port,
+        connection_limit=10000,
+        backlog=2048,
+        asyncore_use_poll=True,
+    )
