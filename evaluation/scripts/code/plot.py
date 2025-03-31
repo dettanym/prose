@@ -273,9 +273,6 @@ def plot_error_hatch_bar_graph(
 
         results = filtered
 
-    # First extract rate values on x-axis using data.istio.200 value of each tuple
-    st_200_rates = sort_and_load_results_into_record(results["plain"]["200"]).x
-
     fig, ax = plt.subplots(
         layout="constrained",
         # (6.4, 4.8) is default
@@ -291,10 +288,11 @@ def plot_error_hatch_bar_graph(
 
     plotted_variants = set()
     plotted_hatches = set()
-
+    st_200_rates = []
     for j, (variant, records) in enumerate(sorted_data):
         c = colors.get(variant)
-
+        if j == 0:
+            st_200_rates = sort_and_load_results_into_record(records["200"]).x
         # First extract data for each status code
         st_503_results = sort_and_load_results_into_record(records["503"])
         # Then each status code is gonna correspond to y_i values.
