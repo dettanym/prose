@@ -329,6 +329,12 @@ graphs_to_plot: Dict[str, List[Tuple[str, Averaging_Method, List[str], List[str]
             ["2025-03-13T10:28:49-04:00"],
             [],
         ),
+        (
+            "All variants, with Prose caching fixed",
+            "all-raw-data",
+            ["2025-03-31T12:24:49-04:00"],
+            [],
+        ),
     ],
 }
 
