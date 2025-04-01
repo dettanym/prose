@@ -114,7 +114,7 @@ def plot_latency_graph(
     variant_order: List[Bookinfo_Variants],
     colors: Dict[Bookinfo_Variants, str],
     labels: Dict[Bookinfo_Variants, str],
-    scale_type: Literal["lin", "log"] = "log",
+    scale_type: Literal["lin", "log", "linlog"] = "log",
 ) -> tuple[Figure, Set[Bookinfo_Variants]]:
     fig, ax = plt.subplots(layout="constrained")
 
@@ -147,6 +147,8 @@ def plot_latency_graph(
         ax.set_yscale("linear")
     elif scale_type == "log":
         ax.set_xscale("log")
+        ax.set_yscale("log")
+    elif scale_type == "linlog":
         ax.set_yscale("log")
     else:
         raise ValueError(f"unknown scale type: '{scale_type}'")
@@ -480,6 +482,18 @@ def plot_everything_and_save_results(
     )
     fig2.savefig(join(graphs_location, "02_log.svg"), format="svg")
     plt.close(fig2)
+
+    fig6, fig6_plotted_variants = plot_latency_graph(
+        dict(sorted_results),
+        avg_method,
+        title,
+        variant_order,
+        colors,
+        labels,
+        "linlog",
+    )
+    fig6.savefig(join(graphs_location, "05_linlog.svg"), format="svg")
+    plt.close(fig6)
 
     fig3, fig3_plotted_variants = plot_error_hatch_bar_graph(
         request_rates,
