@@ -364,7 +364,7 @@ def plot_error_hatch_bar_graph(
     ax.yaxis.set_ticks_position("both")
     ax.set_yscale("log")
     ax.set_xlabel("Load (req/s)")
-    ax.set_ylabel("Mean error rate (%)")
+    ax.set_ylabel("Error rate (%)")
 
     if included_rates_range is not None:
         ax.set_xlim([included_rates_range[0], included_rates_range[1] + 50])
