@@ -25,10 +25,32 @@ const max_warmup_rate = "100" satisfies RATE
 const duration = "10s" satisfies DURATION
 const rates = new Set([
   "1000",
+  "950",
+  "900",
+  "850",
   "800",
+  "750",
+  "700",
+  "650",
   "600",
+  "550",
+  "500",
+  "450",
   "400",
+  "350",
+  "300",
+  "250",
   "200",
+  "180",
+  "160",
+  "140",
+  "120",
+  "100",
+  "80",
+  "60",
+  "40",
+  "20",
+  "10",
 ]) satisfies Iterable<RATE>
 
 const bookinfo_variants = new Set([
@@ -47,6 +69,9 @@ const bookinfo_variants = new Set([
  * behavior where each second attack fails for most of the requests.
  */
 const test_only = new Set<VARIANT>([
+  "plain",
+  "istio",
+  "passthrough-filter",
   "prose-cached-presidio-filter",
   "prose-filter",
 ])
