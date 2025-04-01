@@ -301,6 +301,13 @@ results from runs on different dates.
 - `"2025-03-31T12:24:49-04:00"    # four variants plus prose-cached-presidio-filter, for 200, 400, 600, 800, 1000 for 10 runs in vegeta mode`
   - We fix the cache. We can see a drop from 30s to about 15s at 1000req/sec. We
     do not find any client timeouts at all.
+- `"2025-03-31T20:08:07-04:00"    # all variants for all runs in vegeta mode - experiment timed outaround 9th run`
+  - We see results consistent with the previous experiment. There's a
+    significant drop in latency for all request rates; the latency trendline for
+    the cached variant is closer to other variants, in comparison to the Prose
+    variant without caching. The error rate is also consistent with the previous
+    experiment - no client timeouts. Next steps: remove warmup and rerun. Fix
+    503s. See the project dashboard.
 
 ### All test runs from `"moone"`
 
