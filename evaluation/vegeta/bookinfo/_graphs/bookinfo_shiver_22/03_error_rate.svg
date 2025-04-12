@@ -2507,7 +2507,7 @@ z
 " style="fill: #a52a2a; stroke: #a52a2a; stroke-linejoin: miter"/>
    </g>
    <g id="text_27">
-    <!-- K8s + Istio + PassthroughFilter -->
+    <!-- K8s + Istio + Passthrough -->
     <g transform="translate(81.117969 319.842187) scale(0.1 -0.1)">
      <defs>
       <path id="DejaVuSans-50" d="M 1259 4147 
@@ -2606,19 +2606,6 @@ L 3481 3500
 L 3481 434 
 z
 " transform="scale(0.015625)"/>
-      <path id="DejaVuSans-46" d="M 628 4666 
-L 3309 4666 
-L 3309 4134 
-L 1259 4134 
-L 1259 2759 
-L 3109 2759 
-L 3109 2228 
-L 1259 2228 
-L 1259 0 
-L 628 0 
-L 628 4666 
-z
-" transform="scale(0.015625)"/>
      </defs>
      <use xlink:href="#DejaVuSans-4b"/>
      <use xlink:href="#DejaVuSans-38" x="65.576172"/>
@@ -2645,12 +2632,6 @@ z
      <use xlink:href="#DejaVuSans-75" x="1109.705078"/>
      <use xlink:href="#DejaVuSans-67" x="1173.083984"/>
      <use xlink:href="#DejaVuSans-68" x="1236.560547"/>
-     <use xlink:href="#DejaVuSans-46" x="1299.939453"/>
-     <use xlink:href="#DejaVuSans-69" x="1350.208984"/>
-     <use xlink:href="#DejaVuSans-6c" x="1377.992188"/>
-     <use xlink:href="#DejaVuSans-74" x="1405.775391"/>
-     <use xlink:href="#DejaVuSans-65" x="1444.984375"/>
-     <use xlink:href="#DejaVuSans-72" x="1506.507812"/>
     </g>
    </g>
    <g id="patch_95">

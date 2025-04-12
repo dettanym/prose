@@ -679,7 +679,7 @@ z
 " style="fill: #a52a2a; stroke: #a52a2a; stroke-linejoin: miter"/>
     </g>
     <g id="text_16">
-     <!-- K8s + Istio + PassthroughFilter -->
+     <!-- K8s + Istio + Passthrough -->
      <g transform="translate(35.6 61.644063) scale(0.1 -0.1)">
       <defs>
        <path id="DejaVuSans-50" d="M 1259 4147 
@@ -778,51 +778,6 @@ L 3481 3500
 L 3481 434 
 z
 " transform="scale(0.015625)"/>
-       <path id="DejaVuSans-46" d="M 628 4666 
-L 3309 4666 
-L 3309 4134 
-L 1259 4134 
-L 1259 2759 
-L 3109 2759 
-L 3109 2228 
-L 1259 2228 
-L 1259 0 
-L 628 0 
-L 628 4666 
-z
-" transform="scale(0.015625)"/>
-       <path id="DejaVuSans-6c" d="M 603 4863 
-L 1178 4863 
-L 1178 0 
-L 603 0 
-L 603 4863 
-z
-" transform="scale(0.015625)"/>
-       <path id="DejaVuSans-65" d="M 3597 1894 
-L 3597 1613 
-L 953 1613 
-Q 991 1019 1311 708 
-Q 1631 397 2203 397 
-Q 2534 397 2845 478 
-Q 3156 559 3463 722 
-L 3463 178 
-Q 3153 47 2828 -22 
-Q 2503 -91 2169 -91 
-Q 1331 -91 842 396 
-Q 353 884 353 1716 
-Q 353 2575 817 3079 
-Q 1281 3584 2069 3584 
-Q 2775 3584 3186 3129 
-Q 3597 2675 3597 1894 
-z
-M 3022 2063 
-Q 3016 2534 2758 2815 
-Q 2500 3097 2075 3097 
-Q 1594 3097 1305 2825 
-Q 1016 2553 972 2059 
-L 3022 2063 
-z
-" transform="scale(0.015625)"/>
       </defs>
       <use xlink:href="#DejaVuSans-4b"/>
       <use xlink:href="#DejaVuSans-38" x="65.576172"/>
@@ -849,12 +804,6 @@ z
       <use xlink:href="#DejaVuSans-75" x="1109.705078"/>
       <use xlink:href="#DejaVuSans-67" x="1173.083984"/>
       <use xlink:href="#DejaVuSans-68" x="1236.560547"/>
-      <use xlink:href="#DejaVuSans-46" x="1299.939453"/>
-      <use xlink:href="#DejaVuSans-69" x="1350.208984"/>
-      <use xlink:href="#DejaVuSans-6c" x="1377.992188"/>
-      <use xlink:href="#DejaVuSans-74" x="1405.775391"/>
-      <use xlink:href="#DejaVuSans-65" x="1444.984375"/>
-      <use xlink:href="#DejaVuSans-72" x="1506.507812"/>
      </g>
     </g>
     <g id="patch_11">
@@ -869,6 +818,31 @@ z
      <!-- K8s + Istio + Prose (Presidio with cache) -->
      <g transform="translate(35.6 76.322188) scale(0.1 -0.1)">
       <defs>
+       <path id="DejaVuSans-65" d="M 3597 1894 
+L 3597 1613 
+L 953 1613 
+Q 991 1019 1311 708 
+Q 1631 397 2203 397 
+Q 2534 397 2845 478 
+Q 3156 559 3463 722 
+L 3463 178 
+Q 3153 47 2828 -22 
+Q 2503 -91 2169 -91 
+Q 1331 -91 842 396 
+Q 353 884 353 1716 
+Q 353 2575 817 3079 
+Q 1281 3584 2069 3584 
+Q 2775 3584 3186 3129 
+Q 3597 2675 3597 1894 
+z
+M 3022 2063 
+Q 3016 2534 2758 2815 
+Q 2500 3097 2075 3097 
+Q 1594 3097 1305 2825 
+Q 1016 2553 972 2059 
+L 3022 2063 
+z
+" transform="scale(0.015625)"/>
        <path id="DejaVuSans-28" d="M 1984 4856 
 Q 1566 4138 1362 3434 
 Q 1159 2731 1159 2009 
