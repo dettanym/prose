@@ -524,6 +524,7 @@ def plot_everything_and_save_results(
             fig1_plotted_variants.union(fig2_plotted_variants)
             .union(fig3_plotted_variants)
             .union(fig4_plotted_variants)
+            .union(fig6_plotted_variants)
         ),
         [-5, -5, 5, 5],
         variant_order,
