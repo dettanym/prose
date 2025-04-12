@@ -497,7 +497,7 @@ def plot_everything_and_save_results(
 
     fig3, fig3_plotted_variants = plot_error_hatch_bar_graph(
         request_rates,
-        "Mean error rate across load",  # title,
+        "Error rate across load",  # title,
         variant_order,
         colors,
         labels,

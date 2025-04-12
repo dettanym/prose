@@ -115,7 +115,7 @@ labels: Dict[Bookinfo_Variants, str] = {
     "tooling-filter": "K8s + Istio + PassthroughFilter with Buffer, Traces and singleton OPA instance",
     "prose-no-presidio-filter": "K8s + Istio + Prose - Presidio",
     "prose-cached-presidio-filter": "K8s + Istio + Prose (Presidio with cache)",
-    "prose-filter": "K8s + Istio + Prose",
+    "prose-filter": "K8s + Istio + Prose (Presidio without cache)",
     # historical
     "prose-filter-97776ef1": "K8s + Istio + Prose (opa per request)",
     "prose-filter-8ec667ab": "K8s + Istio + Prose - Presidio (replaced by 20ms delay)",
