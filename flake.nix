@@ -47,6 +47,7 @@
               istioctl
               jq
               kubectl
+              less
               minikube
               neovim
               nodejs
@@ -65,6 +66,7 @@
               ripgrep
               vegeta
               yq-go
+              zsh
               zstd
             ];
 
@@ -72,6 +74,8 @@
 
             shellHook = ''
               ${config.pre-commit.installationScript}
+
+              export EDITOR=nvim
 
               alias v='ls -alhF --color'
               alias kc='kubectl'
