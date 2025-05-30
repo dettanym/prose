@@ -4,4 +4,3 @@ kind: Kustomization
 namespace: istio-system
 resources:
   - ./helmrelease.yaml
-  - ./sidecar.yaml
