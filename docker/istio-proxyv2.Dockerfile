@@ -13,7 +13,7 @@ RUN go build -o dist/tooling.so -buildmode=c-shared ./cmd/tooling-filter
 RUN go build -o dist/prose-no-presidio.so -buildmode=c-shared ./cmd/prose-no-presidio-filter
 
 # This version needs to match the deployed istiod helmrelease version
-FROM istio/proxyv2:1.20.3@sha256:f4e94588a14eee4f053a80a767128ffc482a219f6c6e23039b7db1b6a6081a77
+FROM istio/proxyv2:1.20.3@sha256:18163bd4fdb641bdff1489e124a0b9f1059bb2cec9c8229161b73517db97c05a
 
 ENV GODEBUG="cgocheck=0"
 
