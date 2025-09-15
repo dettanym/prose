@@ -8,7 +8,7 @@ spec:
   interval: 10m
   url: https://github.com/GoogleCloudPlatform/microservices-demo/
   ref:
-    tag: v0.8.0
+    tag: v0.10.3
   ignore: |
     # exclude all
     /*
