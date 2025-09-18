@@ -27,7 +27,7 @@ spec:
   values:
     helperImage:
       repository: public.ecr.aws/docker/library/busybox
-      tag: latest@sha256:6d9ac9237a84afe1516540f40a0fafdc86859b2141954b4d643af7066d598b74
+      tag: latest@sha256:d82f458899c9696cb26a7c02d5568f81c8c8223f8661bb2a7988b269c8b9051e
     storageClass:
       defaultClass: false
     nodePathMap:
