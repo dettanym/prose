@@ -1,4 +1,4 @@
-FROM golang:1.21 AS builder
+FROM golang:1.21@sha256:4746d26432a9117a5f58e95cb9f954ddf0de128e9d5816886514199316e4a2fb AS builder
 
 WORKDIR /app
 
@@ -6,7 +6,7 @@ COPY ./privacy-profile-composer/ ./
 
 RUN go build -o bin/ ./cmd/opa-composer-server
 
-FROM debian:12-slim
+FROM debian:12-slim@sha256:df52e55e3361a81ac1bead266f3373ee55d29aa50cf0975d440c2be3483d8ed3
 
 WORKDIR /app
 
