@@ -13,7 +13,7 @@ spec:
     spec:
       containers:
         - name: presidio
-          image: ghcr.io/dettanym/prose-presidio:main
+          image: ghcr.io/dettanym/prose-presidio:main@sha256:7846601601bb30e8af881e3f01be3f37356bfb54a6bb2a6c267952c2e4338386
           imagePullPolicy: Always
           env:
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
