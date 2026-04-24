@@ -4,7 +4,7 @@
 
 1. Install [Homebrew] in a MacOS or Linux machine:
 
-   `/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)`
+   `/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"`
 
    (TODO: Convert this into a VM.)
 
