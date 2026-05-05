@@ -84,7 +84,6 @@
         <option value="gocheckcompilerdirectives" />
       </list>
     </option>
-    <option name="goLinterExe" value="/usr/bin/golangci-lint" />
     <option name="linterSelected" value="true" />
   </component>
 </project>
