@@ -3,7 +3,7 @@
   settings.global.excludes = [ ".archive/**" ];
 
   programs.statix.enable = true;
-  programs.nixfmt-rfc-style.enable = true;
+  programs.nixfmt.enable = true;
 
   programs.ruff.enable = true;
   programs.ruff.format = true;
@@ -37,9 +37,10 @@
     ];
   };
   programs.prettier.excludes = [
-    "pnpm-lock.yaml"
+    "**/pnpm-lock.yaml"
     "charts/*/templates/*.yaml"
-  ] ++ config.programs.biome.includes;
+  ]
+  ++ config.programs.biome.includes;
 
   programs.shellcheck.enable = true;
   programs.shfmt.enable = true;

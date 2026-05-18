@@ -16,11 +16,8 @@ from .code.data import (
     Bookinfo_Variants,
     Response_Code,
     _merge_dict,
-    collect_tuple_into_record,
-    compute_stats_per_variant,
     convert_list_to_np_array,
     find_matching_files,
-    group_by_first,
     group_by_init,
     map_known_variants,
     pick_and_process_files,
@@ -389,9 +386,7 @@ def main(*args, **kwargs):
                 gen = pick_and_process_files(avg_method, gen)
                 gen = group_by_init(gen)
                 gen = convert_list_to_np_array(gen)
-                (latencies, success_latencies, rates) = split_latencies_from_iterator(
-                    gen
-                )
+                latencies, success_latencies, rates = split_latencies_from_iterator(gen)
                 (
                     success_rates,
                     st_200_rates,
@@ -421,7 +416,7 @@ def main(*args, **kwargs):
 
                 return (latencies, success_latencies, success_rates, final_rates_data)
 
-            print(f"plotting graph #{i+1}...")
+            print(f"plotting graph #{i + 1}...")
 
             start = time.time()
 
@@ -441,7 +436,7 @@ def main(*args, **kwargs):
                 success_rates = data["success_rates"]
                 final_rates_data = data["final_rates_data"]
             else:
-                (latencies, success_latencies, success_rates, final_rates_data) = (
+                latencies, success_latencies, success_rates, final_rates_data = (
                     load_data()
                 )
                 with open(run_cache_location, "wb") as f:

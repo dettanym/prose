@@ -1,4 +1,4 @@
-import { Instant, ZonedDateTime, ZoneId, Duration } from "@js-joda/core"
+import { type Duration, Instant, ZonedDateTime, ZoneId } from "@js-joda/core"
 
 import { dropLeftWhile, dropRightWhile } from "./common.mjs"
 

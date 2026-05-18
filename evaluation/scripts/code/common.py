@@ -35,8 +35,8 @@ def lighten_color(color, amount=0.5):
 
     try:
         c = mc.cnames[color]
-    except:
+    except KeyError:
         c = color
 
-    h, l, s = rgb_to_hls(*mc.to_rgb(c))
-    return hls_to_rgb(h, max(0, min(1, amount * l)), s)
+    hue, lightness, saturation = rgb_to_hls(*mc.to_rgb(c))
+    return hls_to_rgb(hue, max(0, min(1, amount * lightness)), saturation)

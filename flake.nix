@@ -51,9 +51,9 @@
               minikube
               neovim
               nodejs
-              nodePackages.pnpm
-              nodePackages.prettier
               open-policy-agent
+              pnpm
+              prettier
               protobuf_25
               protoc-gen-go
               protoc-gen-go-grpc
@@ -88,7 +88,8 @@
             projectRootFile = "flake.nix";
             # pre-commit runs treefmt as a check, so we should not run it again
             flakeCheck = false;
-          } // (import ./treefmt.nix { config = config.treefmt; });
+          }
+          // (import ./treefmt.nix { config = config.treefmt; });
 
           # can use via `nix flake check`
           pre-commit.settings.hooks = {

@@ -2,9 +2,9 @@
 
 import "@js-joda/timezone"
 
-import { $, echo, fs, os, path, updateArgv, sleep, argv, fetch } from "zx"
 import { Duration, ZonedDateTime } from "@js-joda/core"
 import { Agent } from "https"
+import { $, argv, echo, fetch, fs, os, path, sleep, updateArgv } from "zx"
 
 import { absurd, clamp, range, typeCheck } from "./code/common.mjs"
 import { get_test_results_dir } from "./code/dir.mjs"
