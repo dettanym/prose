@@ -8,6 +8,9 @@ import (
 
 
 type SystemwideObservedProfile struct {
+    traceID string
+    spanID string
+    purpose PurposeOfUse
     systemwideProcessingEntries purposeBasedProcessing
     ComposedServicesInternalFQDNs []string
 }
