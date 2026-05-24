@@ -50,8 +50,8 @@ func (f *Filter) DecodeHeaders(header api.RequestHeaderMap, endStream bool) api.
 	span := common.GlobalTracer.StartSpan("test span in decode headers", zipkin.Parent(f.parentSpanContext))
 	defer span.Finish()
 
-	span.Tag("SIDECAR_DIRECTION", string(f.config.direction))
-	span.Tag("DATA_FLOW", "DECODE_HEADERS")
+	span.Tag(PROSE_SIDECAR_DIRECTION, string(f.config.direction))
+	span.Tag(PROSE_DATA_FLOW, "DECODE_HEADERS")
 
 	f.reqHeaderMetadata = common.ExtractRequestHeaderData(header)
 
@@ -121,8 +121,8 @@ func (f *Filter) DecodeData(buffer api.BufferInstance, endStream bool) api.Statu
 	)
 	defer span.Finish()
 
-	span.Tag("SIDECAR_DIRECTION", string(f.config.direction))
-	span.Tag("DATA_FLOW", "DECODE_DATA")
+	span.Tag(PROSE_SIDECAR_DIRECTION, string(f.config.direction))
+	span.Tag(PROSE_DATA_FLOW, "DECODE_DATA")
 
 	// log.Println(">>> DECODE DATA")
 	// log.Println("  <<About to forward", len(f.decodeDataBuffer), "bytes of data to service>>")
@@ -167,8 +167,8 @@ func (f *Filter) EncodeHeaders(header api.ResponseHeaderMap, endStream bool) api
 	span := common.GlobalTracer.StartSpan("test span in encode headers", zipkin.Parent(f.parentSpanContext))
 	defer span.Finish()
 
-	span.Tag("SIDECAR_DIRECTION", string(f.config.direction))
-	span.Tag("DATA_FLOW", "ENCODE_HEADERS")
+	span.Tag(PROSE_SIDECAR_DIRECTION, string(f.config.direction))
+	span.Tag(PROSE_DATA_FLOW, "ENCODE_HEADERS")
 
 	f.resHeaderMetadata = common.ExtractResponseHeaderData(header)
 
@@ -218,8 +218,8 @@ func (f *Filter) EncodeData(buffer api.BufferInstance, endStream bool) api.Statu
 	)
 	defer span.Finish()
 
-	span.Tag("SIDECAR_DIRECTION", string(f.config.direction))
-	span.Tag("DATA_FLOW", "ENCODE_DATA")
+	span.Tag(PROSE_SIDECAR_DIRECTION, string(f.config.direction))
+	span.Tag(PROSE_DATA_FLOW, "ENCODE_DATA")
 
 	// log.Println("<<< ENCODE DATA")
 	// log.Println("  <<About to forward", len(f.encodeDataBuffer), "bytes of data to client>>")
