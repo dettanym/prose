@@ -32,10 +32,54 @@ type thirdParties struct {
     thirdParty string
 }
 
+type endpoints struct {
+    endpointName string
+    traceID string
+    spanID_of_call string
+    endpoint_profile endpointProfile
+}
 
+type endpointProfile struct {
+    direct directMessage
+    outgoing outgoingMessage
+}
+
+
+type directMessage struct {
+    pii_compliant pii_compliant
+    pii_violation pii_violation
+}
+
+type outgoingMessage struct {
+    indirect []indirectMessage
+    shared []sharedMessage
+}
+
+type indirectMessage struct {
+    spanID string
+    callee_path string
+    callee_host string
+    pii_compliant pii_compliant
+    pii_violation pii_violation
+}
+
+type sharedMessage struct {
+    spanID string
+    pii_compliant pii_compliant
+    pii_violation pii_violation
+    external_domain string
+}
+
+type pii_violation struct {
+    pii []PII_type
+//  violation_reason string  //not used yet
+}
+
+type pii_compliant struct {
+    pii []PII_type
+}
 
 //TODO: check that this actually makes any sense. Don't want to head blindly in the wrong direction
-//FIXME: also, why is names' casing is so inconsistent? can this be fixed, or will a whole bunch of stuff break? 
 type PII_type struct {
     PII int
     allowedTypes := map[string]int{
