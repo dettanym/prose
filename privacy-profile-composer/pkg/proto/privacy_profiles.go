@@ -126,26 +126,3 @@ service PrivacyProfileComposer {
   // Sends another greeting
   rpc GetSystemWideProfile (google.protobuf.Empty) returns (SystemwideObservedProfile) {}
 }
-
-
-
-func main() {
-fmt.Println("test of Go")
-human1 := Human{"abc", 4}
-human1_enc, err := json.Marshal(human1) 
-if err == nil {
-fmt.Println(string(human1_enc))
-} 
-var human2 Human 
-json.Unmarshal(human1_enc, &human2)
-
-fmt.Println(human2)
-}
-
-
-
-type Human struct{
-    A string
-    B int
-}
-
