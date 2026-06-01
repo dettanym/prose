@@ -1,0 +1,129 @@
+syntax = "proto3";
+import "google/protobuf/empty.proto";
+package privacy_profiles;
+
+option go_package = "privacy-profile-composer/pkg/proto";
+
+message SystemwideObservedProfile {
+  purposeBasedProcessing systemwideProcessingEntries = 1;
+  repeated string ComposedServicesInternalFQDNs = 2;
+}
+
+message SvcObservedProfile {
+  string svcInternalFQDN = 1;
+  // repeated map_api_path_to_processing api_path_to_processing = 7;
+  purposeBasedProcessing observedProcessingEntries= 2;
+  string spanID = 3;
+  string traceID = 4;
+  PurposeOfUse purpose = 5;
+}
+
+//message map_api_path_to_processing {
+//  string api_path = 1;
+//  repeated data_item_and_third_parties  data_item_and_third_parties = 2;
+//}
+
+message purposeBasedProcessing {
+  map<string, dataItemAndThirdParties> processingEntries = 1;
+  //  PurposeOfUse purpose = 1;
+  //  repeated dataItemAndThirdParties processing  = 2;
+}
+
+message dataItemAndThirdParties {
+  map<string, thirdParties> entry = 1;
+  //  PII_type dataItem = 1;
+  //  repeated string thirdParties = 2;
+}
+
+message thirdParties {
+  repeated string thirdParty = 1;
+}
+
+message endpoints {
+  endpoint endpointName = 1;
+}
+
+message endpoint {
+  objectHash "%OBJECT_HASH%" = 1; //TODO: fix the name
+}
+
+message objectHash {
+  string traceID = 1;
+  string spanID_of_call = 2;
+  endpointProfile endpoint_profile = 3;
+}
+
+message endpointProfile {
+  directMessage direct = 1;
+  outgoingMessage putgoing = 2;
+}
+
+message directMessage {
+  pii_compliant pii_pompliant = 1;
+  pii_violation pii_violation = 2;
+}
+
+message outgoingMessage {
+  repeated indirectMessage indirect = 1;
+  repeated sharedMessage shared = 2;
+}
+
+message indirectMessage {
+  string spanID = 1;
+  string callee_path = 2;
+  string callee_host = 3;
+  pii_compliant pii_pompliant = 4;
+  pii_violation pii_violation = 5;
+}
+
+message sharedMessage {
+  string spanID = 1;
+  pii_compliant pii_pompliant = 2;
+  pii_violation pii_violation = 3;
+  string external_domain = 4;
+}
+
+message pii_violation {
+  repeated PII_type pii = 1;
+//string violation reason = 2; //not used yet  
+}
+
+message pii_compliant {
+  repeated PII_type pii = 1;
+}
+
+// Map keys can't be enums so we used strings for purposes and PII types.
+enum PII_type {
+  CREDIT_CARD = 0;
+  NRP = 1;
+  US_ITIN = 2;
+  PERSON = 3;
+  US_BANK_NUMBER = 4;
+  US_PASSPORT = 5;
+  IP_ADDRESS = 6;
+  US_DRIVER_LICENSE = 7;
+  CRYPTO = 8;
+  URL = 9;
+  PHONE_NUMBER = 10;
+  IBAN_CODE = 11;
+  DATE_TIME = 12;
+  LOCATION = 13;
+  EMAIL_ADDRESS = 14;
+  US_SSN = 15;
+}
+
+enum PurposeOfUse {
+  advertising = 0;
+  authentication = 1;
+  shipping = 2;
+  payment = 3;
+  marketing = 4;
+}
+
+service PrivacyProfileComposer {
+  // Sends a greeting
+  rpc PostObservedProfile (SvcObservedProfile) returns (google.protobuf.Empty) {}
+  // Sends another greeting
+  rpc GetSystemWideProfile (google.protobuf.Empty) returns (SystemwideObservedProfile) {}
+}
+
