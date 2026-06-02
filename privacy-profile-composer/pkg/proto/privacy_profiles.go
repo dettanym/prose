@@ -1,5 +1,4 @@
-//TODO: integrate this file into the rest of the system properly
-package privacy_profiles;
+package proto;
 import (
         "encoding/json"
         "github.com/google/jsonschema-go/jsonschema"
@@ -33,14 +32,15 @@ type thirdParties struct {
 }
 
 type endpoints struct {
-    endpointName string
+    endpointName []string
 }
 
 type endpoint struct {
+    OBJECT_HASH_NAME string
     OBJECT_HASH objectHash
 }
 
-type objectHash {
+type objectHash struct{
     traceID string
     spanID_of_call string
     endpoint_profile endpointProfile
@@ -86,10 +86,7 @@ type pii_compliant struct {
     pii []PII_type
 }
 
-//TODO: check that this actually makes any sense. Don't want to head blindly in the wrong direction
-type PII_type struct {
-    PII int
-    allowedTypes := map[string]int{
+var types = map[string]int{
     "CREDIT_CARD": 0,
     "NRP": 1,
     "US_ITIN": 2,
@@ -105,19 +102,23 @@ type PII_type struct {
     "DATE_TIME": 12,
     "LOCATION": 13,
     "EMAIL_ADDRESS": 14,
-    "US_SSN: 15",
-    }
+    "US_SSN": 15,
 }
 
-type PurposeOfUse struct {
-    purpose int
-    allowedPurposes := map[string]int{
+type PII_type struct {
+    PII int
+} 
+
+var purposes = map[string]int{
     "advertising": 0,
     "authentication": 1,
     "shipping": 2,
     "payment": 3,
     "marketing": 4,
-    }
+}
+
+type PurposeOfUse struct {
+    purpose int
 }
 
 //validation here
@@ -126,10 +127,3 @@ type PurposeOfUse struct {
 
 //funcs here
 
-
-service PrivacyProfileComposer {
-  // Sends a greeting
-  rpc PostObservedProfile (SvcObservedProfile) returns (google.protobuf.Empty) {}
-  // Sends another greeting
-  rpc GetSystemWideProfile (google.protobuf.Empty) returns (SystemwideObservedProfile) {}
-}
