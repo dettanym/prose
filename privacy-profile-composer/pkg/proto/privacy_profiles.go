@@ -34,6 +34,13 @@ type thirdParties struct {
 
 type endpoints struct {
     endpointName string
+}
+
+type endpoint struct {
+    OBJECT_HASH objectHash
+}
+
+type objectHash {
     traceID string
     spanID_of_call string
     endpoint_profile endpointProfile
