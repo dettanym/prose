@@ -7,15 +7,16 @@ import (
 
 
 type SystemwideObservedProfile struct {
-    traceID string
-    spanID string
     purpose PurposeOfUse
     systemwideProcessingEntries purposeBasedProcessing
     ComposedServicesInternalFQDNs []string
 }
 
 type SvcObservedProfile struct {
+    targetPolicyHash string
+    serviceHash string
     svcInternalFQDN string
+    purposeOfUse PurposeOfUse
     observedProcessingEntries purposeBasedProcessing
 }
 
@@ -32,58 +33,51 @@ type thirdParties struct {
 }
 
 type endpoints struct {
-    endpointName []string
+    endpointName []endpoint
 }
 
 type endpoint struct {
-    OBJECT_HASH_NAME string
-    OBJECT_HASH objectHash
-}
-
-type objectHash struct{
-    traceID string
-    spanID_of_call string
-    endpoint_profile endpointProfile
+    endpointHash string
+    endpointProfile endpointProfile
 }
 
 type endpointProfile struct {
-    direct directMessage
-    outgoing outgoingMessage
+    incoming incomingRequest
+    outgoing outgoingRequests
 }
 
 
-type directMessage struct {
-    pii_compliant pii_compliant
-    pii_violation pii_violation
+type incomingRequest struct {
+    traceID string
+    spanIDOfIncomingRequestToEndpoint string
+    observedPIITypes observedPIITypes
 }
 
-type outgoingMessage struct {
-    indirect []indirectMessage
-    shared []sharedMessage
+type outgoingRequests struct {
+    indirect []OutgoingRequestToInternalEndpoint 
+    shared []OutgoingRequestToExternalEndpoint 
 }
 
-type indirectMessage struct {
-    spanID string
-    callee_path string
-    callee_host string
-    pii_compliant pii_compliant
-    pii_violation pii_violation
+type OutgoingRequestToExternalEndpoint struct {
+       processingInfo processingInfo 
+       externalDomain string 
+}
+ 
+type OutgoingRequestToInternalEndpoint struct {
+      processingInfo processingInfo
+      calleePath string
+      calleeHost string 
 }
 
-type sharedMessage struct {
-    spanID string
-    pii_compliant pii_compliant
-    pii_violation pii_violation
-    external_domain string
+type processingInfo struct {
+    traceID string
+    spanIDOfIncomingRequestToEndpoint string
+    spanIDOfOutgoingRequestFromEndpoint string
+    observedPIITypes observedPIITypes
 }
 
-type pii_violation struct {
-    pii []PII_type
-//  violation_reason string  //not used yet
-}
-
-type pii_compliant struct {
-    pii []PII_type
+type observedPIITypes struct { 
+    observedPIIsClassified map[PIIType]boolean
 }
 
 var types = map[string]int{
@@ -105,7 +99,7 @@ var types = map[string]int{
     "US_SSN": 15,
 }
 
-type PII_type struct {
+type PIIType struct {
     PII int
 } 
 
@@ -122,8 +116,12 @@ type PurposeOfUse struct {
 }
 
 //validation here
+func validate(){
 
+}
 
 
 //funcs here
-
+func encode(structure struct){
+json.Marshal ()
+}
