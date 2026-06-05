@@ -139,9 +139,6 @@ var purposes = map[PurposeOfUse]string{
     marketing:      "marketing",
 }
 
-
-
-//validation here
 func infer(printNicely bool) {
     schema, _ := jsonschema.For[SvcObservedProfile](nil)
     var schemaPrint []byte
@@ -155,7 +152,6 @@ func infer(printNicely bool) {
 
 func encode(){
     var encoding, _ = json.MarshalIndent (`{"target_policy_hash": "%POLICY_FILE_HASH%", "service_hash": "%SERVICE_IMAGE_HASH%", "purpose_of_use": "authentication", "endpoints": { "Login": { "%OBJECT_HASH%": { "traceID": "0x00000000074ace1d", "spanID_of_call": "0x000000000059aebc", "endpoint_profile": {"direct": {"pii_compliant": ["EMAIL_ADDRESS"]}, "outgoing": [{ "type": "indirect", "spanID": "0x00000000004789bb", "callee_host": "users.default.svc.cluster.local", "callee_path": "/GetUserByUsername/", "pii_compliant": ["EMAIL_ADDRESS", "PHONE_NUMBER"], "pii_violation": ["PERSON", "LOCATION", "DATE", "GENDER"], "violation_reason": "Detected PII type PERSON, LOCATION, DATE, GENDER cannot be processed for purpose of use AUTHENTICATION" },{ "type": "shared","spanID": "0x0000000000621def","pii_violation": ["PHONE_NUMBER"],"external_domain": "twilio.com" }]}}},"SetPasswd": {"%OBJECT_HASH%": {"traceID": "0x00000000831bbcce","spanID_of_call": "0x0000000093aaddee","endpoint_profile": {"direct": {"pii_compliant": ["EMAIL_ADDRESS"]}}}}}}`,"","    ")
-    //var validation, _ = (*jsonschema.Resolved).Validate(string(encoding))
     fmt.Println(string(encoding))
 }
 
@@ -163,13 +159,7 @@ func validate(){
 
 }
 
-
-//funcs here
 func main(){
     infer(false)
     encode()
-//var encoding, _ = json.Marshal (`{"target_policy_hash": "%POLICY_FILE_HASH%", "service_hash": "%SERVICE_IMAGE_HASH%", "purpose_of_use": "authentication", "endpoints": { "Login": { "%OBJECT_HASH%": { "traceID": "0x00000000074ace1d", "spanID_of_call": "0x000000000059aebc", "endpoint_profile": {"direct": {"pii_compliant": ["EMAIL_ADDRESS"]}, "outgoing": [{ "type": "indirect", "spanID": "0x00000000004789bb", "callee_host": "users.default.svc.cluster.local", "callee_path": "/GetUserByUsername/", "pii_compliant": ["EMAIL_ADDRESS", "PHONE_NUMBER"], "pii_violation": ["PERSON", "LOCATION", "DATE", "GENDER"], "violation_reason": "Detected PII type PERSON, LOCATION, DATE, GENDER cannot be processed for purpose of use AUTHENTICATION" },{ "type": "shared","spanID": "0x0000000000621def","pii_violation": ["PHONE_NUMBER"],"external_domain": "twilio.com" }]}}},"SetPasswd": {"%OBJECT_HASH%": {"traceID": "0x00000000831bbcce","spanID_of_call": "0x0000000093aaddee","endpoint_profile": {"direct": {"pii_compliant": ["EMAIL_ADDRESS"]}}}}}}`)
-//var validation, _ = (*jsonschema.Resolved).Validate(string(encoding))
-//fmt.Println(validation)
-
 }
