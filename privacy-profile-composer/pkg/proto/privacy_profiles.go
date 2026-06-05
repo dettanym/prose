@@ -34,52 +34,52 @@ type ThirdParties struct {
 }
 
 type endpoints struct {
-    Endpoint []endpoint `json:Endpoint`
+    Endpoint []endpoint `json:"Endpoint"`
 }
 
 type endpoint struct {
-    EndpointName string `json:EndpointName`
-    EndpointHash string `json:EndpointHash`
-    EndpointProfile endpointProfile `json:EndpointProfile`
+    EndpointName string `json:"EndpointName"`
+    EndpointHash string `json:"EndpointHash"`
+    EndpointProfile endpointProfile `json:"EndpointProfile"`
 }
 
 type endpointProfile struct {
-    Incoming incomingRequest `json:Incoming`
-    Outgoing outgoingRequests `json:Outgoing`
+    Incoming incomingRequest `json:"Incoming"`
+    Outgoing outgoingRequests `json:"Outgoing"`
 }
 
 
 type incomingRequest struct {
-    TraceID string `json:TraceID`
-    SpanIDOfIncomingRequestToEndpoint string `json:SpanIDOfIncomingRequestToEndpoint`
-    ObservedPIITypes observedPIITypes `json:ObservedPIITypes`
+    TraceID string `json:"TraceID"`
+    SpanIDOfIncomingRequestToEndpoint string `json:"SpanIDOfIncomingRequestToEndpoint"`
+    ObservedPIITypes observedPIITypes `json:"ObservedPIITypes"`
 }
 
 type outgoingRequests struct {
-    Indirect []OutgoingRequestToInternalEndpoint  `json:Indirect`
-    Shared []OutgoingRequestToExternalEndpoint  `json:Shared`
+    Indirect []OutgoingRequestToInternalEndpoint  `json:"Indirect"`
+    Shared []OutgoingRequestToExternalEndpoint  `json:"Shared"`
 }
 
 type OutgoingRequestToExternalEndpoint struct {
-       ProcessingInfo processingInfo  `json:ProcessingInfo`
-       ExternalDomain string  `json:ExternalDomain`
+    ProcessingInfo processingInfo  `json:"ProcessingInfo"`
+    ExternalDomain string  `json:"ExternalDomain"`
 }
  
 type OutgoingRequestToInternalEndpoint struct {
-      ProcessingInfo processingInfo `json:ProcessingInfo`
-      CalleePath string `json:CalleePath`
-      CalleeHost string  `json:CalleeHost`
+    ProcessingInfo processingInfo `json:"ProcessingInfo"`
+    CalleePath string `json:"CalleePath"`
+    CalleeHost string  `json:"CalleeHost"`
 }
 
 type processingInfo struct {
-    TraceID string `json:TraceID`
-    SpanIDOfIncomingRequestToEndpoint string `json:SpanIDOfIncomingRequestToEndpoint`
-    SpanIDOfOutgoingRequestFromEndpoint string `json:SpanIDOfOutgoingRequestFromEndpoint`
-    ObservedPIITypes observedPIITypes `json:ObservedPIITypes`
+    TraceID string `json:"TraceID"`
+    SpanIDOfIncomingRequestToEndpoint string `json:"SpanIDOfIncomingRequestToEndpoint"`
+    SpanIDOfOutgoingRequestFromEndpoint string `json:"SpanIDOfOutgoingRequestFromEndpoint"`
+    ObservedPIITypes observedPIITypes `json:"ObservedPIITypes"`
 }
 
 type observedPIITypes struct { 
-    ObservedPIIsClassified []PIIType `json:ObservedPIIsClassified`
+    ObservedPIIsClassified []PIIType `json:"ObservedPIIsClassified"`
 }
 
 type PIIType int
@@ -164,7 +164,7 @@ func infer(printNicely bool) *jsonschema.Schema{
 
 // A function to validate provided validatedJson against a JSON schema provided by infer()
 func validate(validatedJson []byte){
-    sch, _ := (infer(true)).Resolve(nil)
+    sch, _ := (infer(false)).Resolve(nil)
     var v interface{}
     json.Unmarshal(validatedJson, &v)
     fmt.Println("decoded JSON: \n\n", v)
