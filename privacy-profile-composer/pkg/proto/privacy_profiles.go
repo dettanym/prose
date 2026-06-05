@@ -34,10 +34,11 @@ type ThirdParties struct {
 }
 
 type endpoints struct {
-    EndpointName []endpoint `json:EndpointName`
+    Endpoint []endpoint `json:Endpoint`
 }
 
 type endpoint struct {
+    EndpointName string `json:EndpointName`
     EndpointHash string `json:EndpointHash`
     EndpointProfile endpointProfile `json:EndpointProfile`
 }
@@ -163,7 +164,7 @@ func infer(printNicely bool) *jsonschema.Schema{
 
 // A function to validate provided validatedJson against a JSON schema provided by infer()
 func validate(validatedJson []byte){
-    sch, _ := (infer(false)).Resolve(nil)
+    sch, _ := (infer(true)).Resolve(nil)
     var v interface{}
     json.Unmarshal(validatedJson, &v)
     fmt.Println("decoded JSON: \n\n", v)
@@ -172,7 +173,7 @@ func validate(validatedJson []byte){
 }
 
 func main(){
-    validatedJson := []byte(`{"TargetPolicyHash": "%POLICY_FILE_HASH%", "ServiceHash": "%SERVICE_IMAGE_HASH%", "PurposeOfUse": 1, "Endpoints": { "Login": { "%OBJECT_HASH%": { "traceID": "0x00000000074ace1d", "spanID_of_call": "0x000000000059aebc", "endpoint_profile": {"direct": {"pii_compliant": ["EMAIL_ADDRESS"]}, "outgoing": [{ "type": "indirect", "spanID": "0x00000000004789bb", "callee_host": "users.default.svc.cluster.local", "callee_path": "/GetUserByUsername/", "pii_compliant": ["EMAIL_ADDRESS", "PHONE_NUMBER"], "pii_violation": ["PERSON", "LOCATION", "DATE", "GENDER"], "violation_reason": "Detected PII type PERSON, LOCATION, DATE, GENDER cannot be processed for purpose of use AUTHENTICATION" },{ "type": "shared","spanID": "0x0000000000621def","pii_violation": ["PHONE_NUMBER"],"external_domain": "twilio.com" }]}}},"SetPasswd": {"%OBJECT_HASH%": {"traceID": "0x00000000831bbcce","spanID_of_call": "0x0000000093aaddee","endpoint_profile": {"direct": {"pii_compliant": ["EMAIL_ADDRESS"]}}}}}}`)
+    validatedJson := []byte(`{"TargetPolicyHash": "%POLICY_FILE_HASH%", "ServiceHash": "%SERVICE_IMAGE_HASH%", "PurposeOfUse": 1, "Endpoints": { "Endpoint": {"EndpointName": "Login", "EndpointHash":"OBJECT_HASH", "EndpointProfile": {"direct": {"pii_compliant": ["EMAIL_ADDRESS"]}, "outgoing": [{ "type": "indirect", "spanID": "0x00000000004789bb", "callee_host": "users.default.svc.cluster.local", "callee_path": "/GetUserByUsername/", "pii_compliant": ["EMAIL_ADDRESS", "PHONE_NUMBER"], "pii_violation": ["PERSON", "LOCATION", "DATE", "GENDER"], "violation_reason": "Detected PII type PERSON, LOCATION, DATE, GENDER cannot be processed for purpose of use AUTHENTICATION" },{ "type": "shared","spanID": "0x0000000000621def","pii_violation": ["PHONE_NUMBER"],"external_domain": "twilio.com" }]}},"Endpoint": {"EndpointName": "SetPasswd", "EndpointHash":"OBJECT_HASH2", "EndpointProfile": {"direct": {"pii_compliant": ["EMAIL_ADDRESS"]}}}}}`)
 //    validatedJson := []byte(`{"target_policy_hash": "%POLICY_FILE_HASH%", "service_hash": "%SERVICE_IMAGE_HASH%", "purpose_of_use": "authentication", "endpoints": { "Login": { "%OBJECT_HASH%": { "traceID": "0x00000000074ace1d", "spanID_of_call": "0x000000000059aebc", "endpoint_profile": {"direct": {"pii_compliant": ["EMAIL_ADDRESS"]}, "outgoing": [{ "type": "indirect", "spanID": "0x00000000004789bb", "callee_host": "users.default.svc.cluster.local", "callee_path": "/GetUserByUsername/", "pii_compliant": ["EMAIL_ADDRESS", "PHONE_NUMBER"], "pii_violation": ["PERSON", "LOCATION", "DATE", "GENDER"], "violation_reason": "Detected PII type PERSON, LOCATION, DATE, GENDER cannot be processed for purpose of use AUTHENTICATION" },{ "type": "shared","spanID": "0x0000000000621def","pii_violation": ["PHONE_NUMBER"],"external_domain": "twilio.com" }]}}},"SetPasswd": {"%OBJECT_HASH%": {"traceID": "0x00000000831bbcce","spanID_of_call": "0x0000000093aaddee","endpoint_profile": {"direct": {"pii_compliant": ["EMAIL_ADDRESS"]}}}}}}`)
 
     //infer(true)
