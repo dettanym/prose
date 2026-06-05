@@ -139,7 +139,9 @@ var purposes = map[PurposeOfUse]string{
     marketing:      "marketing",
 }
 
-func infer(printNicely bool) {
+
+
+func infer(printNicely bool) *jsonschema.Schema{
     schema, _ := jsonschema.For[SvcObservedProfile](nil)
     var schemaPrint []byte
     if printNicely {
@@ -147,19 +149,27 @@ func infer(printNicely bool) {
 }   else {
     schemaPrint, _ = json.Marshal(schema)
 }
-    fmt.Println(string(schemaPrint))
+    fmt.Println("Inferred schema: \n\n", string(schemaPrint))
+    return schema
 }
 
-func encode(){
-    var encoding, _ = json.MarshalIndent (`{"target_policy_hash": "%POLICY_FILE_HASH%", "service_hash": "%SERVICE_IMAGE_HASH%", "purpose_of_use": "authentication", "endpoints": { "Login": { "%OBJECT_HASH%": { "traceID": "0x00000000074ace1d", "spanID_of_call": "0x000000000059aebc", "endpoint_profile": {"direct": {"pii_compliant": ["EMAIL_ADDRESS"]}, "outgoing": [{ "type": "indirect", "spanID": "0x00000000004789bb", "callee_host": "users.default.svc.cluster.local", "callee_path": "/GetUserByUsername/", "pii_compliant": ["EMAIL_ADDRESS", "PHONE_NUMBER"], "pii_violation": ["PERSON", "LOCATION", "DATE", "GENDER"], "violation_reason": "Detected PII type PERSON, LOCATION, DATE, GENDER cannot be processed for purpose of use AUTHENTICATION" },{ "type": "shared","spanID": "0x0000000000621def","pii_violation": ["PHONE_NUMBER"],"external_domain": "twilio.com" }]}}},"SetPasswd": {"%OBJECT_HASH%": {"traceID": "0x00000000831bbcce","spanID_of_call": "0x0000000093aaddee","endpoint_profile": {"direct": {"pii_compliant": ["EMAIL_ADDRESS"]}}}}}}`,"","    ")
-    fmt.Println(string(encoding))
-}
+//func encode(validatedJson string) []byte {        //unneeded, since paper already provides a json
+//    var encoding, _ = json.Marshal (validatedJson)
+//    fmt.Println("encoded JSON: \n\n", string(encoding))
+//    return encoding
+//}
 
-func validate(){
-
+func validate(validatedJson []byte){
+    sch, _ := (infer(false)).Resolve(nil)
+    var v interface{}
+    json.Unmarshal(validatedJson, &v)
+    fmt.Println("decoded JSON: \n\n", v)
+    validation := sch.Validate(v)
+    fmt.Println("\n\nValidation results:\n\n",validation)
 }
 
 func main(){
-    infer(false)
-    encode()
+    validatedJson := []byte(`{"target_policy_hash": "%POLICY_FILE_HASH%", "service_hash": "%SERVICE_IMAGE_HASH%", "purpose_of_use": "authentication", "endpoints": { "Login": { "%OBJECT_HASH%": { "traceID": "0x00000000074ace1d", "spanID_of_call": "0x000000000059aebc", "endpoint_profile": {"direct": {"pii_compliant": ["EMAIL_ADDRESS"]}, "outgoing": [{ "type": "indirect", "spanID": "0x00000000004789bb", "callee_host": "users.default.svc.cluster.local", "callee_path": "/GetUserByUsername/", "pii_compliant": ["EMAIL_ADDRESS", "PHONE_NUMBER"], "pii_violation": ["PERSON", "LOCATION", "DATE", "GENDER"], "violation_reason": "Detected PII type PERSON, LOCATION, DATE, GENDER cannot be processed for purpose of use AUTHENTICATION" },{ "type": "shared","spanID": "0x0000000000621def","pii_violation": ["PHONE_NUMBER"],"external_domain": "twilio.com" }]}}},"SetPasswd": {"%OBJECT_HASH%": {"traceID": "0x00000000831bbcce","spanID_of_call": "0x0000000093aaddee","endpoint_profile": {"direct": {"pii_compliant": ["EMAIL_ADDRESS"]}}}}}}`)
+    //infer(true)
+    validate(validatedJson)
 }
