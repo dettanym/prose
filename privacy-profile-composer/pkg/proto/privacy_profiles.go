@@ -15,9 +15,9 @@ type SystemwideObservedProfile struct {
 type SvcObservedProfile struct {
     TargetPolicyHash string `json:"TargetPolicyHash"`
     ServiceHash string `json:"ServiceHash"`
-    SvcInternalFQDN string `json:"SvcInternalFQDN"` //TODO: still need?
+    SvcInternalFQDN string `json:"SvcInternalFQDN"`
     PurposeOfUse PurposeOfUse `json:"PurposeOfUse"`
-    ObservedProcessingEntries purposeBasedProcessing `json:"ObservedProcessingEntries"` // TODO: still need?
+    ObservedProcessingEntries purposeBasedProcessing `json:"ObservedProcessingEntries"`
     Endpoints endpoints `json:"Endpoints"`
 }
 
@@ -155,7 +155,7 @@ func infer(printNicely bool) *jsonschema.Schema{
     return schema
 }
 
-//unneeded, since paper already provides a json
+//unneeded, since paper already provides a json, but may be useful in the future
 //func encode(validatedJson string) []byte {        
 //    var encoding, _ = json.Marshal (validatedJson)
 //    fmt.Println("encoded JSON: \n\n", string(encoding))
@@ -173,9 +173,7 @@ func validate(validatedJson []byte){
 }
 
 func main(){
-    validatedJson := []byte(`{"TargetPolicyHash": "%POLICY_FILE_HASH%", "ServiceHash": "%SERVICE_IMAGE_HASH%", "PurposeOfUse": 1, "Endpoints": { "Endpoint": {"EndpointName": "Login", "EndpointHash":"OBJECT_HASH", "EndpointProfile": {"direct": {"pii_compliant": ["EMAIL_ADDRESS"]}, "outgoing": [{ "type": "indirect", "spanID": "0x00000000004789bb", "callee_host": "users.default.svc.cluster.local", "callee_path": "/GetUserByUsername/", "pii_compliant": ["EMAIL_ADDRESS", "PHONE_NUMBER"], "pii_violation": ["PERSON", "LOCATION", "DATE", "GENDER"], "violation_reason": "Detected PII type PERSON, LOCATION, DATE, GENDER cannot be processed for purpose of use AUTHENTICATION" },{ "type": "shared","spanID": "0x0000000000621def","pii_violation": ["PHONE_NUMBER"],"external_domain": "twilio.com" }]}},"Endpoint": {"EndpointName": "SetPasswd", "EndpointHash":"OBJECT_HASH2", "EndpointProfile": {"direct": {"pii_compliant": ["EMAIL_ADDRESS"]}}}}}`)
-//    validatedJson := []byte(`{"target_policy_hash": "%POLICY_FILE_HASH%", "service_hash": "%SERVICE_IMAGE_HASH%", "purpose_of_use": "authentication", "endpoints": { "Login": { "%OBJECT_HASH%": { "traceID": "0x00000000074ace1d", "spanID_of_call": "0x000000000059aebc", "endpoint_profile": {"direct": {"pii_compliant": ["EMAIL_ADDRESS"]}, "outgoing": [{ "type": "indirect", "spanID": "0x00000000004789bb", "callee_host": "users.default.svc.cluster.local", "callee_path": "/GetUserByUsername/", "pii_compliant": ["EMAIL_ADDRESS", "PHONE_NUMBER"], "pii_violation": ["PERSON", "LOCATION", "DATE", "GENDER"], "violation_reason": "Detected PII type PERSON, LOCATION, DATE, GENDER cannot be processed for purpose of use AUTHENTICATION" },{ "type": "shared","spanID": "0x0000000000621def","pii_violation": ["PHONE_NUMBER"],"external_domain": "twilio.com" }]}}},"SetPasswd": {"%OBJECT_HASH%": {"traceID": "0x00000000831bbcce","spanID_of_call": "0x0000000093aaddee","endpoint_profile": {"direct": {"pii_compliant": ["EMAIL_ADDRESS"]}}}}}}`)
-
+    validatedJson := []byte(`{"TargetPolicyHash": "%POLICY_FILE_HASH%", "ServiceHash": "%SERVICE_IMAGE_HASH%", "SvcInternalFQDN":"/svc/endpoint/login", "PurposeOfUse": 1, "ObservedProcessingEntries":{"ProcessingEntries":{"analytics":{"Entry":{"advertising":{"ThirdParty":"adware.xyz"}}}}},"Endpoints": {"Endpoint":[{"EndpointName": "Login", "EndpointHash":"OBJECT_HASH", "EndpointProfile":{"Incoming":{"TraceID":"0x00000000074ace1d", "SpanIDOfIncomingRequestToEndpoint": "0x000000000059aebc", "ObservedPIITypes": {"ObservedPIIsClassified": [14,10,3,13,12]}},"Outgoing":{"Indirect":[{"ProcessingInfo": {"TraceID": "0x00000000081bca3f","SpanIDOfIncomingRequestToEndpoint":"0x000000000059aebe","SpanIDOfOutgoingRequestFromEndpoint": "0x001234567059aebc","ObservedPIITypes": {"ObservedPIIsClassified": [3,5,10]}},"CalleePath": "/GetUserByUsername/","CalleeHost":"users.default.svc.cluster.local"}],"Shared":[{"ProcessingInfo": {"TraceID": "0x00000000085cad64","SpanIDOfIncomingRequestToEndpoint":"0x000000000059aebc","SpanIDOfOutgoingRequestFromEndpoint": "0x0012345670593c7a","ObservedPIITypes": {"ObservedPIIsClassified": [5,1,9,7,2]}},"ExternalDomain": "twilio2notascam.xyz"}]}}}, {"EndpointName": "SetPasswd", "EndpointHash":"OBJECT_HASH2", "EndpointProfile":{"Incoming":{"TraceID":"0x000000000747921d", "SpanIDOfIncomingRequestToEndpoint": "0x000000000057d209", "ObservedPIITypes": {"ObservedPIIsClassified": [14]}},"Outgoing":{"Indirect":[{"ProcessingInfo": {"TraceID":"","SpanIDOfIncomingRequestToEndpoint":"","SpanIDOfOutgoingRequestFromEndpoint": "","ObservedPIITypes": {"ObservedPIIsClassified": []}},"CalleePath":"","CalleeHost":""}],"Shared":[{"ProcessingInfo": {"TraceID": "","SpanIDOfIncomingRequestToEndpoint":"","SpanIDOfOutgoingRequestFromEndpoint": "","ObservedPIITypes": {"ObservedPIIsClassified": []}},"ExternalDomain": ""}]}}}]}}`)
     //infer(true)
     validate(validatedJson)
 }
