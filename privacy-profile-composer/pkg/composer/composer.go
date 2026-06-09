@@ -34,6 +34,7 @@ func union[V any](
 			out[k] = v2
 		}
 	}
+
 	return out
 }
 
@@ -50,6 +51,7 @@ func combineStringLists(
 		strListWithDuplicates = append(strList1, strList2...)
 	}
 	strListUnique := uniqueNonEmptyElementsOf(strListWithDuplicates)
+
 	return strListUnique
 }
 
@@ -62,6 +64,7 @@ func uniqueNonEmptyElementsOf(s []string) []string {
 			unique[elem] = true
 		}
 	}
+
 	return us
 }
 
@@ -87,6 +90,7 @@ func combinerInnerMost(
 			return thirdParties1
 		}
 		out := combineStringLists(thirdParties1.ThirdParty, thirdParties2.ThirdParty)
+
 		return &proto.ThirdParties{
 			ThirdParty: out,
 		}
@@ -127,6 +131,7 @@ func combineSvcInternalFQDNs(systemWideFQDNs []string, svcFQDN string) []string 
 	if indexOfSvcFQDN == -1 {
 		systemWideFQDNs = append(systemWideFQDNs, svcFQDN)
 	}
+
 	return systemWideFQDNs
 }
 

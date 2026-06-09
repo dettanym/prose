@@ -55,7 +55,7 @@ func PiiAnalysis(
 		return *hardcodedPiiTypes, nil
 	}
 
-	req, err := http.NewRequest("POST", presidioSvcURL, bytes.NewBuffer(msgString))
+	req, err := http.NewRequest(http.MethodPost, presidioSvcURL, bytes.NewBuffer(msgString))
 	if err != nil {
 		return empty, fmt.Errorf("could not create new request object: %w", err)
 	}

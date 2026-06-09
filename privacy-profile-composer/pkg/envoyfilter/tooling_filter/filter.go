@@ -6,7 +6,6 @@ import (
 	"github.com/envoyproxy/envoy/contrib/golang/common/go/api"
 	"github.com/openzipkin/zipkin-go"
 	"github.com/openzipkin/zipkin-go/model"
-
 	"privacy-profile-composer/pkg/envoyfilter"
 	"privacy-profile-composer/pkg/envoyfilter/internal/common"
 )
@@ -32,6 +31,7 @@ func FilterFactory(c interface{}) api.StreamFilterFactory {
 		if err != nil {
 			panic(err)
 		}
+
 		return filter
 	}
 }

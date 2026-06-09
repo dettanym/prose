@@ -44,18 +44,21 @@ func DecodeXEnvoyPeerMetadataHeader(base64encoded string) (XEnvoyPeerMetadataHea
 	decodedBinary, err := base64.StdEncoding.DecodeString(base64encoded)
 	if err != nil {
 		fmt.Println("decode error:", err)
+
 		return istioHeader, err
 	}
 
 	genericPBstruct, err := structpb.NewStruct(map[string]interface{}{})
 	if err != nil {
 		fmt.Println("cannot initialize a generic PB struct: ", err)
+
 		return istioHeader, err
 	}
 
 	err = proto.Unmarshal(decodedBinary, genericPBstruct)
 	if err != nil {
 		fmt.Println("cannot unmarshal decoded binary into generic PB struct:", err)
+
 		return istioHeader, err
 	}
 

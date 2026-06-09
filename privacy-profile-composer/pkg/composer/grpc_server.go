@@ -3,9 +3,8 @@ package composer
 import (
 	"context"
 
-	pb "privacy-profile-composer/pkg/proto"
-
 	"google.golang.org/protobuf/types/known/emptypb"
+	pb "privacy-profile-composer/pkg/proto"
 )
 
 func (s server) PostObservedProfile(
@@ -15,6 +14,7 @@ func (s server) PostObservedProfile(
 	if profile != nil {
 		s.systemWideProfile = *Composer(&s.systemWideProfile, profile)
 	}
+
 	return &emptypb.Empty{}, nil
 }
 

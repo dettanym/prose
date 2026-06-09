@@ -10,6 +10,7 @@ func TestDecodeXEnvoyPeerMetadataHeader(t *testing.T) {
 	decoded, err := DecodeXEnvoyPeerMetadataHeader(data)
 	if err != nil {
 		t.Error(err)
+
 		return
 	}
 

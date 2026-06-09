@@ -8,7 +8,6 @@ import (
 	xds "github.com/cncf/xds/go/xds/type/v3"
 	"github.com/envoyproxy/envoy/contrib/golang/common/go/api"
 	"google.golang.org/protobuf/types/known/anypb"
-
 	"privacy-profile-composer/pkg/envoyfilter/internal/common"
 )
 
@@ -112,7 +111,7 @@ func (p *ConfigParser) Parse(any *anypb.Any, callbacks api.ConfigCallbackHandler
 			if internalCidrStr, ok := v.(string); !ok {
 				return nil, fmt.Errorf("internal_cidrs[%d]: expected a string while got %T", i, v)
 			} else if _, cidr, err := net.ParseCIDR(internalCidrStr); err != nil {
-				return nil, fmt.Errorf("invalid internal_cidrs[%d]: %v (%v)", i, cidr, err)
+				return nil, fmt.Errorf("invalid internal_cidrs[%d]: %v (%w)", i, cidr, err)
 			} else {
 				conf.internalCidrs = append(conf.internalCidrs, *cidr)
 			}
