@@ -1,4 +1,4 @@
-{ config }:
+{ lib, config }:
 {
   settings.global.excludes = [ ".archive/**" ];
 
@@ -29,7 +29,7 @@
         # patterns in prettier settings. That is because the file path expands
         # to a relative value with `../` at the beginning, and in micromatch
         # extglob (`**/`) does not match against `../`.
-        files = [ "*(../)**/evaluation/results.md" ];
+        files = [ "*(../)**/*.md" ];
         options = {
           proseWrap = "always";
         };

@@ -22,6 +22,7 @@
         # system. For description of all other function arguments, see
         # `https://flake.parts/module-arguments#persystem-module-parameters`.
         {
+          lib,
           config,
           self',
           inputs',
@@ -89,7 +90,10 @@
             # pre-commit runs treefmt as a check, so we should not run it again
             flakeCheck = false;
           }
-          // (import ./treefmt.nix { config = config.treefmt; });
+          // (import ./treefmt.nix {
+            inherit lib;
+            config = config.treefmt;
+          });
 
           # can use via `nix flake check`
           pre-commit.settings.hooks = {

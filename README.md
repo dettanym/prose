@@ -4,7 +4,8 @@ PRivacy ObServability and Enforcement Frameworks
 
 ## Evaluation with sample kubernetes cluster
 
-See [evaluation/README.md](./evaluation/README.md) for details on running evaluations.
+See [evaluation/README.md](./evaluation/README.md) for details on running
+evaluations.
 
 ## Contribution guide
 
