@@ -11,6 +11,7 @@ MINIKUBE="$(dirname "$(readlink -f "$0")")/minikube.sh"
 minikube_start=(
   "start"
   "--driver=docker"
+  "--container-runtime=containerd"
   "--subnet=192.168.49.0/24"
 )
 

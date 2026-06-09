@@ -112,6 +112,7 @@ args=(
   "develop"
   "--ignore-environment"
   "--keep" "KUBECONFIG"
+  "--keep" "DOCKER_HOST"
   "--keep" "HOME"
   "--keep" "USER"
   "--command"
