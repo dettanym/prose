@@ -2,8 +2,10 @@ package composer
 
 import (
 	"context"
-	"google.golang.org/protobuf/types/known/emptypb"
+
 	pb "privacy-profile-composer/pkg/proto"
+
+	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 func (s server) PostObservedProfile(

@@ -1,8 +1,9 @@
 package composer
 
 import (
-	"privacy-profile-composer/pkg/proto"
 	"slices"
+
+	"privacy-profile-composer/pkg/proto"
 )
 
 // Adapted from fp-ts
@@ -91,7 +92,7 @@ func combinerInnerMost(
 		}
 	}
 
-	var partyOut = proto.DataItemAndThirdParties{
+	partyOut := proto.DataItemAndThirdParties{
 		Entry: union(party1.Entry, party2.Entry, f),
 	}
 
@@ -108,7 +109,7 @@ func combinerMiddle(
 	if processing2 == nil {
 		return processing1
 	}
-	var processingOut = proto.PurposeBasedProcessing{
+	processingOut := proto.PurposeBasedProcessing{
 		ProcessingEntries: union(
 			processing1.ProcessingEntries,
 			processing2.ProcessingEntries,
@@ -140,7 +141,8 @@ func Composer(
 		),
 		ComposedServicesInternalFQDNs: combineSvcInternalFQDNs(
 			systemProfile.ComposedServicesInternalFQDNs,
-			svcProfile.SvcInternalFQDN),
+			svcProfile.SvcInternalFQDN,
+		),
 	}
 
 	return composedProfile

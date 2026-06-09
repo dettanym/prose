@@ -3,9 +3,10 @@ package common
 import (
 	"encoding/base64"
 	"fmt"
+	"strings"
+
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/structpb"
-	"strings"
 )
 
 // X-Envoy-Peer-Metadata header is set by Istio.

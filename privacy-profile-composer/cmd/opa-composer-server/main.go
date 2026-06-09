@@ -3,10 +3,12 @@ package main
 import (
 	"flag"
 	"fmt"
-	"google.golang.org/grpc"
 	"log"
 	"net"
 	"net/http"
+
+	"google.golang.org/grpc"
+
 	"privacy-profile-composer/pkg/composer"
 	"privacy-profile-composer/pkg/opa"
 	pb "privacy-profile-composer/pkg/proto"
@@ -47,7 +49,6 @@ func main() {
 	if err := composerServer.Serve(lis); err != nil {
 		log.Fatalf("composer server failed to serve: %v", err)
 	}
-
 }
 
 func prepareOpaServer() error {

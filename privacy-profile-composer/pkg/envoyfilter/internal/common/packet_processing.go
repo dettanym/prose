@@ -11,8 +11,10 @@ import (
 	"github.com/envoyproxy/envoy/contrib/golang/common/go/api"
 )
 
-const anyPurpose = "ANY"
-const unknownSvcName = "UNKNOWN SVC"
+const (
+	anyPurpose     = "ANY"
+	unknownSvcName = "UNKNOWN SVC"
+)
 
 type RequestHeaderMetadata struct {
 	Host   string

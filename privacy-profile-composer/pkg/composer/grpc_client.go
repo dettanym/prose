@@ -12,9 +12,7 @@ import (
 	pb "privacy-profile-composer/pkg/proto"
 )
 
-var (
-	addr = flag.String("addr", "localhost:50051", "the address to connect to")
-)
+var addr = flag.String("addr", "localhost:50051", "the address to connect to")
 
 func Run_client() {
 	flag.Parse()
@@ -60,12 +58,10 @@ func Run_client() {
 	log.Println(profile)
 }
 
-// TODO: Call this within the jaeger trace querying API, to submit updates to all observed profiles,
-//  after going through a batch of traces. Remove the flag as it won't be run via cli.
+// TODO: Call this within the jaeger trace querying API, to submit updates to all observed profiles, after going through a batch of traces. Remove the flag as it won't be run via cli.
+// sendComposedProfile sends the constructed profile to the prose server
 func sendComposedProfile(fqdn string, purpose string, piiTypes []string, thirdParties []string) {
-	var (
-		composerSvcAddr = flag.String("addr", "http://prose-server.prose-system.svc.cluster.local:50051", "the address to connect to")
-	)
+	composerSvcAddr := flag.String("addr", "http://prose-server.prose-system.svc.cluster.local:50051", "the address to connect to")
 
 	flag.Parse()
 	// Set up a connection to the server.
@@ -100,10 +96,10 @@ func sendComposedProfile(fqdn string, purpose string, piiTypes []string, thirdPa
 		&pb.SvcObservedProfile{
 			SvcInternalFQDN: fqdn,
 			ObservedProcessingEntries: &pb.PurposeBasedProcessing{
-				ProcessingEntries: processingEntries},
+				ProcessingEntries: processingEntries,
+			},
 		},
 	)
-
 	if err != nil {
 		log.Printf("got this error when posting observed profile: %v", err)
 	}

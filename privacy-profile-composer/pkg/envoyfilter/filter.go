@@ -330,7 +330,6 @@ func (f *Filter) runOPA(ctx context.Context, isDecode bool, dataItems []string) 
 			Tracer: topdown.NewBufferTracer(),
 		},
 	)
-
 	if err != nil {
 		errStr := fmt.Sprintf("had an error evaluating the policy: %s", err)
 		proseTags[PROSE_OPA_ERROR] = errStr
@@ -378,7 +377,6 @@ func (f *Filter) runOPA(ctx context.Context, isDecode bool, dataItems []string) 
 }
 
 func (f *Filter) checkInternalAddress(destinationAddress string) (bool, error) {
-
 	hostIpStr, _, err := net.SplitHostPort(destinationAddress)
 	if err != nil {
 		return false, err

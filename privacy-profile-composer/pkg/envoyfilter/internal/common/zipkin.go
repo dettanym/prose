@@ -124,5 +124,4 @@ func (t ZipkinTracer) Extract(h envoyapi.HeaderMap) model.SpanContext {
 
 		return sc, mErr
 	})
-
 }

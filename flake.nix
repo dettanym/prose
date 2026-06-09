@@ -43,6 +43,7 @@
               git
               go
               go-task
+              golangci-lint
               hostname
               istioctl
               jq
