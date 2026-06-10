@@ -2,7 +2,7 @@
   description = "Development environment for prose";
 
   outputs =
-    inputs@{ flake-parts, ... }:
+    inputs@{ self, flake-parts, ... }:
     flake-parts.lib.mkFlake { inherit inputs; } {
       imports = [
         inputs.treefmt-nix.flakeModule
@@ -33,6 +33,12 @@
         {
           packages.hello = pkgs.hello;
           packages.default = self'.packages.hello;
+
+          apps."cluster:reconcile" = {
+            type = "app";
+            program = "${self}/evaluation/scripts/cluster-reconcile.sh";
+            meta.description = "Instruct flux to pull changes from remote repository";
+          };
 
           devShells.default = pkgs.mkShell {
             packages = with pkgs; [
