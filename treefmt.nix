@@ -44,4 +44,9 @@
 
   programs.shellcheck.enable = true;
   programs.shfmt.enable = true;
+
+  programs.golangci-lint.enable = true;
+#  programs.golangci-lint.no-positional-arg-support=true;
+  programs.golangci-lint.configFile = "golangci.yml";
+  settings.formatter.golangci-lint.options = [ "./privacy-profile-composer/..." ];
 }

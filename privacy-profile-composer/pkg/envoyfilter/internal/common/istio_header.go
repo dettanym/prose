@@ -3,9 +3,10 @@ package common
 import (
 	"encoding/base64"
 	"fmt"
+	"strings"
+
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/structpb"
-	"strings"
 )
 
 // X-Envoy-Peer-Metadata header is set by Istio.
@@ -43,18 +44,21 @@ func DecodeXEnvoyPeerMetadataHeader(base64encoded string) (XEnvoyPeerMetadataHea
 	decodedBinary, err := base64.StdEncoding.DecodeString(base64encoded)
 	if err != nil {
 		fmt.Println("decode error:", err)
+
 		return istioHeader, err
 	}
 
 	genericPBstruct, err := structpb.NewStruct(map[string]interface{}{})
 	if err != nil {
 		fmt.Println("cannot initialize a generic PB struct: ", err)
+
 		return istioHeader, err
 	}
 
 	err = proto.Unmarshal(decodedBinary, genericPBstruct)
 	if err != nil {
 		fmt.Println("cannot unmarshal decoded binary into generic PB struct:", err)
+
 		return istioHeader, err
 	}
 

@@ -1,8 +1,9 @@
 package composer
 
 import (
-	"privacy-profile-composer/pkg/proto"
 	"slices"
+
+	"privacy-profile-composer/pkg/proto"
 )
 
 // Adapted from fp-ts
@@ -33,6 +34,7 @@ func union[V any](
 			out[k] = v2
 		}
 	}
+
 	return out
 }
 
@@ -49,6 +51,7 @@ func combineStringLists(
 		strListWithDuplicates = append(strList1, strList2...)
 	}
 	strListUnique := uniqueNonEmptyElementsOf(strListWithDuplicates)
+
 	return strListUnique
 }
 
@@ -61,6 +64,7 @@ func uniqueNonEmptyElementsOf(s []string) []string {
 			unique[elem] = true
 		}
 	}
+
 	return us
 }
 
@@ -86,12 +90,13 @@ func combinerInnerMost(
 			return thirdParties1
 		}
 		out := combineStringLists(thirdParties1.ThirdParty, thirdParties2.ThirdParty)
+
 		return &proto.ThirdParties{
 			ThirdParty: out,
 		}
 	}
 
-	var partyOut = proto.DataItemAndThirdParties{
+	partyOut := proto.DataItemAndThirdParties{
 		Entry: union(party1.Entry, party2.Entry, f),
 	}
 
@@ -108,7 +113,7 @@ func combinerMiddle(
 	if processing2 == nil {
 		return processing1
 	}
-	var processingOut = proto.PurposeBasedProcessing{
+	processingOut := proto.PurposeBasedProcessing{
 		ProcessingEntries: union(
 			processing1.ProcessingEntries,
 			processing2.ProcessingEntries,
@@ -126,6 +131,7 @@ func combineSvcInternalFQDNs(systemWideFQDNs []string, svcFQDN string) []string 
 	if indexOfSvcFQDN == -1 {
 		systemWideFQDNs = append(systemWideFQDNs, svcFQDN)
 	}
+
 	return systemWideFQDNs
 }
 
@@ -140,7 +146,8 @@ func Composer(
 		),
 		ComposedServicesInternalFQDNs: combineSvcInternalFQDNs(
 			systemProfile.ComposedServicesInternalFQDNs,
-			svcProfile.SvcInternalFQDN),
+			svcProfile.SvcInternalFQDN,
+		),
 	}
 
 	return composedProfile

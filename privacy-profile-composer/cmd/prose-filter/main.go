@@ -2,7 +2,6 @@ package main
 
 import (
 	"github.com/envoyproxy/envoy/contrib/golang/filters/http/source/go/pkg/http"
-
 	"privacy-profile-composer/pkg/envoyfilter"
 )
 

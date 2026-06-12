@@ -11,8 +11,10 @@ import (
 	"github.com/envoyproxy/envoy/contrib/golang/common/go/api"
 )
 
-const anyPurpose = "ANY"
-const unknownSvcName = "UNKNOWN SVC"
+const (
+	anyPurpose     = "ANY"
+	unknownSvcName = "UNKNOWN SVC"
+)
 
 type RequestHeaderMetadata struct {
 	Host   string
@@ -41,19 +43,19 @@ const (
 
 func LogDecodeHeaderData(header api.RequestHeaderMap) {
 	log.Printf("%v (%v) %v://%v%v\n", header.Method(), header.Protocol(), header.Scheme(), header.Host(), header.Path())
-	//header.Range(func(key, value string) bool {
+	// header.Range(func(key, value string) bool {
 	//	log.Printf("  \"%v\": %v\n", key, value)
 	//	return true
-	//})
+	// })
 }
 
 func LogEncodeHeaderData(header api.ResponseHeaderMap) {
 	status, statusWasSet := header.Status()
 	log.Printf("Status was set (%v) to %v with response headers:\n", statusWasSet, status)
-	//header.Range(func(key, value string) bool {
+	// header.Range(func(key, value string) bool {
 	//	log.Printf("  \"%v\": %v\n", key, value)
 	//	return true
-	//})
+	// })
 }
 
 func ExtractRequestHeaderData(header api.RequestHeaderMap) RequestHeaderMetadata {
@@ -90,7 +92,7 @@ func ExtractRequestHeaderData(header api.RequestHeaderMap) RequestHeaderMetadata
 		name := metadata.EnvoyPeerMetadata.Name
 		metadata.SvcName = name
 
-		// The pod hasn't been labelled with a purpose
+		// The pod hasn't been labeled with a purpose
 		// Initialize the purpose to the svcName
 		// Infer it from the svcName using presidio
 		metadata.Purpose = name

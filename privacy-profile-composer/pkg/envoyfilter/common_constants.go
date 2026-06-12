@@ -16,6 +16,6 @@ const (
 
 const (
 	DataSharing          string = "DATA_SHARING"
-	PurposeOfUseDirect          = "PURPOSE_OF_USE_DIRECT"
-	PurposeOfUseIndirect        = "PURPOSE_OF_USE_INDIRECT"
+	PurposeOfUseDirect   string = "PURPOSE_OF_USE_DIRECT"
+	PurposeOfUseIndirect string = "PURPOSE_OF_USE_INDIRECT"
 )

@@ -4,7 +4,6 @@ import (
 	"log"
 
 	"github.com/envoyproxy/envoy/contrib/golang/common/go/api"
-
 	"privacy-profile-composer/pkg/envoyfilter/internal/common"
 )
 
@@ -35,6 +34,7 @@ func ConfigFactory(c interface{}) api.StreamFilterFactory {
 		if err != nil {
 			panic(err)
 		}
+
 		return filter
 	}
 }
