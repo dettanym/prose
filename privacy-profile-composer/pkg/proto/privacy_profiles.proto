@@ -13,9 +13,6 @@ message SvcObservedProfile {
   string svcInternalFQDN = 1;
   // repeated map_api_path_to_processing api_path_to_processing = 7;
   purposeBasedProcessing observedProcessingEntries= 2;
-  string spanID = 3;
-  string traceID = 4;
-  PurposeOfUse purpose = 5;
 }
 
 //message map_api_path_to_processing {
@@ -37,52 +34,6 @@ message dataItemAndThirdParties {
 
 message thirdParties {
   repeated string thirdParty = 1;
-}
-
-message endpoints {
-  string endpointName = 1;
-  string traceID = 2;
-  string spanID_of_call = 3;
-  endpointProfile endpoint_profile = 4;
-}
-
-message endpointProfile {
-  directMessage direct = 1;
-  outgoingMessage putgoing = 2;
-}
-
-message directMessage {
-  pii_compliant pii_pompliant = 1;
-  pii_violation pii_violation = 2;
-}
-
-message outgoingMessage {
-  repeated indirectMessage indirect = 1;
-  repeated sharedMessage shared = 2;
-}
-
-message indirectMessage {
-  string spanID = 1;
-  string callee_path = 2;
-  string callee_host = 3;
-  pii_compliant pii_pompliant = 4;
-  pii_violation pii_violation = 5;
-}
-
-message sharedMessage {
-  string spanID = 1;
-  pii_compliant pii_pompliant = 2;
-  pii_violation pii_violation = 3;
-  string external_domain = 4;
-}
-
-message pii_violation {
-  repeated PII_type pii = 1;
-//string violation reason = 2; //not used yet  
-}
-
-message pii_compliant {
-  repeated PII_type pii = 1;
 }
 
 // Map keys can't be enums so we used strings for purposes and PII types.
