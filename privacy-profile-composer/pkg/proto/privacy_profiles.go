@@ -169,22 +169,24 @@ func validate(validatedJson []byte){
     sch, _ := (infer(false)).Resolve(nil)
     var v interface{}
     json.Unmarshal(validatedJson, &v)
-    fmt.Println("decoded JSON: \n\n", v)
+    fmt.Println("\ndecoded JSON: \n\n", v)
     validation := sch.Validate(v)
-    fmt.Println("\n\nValidation results:\n\n",validation)
+    fmt.Println("\n\nValidation results:\n\n",validation, "\n\n")
 }
 
 
 // This function is used to check whether there are matching elements in 2 given slices 
 // (which, if true, means that there is a consistency violation related to the data flow described by the provided slices)
-func checkMatchingElementsInSlices (slice1, slice2 []int) bool {
+func checkMatchingElementsInSlices (slice1, slice2 []int) (violating []int, isViolating bool) {
+    var violatingElements = []int{}
+    var isViolationDetected = false
     for _, element1 := range slice1 {
         if slices.Contains(slice2, element1) {
-            fmt.Println ("!!!Consistency Violation Detected!!!")
-            return true
+            isViolationDetected = true
+            violatingElements = append (violatingElements, int(element1))
         }
     }
-    return false
+    return violatingElements, isViolationDetected
 }
 
 func checkConsistency(json1 []byte, json2 []byte){
@@ -200,12 +202,6 @@ func checkConsistency(json1 []byte, json2 []byte){
     var obj2 SvcObservedProfile
     json.Unmarshal(json1, &obj1)
     json.Unmarshal(json2, &obj2)
-    //fmt.Println(obj1)
-
-    //all of the copmpliant PIIs at endpoint 0 (ignoring that Incoming, Outgoing... are arrays as well)
-    fmt.Println(obj2.Endpoints.Endpoint[0].EndpointProfile.Incoming[0].ObservedPIITypes.CompliantPIIs)
-    fmt.Println(obj2.Endpoints.Endpoint[0].EndpointProfile.Outgoing.Indirect[0].ProcessingInfo.ObservedPIITypes.CompliantPIIs)
-    fmt.Println(obj2.Endpoints.Endpoint[0].EndpointProfile.Outgoing.Shared[0].ProcessingInfo.ObservedPIITypes.CompliantPIIs)
 
     //getting first profile's compliances/violations
     var profile1IncomingCompliant = []int{}
@@ -310,84 +306,85 @@ func checkConsistency(json1 []byte, json2 []byte){
             }
         }
     }
-
+    var violatingElements = []int{}
+    var isViolating = false
     //checking that there are no violations within the same profile's dataflow
     //profile1
-    if checkMatchingElementsInSlices(profile1IncomingCompliant, profile1IncomingViolating){
+    violatingElements, isViolating = checkMatchingElementsInSlices(profile1IncomingCompliant, profile1IncomingViolating)
+    if isViolating {
         violationsDetected = true
         fmt.Println("Violation detected at profile1, Incoming dataflow")
-        fmt.Println("Compliant PIIs: ",profile1IncomingCompliant)
-        fmt.Println("Violating PIIs: ",profile1IncomingViolating)
+        fmt.Println("Inconsistent PIIs: ",violatingElements)
     }
-    if checkMatchingElementsInSlices(profile1IndirectCompliant, profile1IndirectViolating){
+    violatingElements, isViolating = checkMatchingElementsInSlices(profile1IndirectCompliant, profile1IndirectViolating)
+    if isViolating {
         violationsDetected = true
         fmt.Println("Violation detected at profile1, Indirect dataflow")
-        fmt.Println("Compliant PIIs: ",profile1IndirectCompliant)
-        fmt.Println("Violating PIIs: ",profile1IndirectViolating)
+        fmt.Println("Inconsistent PIIs: ",violatingElements)
     }
-    if checkMatchingElementsInSlices(profile1SharedCompliant, profile1SharedViolating){
+    violatingElements, isViolating = checkMatchingElementsInSlices(profile1SharedCompliant, profile1SharedViolating)
+    if isViolating {
         violationsDetected = true
         fmt.Println("Violation detected at profile1, Shared dataflow")
-        fmt.Println("Compliant PIIs: ",profile1SharedCompliant)
-        fmt.Println("Violating PIIs: ",profile1SharedViolating)
+        fmt.Println("Inconsistent PIIs: ",violatingElements)
     }
     //profile2
-    if checkMatchingElementsInSlices(profile2IncomingCompliant, profile2IncomingViolating){
+    violatingElements, isViolating = checkMatchingElementsInSlices(profile2IncomingCompliant, profile2IncomingViolating)
+    if isViolating {
         violationsDetected = true
         fmt.Println("Violation detected at profile2, Incoming dataflow")
-        fmt.Println("Compliant PIIs: ",profile2IncomingCompliant)
-        fmt.Println("Violating PIIs: ",profile2IncomingViolating)
+        fmt.Println("Inconsistent PIIs: ",violatingElements)
     }
-    if checkMatchingElementsInSlices(profile2IndirectCompliant, profile2IndirectViolating){
+    violatingElements, isViolating = checkMatchingElementsInSlices(profile2IndirectCompliant, profile2IndirectViolating)
+    if isViolating {
         violationsDetected = true
         fmt.Println("Violation detected at profile2, Indirect dataflow")
-        fmt.Println("Compliant PIIs: ",profile2IndirectCompliant)
-        fmt.Println("Violating PIIs: ",profile2IndirectViolating)
+        fmt.Println("Inconsistent PIIs: ",violatingElements)
     }
-    if checkMatchingElementsInSlices(profile2SharedCompliant, profile2SharedViolating){
+    violatingElements, isViolating = checkMatchingElementsInSlices(profile2SharedCompliant, profile2SharedViolating)
+    if isViolating {
         violationsDetected = true
         fmt.Println("Violation detected at profile2, Shared dataflow")
-        fmt.Println("Compliant PIIs: ",profile2SharedCompliant)
-        fmt.Println("Violating PIIs: ",profile2SharedViolating)
+        fmt.Println("Inconsistent PIIs: ",violatingElements)
     }
 
     //Checking that the two profiles do not have violations between each other
     //Here we need to compare compliant1 and violating2, as well as vice versa (compliant2 and violating1)
-    if checkMatchingElementsInSlices(profile1IncomingCompliant, profile2IncomingViolating){
+    violatingElements, isViolating = checkMatchingElementsInSlices(profile1IncomingCompliant, profile2IncomingViolating)
+    if isViolating {
         violationsDetected = true
         fmt.Println("Violation detected between profile1 compliant and profile2 violating, Incoming dataflow")
-        fmt.Println("Compliant PIIs: ",profile1IncomingCompliant)
-        fmt.Println("Violating PIIs: ",profile2IncomingViolating)
+        fmt.Println("Inconsistent PIIs: ",violatingElements)
     }
-    if checkMatchingElementsInSlices(profile2IncomingCompliant, profile1IncomingViolating){
+    violatingElements, isViolating = checkMatchingElementsInSlices(profile2IncomingCompliant, profile1IncomingViolating)
+    if isViolating {
         violationsDetected = true
         fmt.Println("Violation detected between profile1 violating and profile2 compliant, Incoming dataflow")
-        fmt.Println("Compliant PIIs: ",profile2IncomingCompliant)
-        fmt.Println("Violating PIIs: ",profile1IncomingViolating)
+        fmt.Println("Inconsistent PIIs: ",violatingElements)
     }
-    if checkMatchingElementsInSlices(profile1IndirectCompliant, profile2IndirectViolating){
+    violatingElements, isViolating = checkMatchingElementsInSlices(profile1IndirectCompliant, profile2IndirectViolating)
+    if isViolating {
         violationsDetected = true
         fmt.Println("Violation detected between profile1 compliant and profile2 violating, Indirect dataflow")
-        fmt.Println("Compliant PIIs: ",profile1IndirectCompliant)
-        fmt.Println("Violating PIIs: ",profile2IndirectViolating)
+        fmt.Println("Inconsistent PIIs: ",violatingElements)
     }
-    if checkMatchingElementsInSlices(profile2IndirectCompliant, profile1IndirectViolating){
+    violatingElements, isViolating = checkMatchingElementsInSlices(profile2IndirectCompliant, profile1IndirectViolating)
+    if isViolating {
         violationsDetected = true
         fmt.Println("Violation detected between profile1 violating and profile2 compliant, Indirect dataflow")
-        fmt.Println("Compliant PIIs: ",profile2IndirectCompliant)
-        fmt.Println("Violating PIIs: ",profile1IndirectViolating)
+        fmt.Println("Inconsistent PIIs: ",violatingElements)
     }
-    if checkMatchingElementsInSlices(profile1SharedCompliant, profile1SharedViolating){
+    violatingElements, isViolating = checkMatchingElementsInSlices(profile1SharedCompliant, profile1SharedViolating)
+    if isViolating {
         violationsDetected = true
         fmt.Println("Violation detected between profile1 compliant and profile2 violating, Shared dataflow")
-        fmt.Println("Compliant PIIs: ",profile1SharedCompliant)
-        fmt.Println("Violating PIIs: ",profile1SharedViolating)
+        fmt.Println("Inconsistent PIIs: ",violatingElements)
     }
-    if checkMatchingElementsInSlices(profile2SharedCompliant, profile2SharedViolating){
+    violatingElements, isViolating = checkMatchingElementsInSlices(profile2SharedCompliant, profile2SharedViolating)
+    if isViolating {
         violationsDetected = true
         fmt.Println("Violation detected between profile1 violating and profile2 compliant, Shared dataflow")
-        fmt.Println("Compliant PIIs: ",profile2SharedCompliant)
-        fmt.Println("Violating PIIs: ",profile2SharedViolating)
+        fmt.Println("Inconsistent PIIs: ",violatingElements)
     }
 
     if !violationsDetected {
@@ -398,11 +395,12 @@ func checkConsistency(json1 []byte, json2 []byte){
 // This function initializes 2 sample profiles as JSONs, validates that both of them match the above schema,
 // and checks to ensure that the consistency criteria are met
 func main(){
-    JSON1 := []byte(`{"TargetPolicyHash": "%POLICY_FILE_HASH%", "ServiceHash": "%SERVICE_IMAGE_HASH%", "SvcInternalFQDN":"/svc/endpoint/login", "PurposeOfUse": 1, "ObservedProcessingEntries":{"ProcessingEntries":{"analytics":{"Entry":{"advertising":{"ThirdParty":"adware.xyz"}}}}},"Endpoints": {"Endpoint":[{"EndpointName": "Login", "EndpointHash":"OBJECT_HASH", "EndpointProfile":{"Incoming":[{"TraceID":"0x00000000074ace1d", "SpanIDOfIncomingRequestToEndpoint": "0x000000000059aebc", "ObservedPIITypes": {"CompliantPIIs": [14,10,3,13,12], "ViolatingPIIs": [14,10,3,13,12]}}],"Outgoing":{"Indirect":[{"ProcessingInfo": {"TraceID": "0x00000000081bca3f","SpanIDOfIncomingRequestToEndpoint":"0x000000000059aebe","SpanIDOfOutgoingRequestFromEndpoint": "0x001234567059aebc","ObservedPIITypes": {"CompliantPIIs": [3,5,10], "ViolatingPIIs": [3,5,10]}},"CalleePath": "/GetUserByUsername/","CalleeHost":"users.default.svc.cluster.local"}],"Shared":[{"ProcessingInfo": {"TraceID": "0x00000000085cad64","SpanIDOfIncomingRequestToEndpoint":"0x000000000059aebc","SpanIDOfOutgoingRequestFromEndpoint": "0x0012345670593c7a","ObservedPIITypes": {"CompliantPIIs": [1,2,5,7,9], "ViolatingPIIs": [1,2,5,7,9]}},"ExternalDomain": "twilio2notascam.xyz"}]}}}, {"EndpointName": "SetPasswd", "EndpointHash":"OBJECT_HASH2", "EndpointProfile":{"Incoming":[{"TraceID":"0x000000000747921d", "SpanIDOfIncomingRequestToEndpoint": "0x000000000057d209", "ObservedPIITypes": {"CompliantPIIs": [3], "ViolatingPIIs": []}}],"Outgoing":{"Indirect":[{"ProcessingInfo": {"TraceID":"","SpanIDOfIncomingRequestToEndpoint":"","SpanIDOfOutgoingRequestFromEndpoint": "","ObservedPIITypes": {"CompliantPIIs": [], "ViolatingPIIs": []}},"CalleePath":"","CalleeHost":""}],"Shared":[{"ProcessingInfo": {"TraceID": "","SpanIDOfIncomingRequestToEndpoint":"","SpanIDOfOutgoingRequestFromEndpoint": "","ObservedPIITypes": {"CompliantPIIs": [], "ViolatingPIIs": []}},"ExternalDomain": ""}]}}}]}}`)
-    JSON2 := []byte(`{"TargetPolicyHash": "%POLICY_FILE_HASH%", "ServiceHash": "%SERVICE_IMAGE_HASH%", "SvcInternalFQDN":"/svc/endpoint/login", "PurposeOfUse": 1, "ObservedProcessingEntries":{"ProcessingEntries":{"analytics":{"Entry":{"advertising":{"ThirdParty":"adware.xyz"}}}}},"Endpoints": {"Endpoint":[{"EndpointName": "Login", "EndpointHash":"OBJECT_HASH", "EndpointProfile":{"Incoming":[{"TraceID":"0x00000000074ace1d", "SpanIDOfIncomingRequestToEndpoint": "0x000000000059aebc", "ObservedPIITypes": {"CompliantPIIs": [14,10,3,13,12], "ViolatingPIIs": [14,10,3,13,12]}}],"Outgoing":{"Indirect":[{"ProcessingInfo": {"TraceID": "0x00000000081bca3f","SpanIDOfIncomingRequestToEndpoint":"0x000000000059aebe","SpanIDOfOutgoingRequestFromEndpoint": "0x001234567059aebc","ObservedPIITypes": {"CompliantPIIs": [3,5,10], "ViolatingPIIs": [3,5,10]}},"CalleePath": "/GetUserByUsername/","CalleeHost":"users.default.svc.cluster.local"}],"Shared":[{"ProcessingInfo": {"TraceID": "0x00000000085cad64","SpanIDOfIncomingRequestToEndpoint":"0x000000000059aebc","SpanIDOfOutgoingRequestFromEndpoint": "0x0012345670593c7a","ObservedPIITypes": {"CompliantPIIs": [1,2,5,7,9], "ViolatingPIIs": [1,2,5,7,9]}},"ExternalDomain": "twilio2notascam.xyz"}]}}}, {"EndpointName": "SetPasswd", "EndpointHash":"OBJECT_HASH2", "EndpointProfile":{"Incoming":[{"TraceID":"0x000000000747921d", "SpanIDOfIncomingRequestToEndpoint": "0x000000000057d209", "ObservedPIITypes": {"CompliantPIIs": [3], "ViolatingPIIs": []}}],"Outgoing":{"Indirect":[{"ProcessingInfo": {"TraceID":"","SpanIDOfIncomingRequestToEndpoint":"","SpanIDOfOutgoingRequestFromEndpoint": "","ObservedPIITypes": {"CompliantPIIs": [], "ViolatingPIIs": []}},"CalleePath":"","CalleeHost":""}],"Shared":[{"ProcessingInfo": {"TraceID": "","SpanIDOfIncomingRequestToEndpoint":"","SpanIDOfOutgoingRequestFromEndpoint": "","ObservedPIITypes": {"CompliantPIIs": [], "ViolatingPIIs": []}},"ExternalDomain": ""}]}}}]}}`)
-    infer(true)
+    JSON1 := []byte(`{"TargetPolicyHash": "%POLICY_FILE_HASH%", "ServiceHash": "%SERVICE_IMAGE_HASH%", "SvcInternalFQDN":"/svc/endpoint/login", "PurposeOfUse": 1, "ObservedProcessingEntries":{"ProcessingEntries":{"analytics":{"Entry":{"advertising":{"ThirdParty":"adware.xyz"}}}}},"Endpoints": {"Endpoint":[{"EndpointName": "Login", "EndpointHash":"OBJECT_HASH", "EndpointProfile":{"Incoming":[{"TraceID":"0x00000000074ace1d", "SpanIDOfIncomingRequestToEndpoint": "0x000000000059aebc", "ObservedPIITypes": {"CompliantPIIs": [1,2], "ViolatingPIIs": [14,10,3,13,12]}}],"Outgoing":{"Indirect":[{"ProcessingInfo": {"TraceID": "0x00000000081bca3f","SpanIDOfIncomingRequestToEndpoint":"0x000000000059aebe","SpanIDOfOutgoingRequestFromEndpoint": "0x001234567059aebc","ObservedPIITypes": {"CompliantPIIs": [3,5,10], "ViolatingPIIs": [3,5,10]}},"CalleePath": "/GetUserByUsername/","CalleeHost":"users.default.svc.cluster.local"}],"Shared":[{"ProcessingInfo": {"TraceID": "0x00000000085cad64","SpanIDOfIncomingRequestToEndpoint":"0x000000000059aebc","SpanIDOfOutgoingRequestFromEndpoint": "0x0012345670593c7a","ObservedPIITypes": {"CompliantPIIs": [1,2,5,7,9], "ViolatingPIIs": [1,2,5,7,9]}},"ExternalDomain": "twilio2notascam.xyz"}]}}}, {"EndpointName": "SetPasswd", "EndpointHash":"OBJECT_HASH2", "EndpointProfile":{"Incoming":[{"TraceID":"0x000000000747921d", "SpanIDOfIncomingRequestToEndpoint": "0x000000000057d209", "ObservedPIITypes": {"CompliantPIIs": [3], "ViolatingPIIs": []}}],"Outgoing":{"Indirect":[{"ProcessingInfo": {"TraceID":"","SpanIDOfIncomingRequestToEndpoint":"","SpanIDOfOutgoingRequestFromEndpoint": "","ObservedPIITypes": {"CompliantPIIs": [], "ViolatingPIIs": []}},"CalleePath":"","CalleeHost":""}],"Shared":[{"ProcessingInfo": {"TraceID": "","SpanIDOfIncomingRequestToEndpoint":"","SpanIDOfOutgoingRequestFromEndpoint": "","ObservedPIITypes": {"CompliantPIIs": [], "ViolatingPIIs": []}},"ExternalDomain": ""}]}}}]}}`)
+    JSON2 := []byte(`{"TargetPolicyHash": "%POLICY_FILE_HASH%", "ServiceHash": "%SERVICE_IMAGE_HASH%", "SvcInternalFQDN":"/svc/endpoint/login", "PurposeOfUse": 1, "ObservedProcessingEntries":{"ProcessingEntries":{"analytics":{"Entry":{"advertising":{"ThirdParty":"adware.xyz"}}}}},"Endpoints": {"Endpoint":[{"EndpointName": "Login", "EndpointHash":"OBJECT_HASH", "EndpointProfile":{"Incoming":[{"TraceID":"0x00000000074ace1d", "SpanIDOfIncomingRequestToEndpoint": "0x000000000059aebc", "ObservedPIITypes": {"CompliantPIIs": [1,2,4,5], "ViolatingPIIs": []}}],"Outgoing":{"Indirect":[{"ProcessingInfo": {"TraceID": "0x00000000081bca3f","SpanIDOfIncomingRequestToEndpoint":"0x000000000059aebe","SpanIDOfOutgoingRequestFromEndpoint": "0x001234567059aebc","ObservedPIITypes": {"CompliantPIIs": [3,5,10], "ViolatingPIIs": [3,5,10]}},"CalleePath": "/GetUserByUsername/","CalleeHost":"users.default.svc.cluster.local"}],"Shared":[{"ProcessingInfo": {"TraceID": "0x00000000085cad64","SpanIDOfIncomingRequestToEndpoint":"0x000000000059aebc","SpanIDOfOutgoingRequestFromEndpoint": "0x0012345670593c7a","ObservedPIITypes": {"CompliantPIIs": [1,2,5,7,9], "ViolatingPIIs": [1,2,5,7,9]}},"ExternalDomain": "twilio2notascam.xyz"}]}}}, {"EndpointName": "SetPasswd", "EndpointHash":"OBJECT_HASH2", "EndpointProfile":{"Incoming":[{"TraceID":"0x000000000747921d", "SpanIDOfIncomingRequestToEndpoint": "0x000000000057d209", "ObservedPIITypes": {"CompliantPIIs": [3], "ViolatingPIIs": []}}],"Outgoing":{"Indirect":[{"ProcessingInfo": {"TraceID":"","SpanIDOfIncomingRequestToEndpoint":"","SpanIDOfOutgoingRequestFromEndpoint": "","ObservedPIITypes": {"CompliantPIIs": [], "ViolatingPIIs": []}},"CalleePath":"","CalleeHost":""}],"Shared":[{"ProcessingInfo": {"TraceID": "","SpanIDOfIncomingRequestToEndpoint":"","SpanIDOfOutgoingRequestFromEndpoint": "","ObservedPIITypes": {"CompliantPIIs": [], "ViolatingPIIs": []}},"ExternalDomain": ""}]}}}]}}`)
+    //infer(true)
     validate(JSON1)
     validate(JSON2)
     checkConsistency(JSON1, JSON2)
 }
 
+// TODO: put jsons in a test file
