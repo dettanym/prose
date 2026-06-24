@@ -4,6 +4,7 @@ import (
         "github.com/google/jsonschema-go/jsonschema"
         "fmt"
         "slices"
+        "os"
 )
 
 
@@ -395,12 +396,16 @@ func checkConsistency(json1 []byte, json2 []byte){
 // This function initializes 2 sample profiles as JSONs, validates that both of them match the above schema,
 // and checks to ensure that the consistency criteria are met
 func main(){
-    JSON1 := []byte(`{"TargetPolicyHash": "%POLICY_FILE_HASH%", "ServiceHash": "%SERVICE_IMAGE_HASH%", "SvcInternalFQDN":"/svc/endpoint/login", "PurposeOfUse": 1, "ObservedProcessingEntries":{"ProcessingEntries":{"analytics":{"Entry":{"advertising":{"ThirdParty":"adware.xyz"}}}}},"Endpoints": {"Endpoint":[{"EndpointName": "Login", "EndpointHash":"OBJECT_HASH", "EndpointProfile":{"Incoming":[{"TraceID":"0x00000000074ace1d", "SpanIDOfIncomingRequestToEndpoint": "0x000000000059aebc", "ObservedPIITypes": {"CompliantPIIs": [1,2], "ViolatingPIIs": [14,10,3,13,12]}}],"Outgoing":{"Indirect":[{"ProcessingInfo": {"TraceID": "0x00000000081bca3f","SpanIDOfIncomingRequestToEndpoint":"0x000000000059aebe","SpanIDOfOutgoingRequestFromEndpoint": "0x001234567059aebc","ObservedPIITypes": {"CompliantPIIs": [3,5,10], "ViolatingPIIs": [3,5,10]}},"CalleePath": "/GetUserByUsername/","CalleeHost":"users.default.svc.cluster.local"}],"Shared":[{"ProcessingInfo": {"TraceID": "0x00000000085cad64","SpanIDOfIncomingRequestToEndpoint":"0x000000000059aebc","SpanIDOfOutgoingRequestFromEndpoint": "0x0012345670593c7a","ObservedPIITypes": {"CompliantPIIs": [1,2,5,7,9], "ViolatingPIIs": [1,2,5,7,9]}},"ExternalDomain": "twilio2notascam.xyz"}]}}}, {"EndpointName": "SetPasswd", "EndpointHash":"OBJECT_HASH2", "EndpointProfile":{"Incoming":[{"TraceID":"0x000000000747921d", "SpanIDOfIncomingRequestToEndpoint": "0x000000000057d209", "ObservedPIITypes": {"CompliantPIIs": [3], "ViolatingPIIs": []}}],"Outgoing":{"Indirect":[{"ProcessingInfo": {"TraceID":"","SpanIDOfIncomingRequestToEndpoint":"","SpanIDOfOutgoingRequestFromEndpoint": "","ObservedPIITypes": {"CompliantPIIs": [], "ViolatingPIIs": []}},"CalleePath":"","CalleeHost":""}],"Shared":[{"ProcessingInfo": {"TraceID": "","SpanIDOfIncomingRequestToEndpoint":"","SpanIDOfOutgoingRequestFromEndpoint": "","ObservedPIITypes": {"CompliantPIIs": [], "ViolatingPIIs": []}},"ExternalDomain": ""}]}}}]}}`)
-    JSON2 := []byte(`{"TargetPolicyHash": "%POLICY_FILE_HASH%", "ServiceHash": "%SERVICE_IMAGE_HASH%", "SvcInternalFQDN":"/svc/endpoint/login", "PurposeOfUse": 1, "ObservedProcessingEntries":{"ProcessingEntries":{"analytics":{"Entry":{"advertising":{"ThirdParty":"adware.xyz"}}}}},"Endpoints": {"Endpoint":[{"EndpointName": "Login", "EndpointHash":"OBJECT_HASH", "EndpointProfile":{"Incoming":[{"TraceID":"0x00000000074ace1d", "SpanIDOfIncomingRequestToEndpoint": "0x000000000059aebc", "ObservedPIITypes": {"CompliantPIIs": [1,2,4,5], "ViolatingPIIs": []}}],"Outgoing":{"Indirect":[{"ProcessingInfo": {"TraceID": "0x00000000081bca3f","SpanIDOfIncomingRequestToEndpoint":"0x000000000059aebe","SpanIDOfOutgoingRequestFromEndpoint": "0x001234567059aebc","ObservedPIITypes": {"CompliantPIIs": [3,5,10], "ViolatingPIIs": [3,5,10]}},"CalleePath": "/GetUserByUsername/","CalleeHost":"users.default.svc.cluster.local"}],"Shared":[{"ProcessingInfo": {"TraceID": "0x00000000085cad64","SpanIDOfIncomingRequestToEndpoint":"0x000000000059aebc","SpanIDOfOutgoingRequestFromEndpoint": "0x0012345670593c7a","ObservedPIITypes": {"CompliantPIIs": [1,2,5,7,9], "ViolatingPIIs": [1,2,5,7,9]}},"ExternalDomain": "twilio2notascam.xyz"}]}}}, {"EndpointName": "SetPasswd", "EndpointHash":"OBJECT_HASH2", "EndpointProfile":{"Incoming":[{"TraceID":"0x000000000747921d", "SpanIDOfIncomingRequestToEndpoint": "0x000000000057d209", "ObservedPIITypes": {"CompliantPIIs": [3], "ViolatingPIIs": []}}],"Outgoing":{"Indirect":[{"ProcessingInfo": {"TraceID":"","SpanIDOfIncomingRequestToEndpoint":"","SpanIDOfOutgoingRequestFromEndpoint": "","ObservedPIITypes": {"CompliantPIIs": [], "ViolatingPIIs": []}},"CalleePath":"","CalleeHost":""}],"Shared":[{"ProcessingInfo": {"TraceID": "","SpanIDOfIncomingRequestToEndpoint":"","SpanIDOfOutgoingRequestFromEndpoint": "","ObservedPIITypes": {"CompliantPIIs": [], "ViolatingPIIs": []}},"ExternalDomain": ""}]}}}]}}`)
-    //infer(true)
+    JSON1, err1 := os.ReadFile("test_json1.json")
+    if err1!= nil {
+        panic(err1)
+    }
+    JSON2, err2 := os.ReadFile("test_json2.json")
+    if err2!= nil {
+        panic(err2)
+    }
+
     validate(JSON1)
     validate(JSON2)
     checkConsistency(JSON1, JSON2)
 }
-
-// TODO: put jsons in a test file
