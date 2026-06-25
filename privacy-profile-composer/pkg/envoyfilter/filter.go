@@ -17,6 +17,23 @@ import (
 	"privacy-profile-composer/pkg/envoyfilter/internal/common"
 )
 
+// NOTE: All constants below must exist in common_constants.go.
+// Add any that are missing:
+//
+//   const PROSE_SIDECAR_DIRECTION = "prose_sidecar_direction"
+//   const PROSE_DATA_FLOW         = "prose_data_flow"
+//   const PROSE_PII_TYPES         = "prose_pii_types"
+//   const PROSE_OPA_ENFORCE       = "prose_opa_enforce"
+//   const PROSE_OPA_DECISION      = "prose_opa_decision"
+//   const PROSE_VIOLATION_TYPE    = "prose_violation_type"
+//   const PROSE_EXTERNAL_DOMAIN   = "prose_external_domain"
+//   const PROSE_PRESIDIO_ERROR    = "prose_presidio_error"
+//   const PROSE_JSON_BODY_ERROR   = "prose_json_body_error"
+//   const PROSE_OPA_ERROR         = "prose_opa_error"
+//
+// All span tag keys use the "prose_" prefix (lowercase) so the Jaeger
+// querying pipeline can identify Prose spans by checking HasPrefix("prose_").
+
 func NewFilter(callbacks api.FilterCallbackHandler, config *Config) (api.StreamFilter, error) {
 	return &Filter{
 		callbacks: callbacks,
@@ -30,18 +47,19 @@ type Filter struct {
 	callbacks api.FilterCallbackHandler
 	config    *Config
 
-	// Runtime state of the filter
+	// Runtime state of the filter — reset per HTTP request
 	parentSpanContext model.SpanContext
 	reqHeaderMetadata common.RequestHeaderMetadata
 	resHeaderMetadata common.ResponseHeaderMetadata
-	thirdPartyURL     string
+	thirdPartyURL     string // non-empty only for outbound requests to external domains
 	processDecodeBody bool
 	decodeDataBuffer  string
 	processEncodeBody bool
 	encodeDataBuffer  string
 }
 
-// Callbacks which are called in request path
+// ─── Request path ─────────────────────────────────────────────────────────────
+
 func (f *Filter) DecodeHeaders(header api.RequestHeaderMap, endStream bool) api.StatusType {
 	// log.Println(">>> DECODE HEADERS")
 
@@ -50,6 +68,8 @@ func (f *Filter) DecodeHeaders(header api.RequestHeaderMap, endStream bool) api.
 	span := common.GlobalTracer.StartSpan("test span in decode headers", zipkin.Parent(f.parentSpanContext))
 	defer span.Finish()
 
+	// PROSE_ prefixed tags allow the Jaeger pipeline to identify this as a
+	// Prose span by checking HasPrefix(key, "prose_")
 	span.Tag(PROSE_SIDECAR_DIRECTION, string(f.config.direction))
 	span.Tag(PROSE_DATA_FLOW, "DECODE_HEADERS")
 
@@ -58,19 +78,20 @@ func (f *Filter) DecodeHeaders(header api.RequestHeaderMap, endStream bool) api.
 	// common.LogDecodeHeaderData(header)
 
 	if endStream {
-		// here we have a header-only request
+		// header-only request — no body to scan
 		return api.Continue
 	}
 
 	switch f.config.direction {
 	case common.Inbound:
-		// If it is an inbound sidecar, then do process the body
-		// run PII Analysis + OPA directly
+		// Inbound sidecar always scans the request body.
+		// Catches PURPOSE_OF_USE_DIRECT violations (paper Figure 4 step 3).
 		f.processDecodeBody = true
 
 	case common.Outbound:
-		// If it is an outbound sidecar, then check if it's a request to a third party
-		// and only process the body in this case
+		// Outbound sidecar only scans requests going to external (third-party) destinations.
+		// Internal mesh traffic is handled by the callee's inbound sidecar.
+		// Catches DATA_SHARING violations (paper Figure 4 step 2).
 		destinationAddress, err := f.callbacks.GetProperty("destination.address")
 		if err != nil {
 			log.Println(err)
@@ -84,8 +105,6 @@ func (f *Filter) DecodeHeaders(header api.RequestHeaderMap, endStream bool) api.
 		}
 
 		if isInternalDestination {
-			// log.Printf("outbound sidecar processed a request to another sidecar in the mesh" +
-			// 	"Prose will process it through the inbound decode function\n")
 			return api.Continue
 		}
 
@@ -127,8 +146,6 @@ func (f *Filter) DecodeData(buffer api.BufferInstance, endStream bool) api.Statu
 	// log.Println(">>> DECODE DATA")
 	// log.Println("  <<About to forward", len(f.decodeDataBuffer), "bytes of data to service>>")
 
-	// span.Tag("buffer-value", f.decodeDataBuffer)
-
 	if f.processDecodeBody {
 		sendLocalReply, err, proseTags := f.processBody(ctx, f.decodeDataBuffer, true)
 		// Some of these tags may include error info,
@@ -141,8 +158,8 @@ func (f *Filter) DecodeData(buffer api.BufferInstance, endStream bool) api.Statu
 			return api.Continue
 		}
 
-		// If OPA is configured to an enforce mode (for production),
-		// then actually drop the request when it violates the policy
+		// If OPA is configured to enforce mode (for production),
+		// actually drop the request when it violates the policy
 		if sendLocalReply && f.config.opaEnforce {
 			body := "OPA target policy rejected the input data"
 			f.callbacks.SendLocalReply(403, body, nil, 0, "")
@@ -155,14 +172,13 @@ func (f *Filter) DecodeData(buffer api.BufferInstance, endStream bool) api.Statu
 
 func (f *Filter) DecodeTrailers(trailers api.RequestTrailerMap) api.StatusType {
 	// log.Println(">>> DECODE TRAILERS")
-	// log.Printf("%+v", trailers)
 	return api.Continue
 }
 
+// ─── Response path ─────────────────────────────────────────────────────────────
+
 func (f *Filter) EncodeHeaders(header api.ResponseHeaderMap, endStream bool) api.StatusType {
 	// log.Println("<<< ENCODE HEADERS")
-
-	// common.LogEncodeHeaderData(header)
 
 	span := common.GlobalTracer.StartSpan("test span in encode headers", zipkin.Parent(f.parentSpanContext))
 	defer span.Finish()
@@ -173,20 +189,20 @@ func (f *Filter) EncodeHeaders(header api.ResponseHeaderMap, endStream bool) api
 	f.resHeaderMetadata = common.ExtractResponseHeaderData(header)
 
 	if endStream {
-		// here we have a header-only request
 		return api.Continue
 	}
 
 	switch f.config.direction {
 	case common.Inbound:
-		// if inbound then ignore
-		// we will just address them in the inbound call to the caller svc
+		// Inbound sidecar skips the response — the caller's outbound sidecar
+		// handles it. The inbound sidecar doesn't know the caller's purpose.
 		f.processEncodeBody = false
 
 	case common.Outbound:
-		// if outbound then indirect purpose of use violation
+		// Outbound sidecar scans the response coming back to the caller.
+		// Catches PURPOSE_OF_USE_INDIRECT violations (paper Figure 4 step 7).
 		// TODO: This is usually data obtained from another service
-		//  but it could also be data obtained from a third party. I.e. a kind of join violation.
+		//  but it could also be data obtained from a third party (join violation).
 		//  Not sure if we'll run into those cases in the examples we look at.
 		f.processEncodeBody = true
 
@@ -198,7 +214,6 @@ func (f *Filter) EncodeHeaders(header api.ResponseHeaderMap, endStream bool) api
 	return api.StopAndBuffer
 }
 
-// Callbacks which are called in response path
 func (f *Filter) EncodeData(buffer api.BufferInstance, endStream bool) api.StatusType {
 	// TODO: we might need to be careful about collecting the data from all
 	//  of these buffers. Maybe go has some builtin methods to work with it,
@@ -224,8 +239,6 @@ func (f *Filter) EncodeData(buffer api.BufferInstance, endStream bool) api.Statu
 	// log.Println("<<< ENCODE DATA")
 	// log.Println("  <<About to forward", len(f.encodeDataBuffer), "bytes of data to client>>")
 
-	// span.Tag("buffer-value", f.encodeDataBuffer)
-
 	if f.processEncodeBody {
 		sendLocalReply, err, proseTags := f.processBody(ctx, f.encodeDataBuffer, false)
 		for k, v := range proseTags {
@@ -236,8 +249,6 @@ func (f *Filter) EncodeData(buffer api.BufferInstance, endStream bool) api.Statu
 			return api.Continue
 		}
 
-		// If OPA is configured to an enforce mode (for production),
-		// then actually drop the request when it violates the policy
 		if sendLocalReply && f.config.opaEnforce {
 			body := "OPA target policy rejected the input data"
 			f.callbacks.SendLocalReply(403, body, nil, 0, "")
@@ -250,12 +261,13 @@ func (f *Filter) EncodeData(buffer api.BufferInstance, endStream bool) api.Statu
 
 func (f *Filter) EncodeTrailers(trailers api.ResponseTrailerMap) api.StatusType {
 	// log.Println("<<< ENCODE TRAILERS")
-	// log.Printf("%+v", trailers)
 	return api.Continue
 }
 
 func (f *Filter) OnDestroy(reason api.DestroyReason) {
 }
+
+// ─── Internal pipeline ─────────────────────────────────────────────────────────
 
 func (f *Filter) processBody(ctx context.Context, body string, isDecode bool) (sendLocalReply bool, err error, proseTags map[string]string) {
 	span, ctx := common.GlobalTracer.StartSpanFromContext(ctx, "processBody")
@@ -264,6 +276,11 @@ func (f *Filter) processBody(ctx context.Context, body string, isDecode bool) (s
 	proseTags = map[string]string{}
 
 	proseTags[PROSE_SIDECAR_DIRECTION] = string(f.config.direction)
+
+	// Tag the external domain so the Jaeger pipeline can identify data-sharing
+	// spans without falling back to unreliable Envoy tags (upstream_cluster, peer.address).
+	// Non-empty only when direction=Outbound and destination is a third-party domain.
+	proseTags[PROSE_EXTERNAL_DOMAIN] = f.thirdPartyURL
 
 	var contentType *string
 	if isDecode {
@@ -309,7 +326,6 @@ func (f *Filter) runOPA(ctx context.Context, isDecode bool, dataItems []string) 
 
 	proseTags = map[string]string{}
 
-	// get the named policy decision for the specified input
 	result, err := common.GlobalAuthAgent.Decision(
 		ctx,
 		sdk.DecisionOptions{
@@ -346,12 +362,10 @@ func (f *Filter) runOPA(ctx context.Context, isDecode bool, dataItems []string) 
 
 	if decision {
 		proseTags[PROSE_OPA_DECISION] = "accept"
-		// log.Printf("policy accepted the input data \n")
 		return false, nil, proseTags
 	}
 
 	proseTags[PROSE_OPA_DECISION] = "deny"
-	// log.Printf("policy rejected the input data \n")
 
 	// Ideally, get the reason why it was rejected, e.g. which clause was violated
 	//  the result.Provenance field includes version info, bundle info etc.
@@ -360,7 +374,7 @@ func (f *Filter) runOPA(ctx context.Context, isDecode bool, dataItems []string) 
 	//  https://github.com/open-policy-agent/opa/pull/5447
 	//  can initialize it in the DecisionOptions above
 
-	// Include a tag for the violation type
+	// Classify the violation type based on direction × request/response
 	if isDecode {
 		if f.config.direction == common.Outbound {
 			proseTags[PROSE_VIOLATION_TYPE] = DataSharing
@@ -377,8 +391,9 @@ func (f *Filter) runOPA(ctx context.Context, isDecode bool, dataItems []string) 
 	return true, nil, proseTags
 }
 
-func (f *Filter) checkInternalAddress(destinationAddress string) (bool, error) {
+// ─── Helpers ───────────────────────────────────────────────────────────────────
 
+func (f *Filter) checkInternalAddress(destinationAddress string) (bool, error) {
 	hostIpStr, _, err := net.SplitHostPort(destinationAddress)
 	if err != nil {
 		return false, err
