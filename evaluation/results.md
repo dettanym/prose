@@ -309,6 +309,15 @@ results from runs on different dates.
     experiment - no client timeouts. Next steps: remove warmup and rerun. Fix
     503s. See the project dashboard.
 
+We lost information about what is the purpose of this subsequent execution.
+
+- `"2025-04-06T23:29:07-04:00"`
+
+We found a way to change idle_timeout setting on HTTP connections and executed
+the following run with those settings applied.
+
+- `"2025-05-29T23:59:18-04:00"    # "plain"+"istio"+"passthrough-filter"+"prose-no-presidio-filter"+"prose-filter"; vegeta mode; 10 runs; 800,850,900,950,1000req/s; variable warmup rate`
+
 ### All test runs from `"moone"`
 
 This host contains some random attempts.
