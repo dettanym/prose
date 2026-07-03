@@ -10,80 +10,77 @@ import (
 
 type SystemwideObservedProfile struct {
     Purpose PurposeOfUse `json:"purpose"`
-    SystemwideProcessingEntries purposeBasedProcessing `json:"systemwideProcessingEntries"`
+    SystemwideProcessingEntries struct {
+		ProcessingEntries map[string]struct {
+			Entry map[string]struct {
+				ThirdParty string `json:"ThirdParty"`
+			} `json:"Entry"`
+		} `json:"ProcessingEntries"`
+	} `json:"systemwideProcessingEntries"`
     ComposedServicesInternalFQDNs []string `json:"ComposedServicesInternalFQDNs"`
 }
 
 type SvcObservedProfile struct {
-    TargetPolicyHash string `json:"TargetPolicyHash"`
-    ServiceHash string `json:"ServiceHash"`
-    SvcInternalFQDN string `json:"SvcInternalFQDN"`
-    PurposeOfUse PurposeOfUse `json:"PurposeOfUse"`
-    ObservedProcessingEntries purposeBasedProcessing `json:"ObservedProcessingEntries"`
-    Endpoints endpoints `json:"Endpoints"`
+	TargetPolicyHash string         `json:"TargetPolicyHash"`
+	ServiceHash      string         `json:"ServiceHash"`
+	SvcInternalFQDN  string         `json:"SvcInternalFQDN"`
+	PurposeOfUse     PurposeOfUse `json:"PurposeOfUse"`
+
+	ObservedProcessingEntries struct {
+		ProcessingEntries map[string]struct {
+			Entry map[string]struct {
+				ThirdParty string `json:"ThirdParty"`
+			} `json:"Entry"`
+		} `json:"ProcessingEntries"`
+	} `json:"ObservedProcessingEntries"`
+
+	Endpoints struct {
+		Endpoint []struct {
+			EndpointName  string `json:"EndpointName"`
+			EndpointHash  string `json:"EndpointHash"`
+			EndpointProfile struct {
+				Incoming []struct {
+					TraceID  string `json:"TraceID"`
+					SpanIDOfIncomingRequestToEndpoint string `json:"SpanIDOfIncomingRequestToEndpoint"`
+					ObservedPIITypes struct {
+						CompliantPIIs []PIIType `json:"CompliantPIIs"`
+						ViolatingPIIs []PIIType `json:"ViolatingPIIs"`
+					} `json:"ObservedPIITypes"`
+				} `json:"Incoming"`
+
+				Outgoing struct {
+					Indirect []struct {
+						ProcessingInfo struct {
+							TraceID  string `json:"TraceID"`
+							SpanIDOfIncomingRequestToEndpoint        string `json:"SpanIDOfIncomingRequestToEndpoint"`
+							SpanIDOfOutgoingRequestFromEndpoint     string `json:"SpanIDOfOutgoingRequestFromEndpoint"`
+							ObservedPIITypes struct {
+								CompliantPIIs []PIIType `json:"CompliantPIIs"`
+								ViolatingPIIs []PIIType `json:"ViolatingPIIs"`
+							} `json:"ObservedPIITypes"`
+						} `json:"ProcessingInfo"`
+						CalleePath string `json:"CalleePath"`
+						CalleeHost string `json:"CalleeHost"`
+					} `json:"Indirect"`
+
+					Shared []struct {
+						ProcessingInfo struct {
+							TraceID  string `json:"TraceID"`
+							SpanIDOfIncomingRequestToEndpoint        string `json:"SpanIDOfIncomingRequestToEndpoint"`
+							SpanIDOfOutgoingRequestFromEndpoint     string `json:"SpanIDOfOutgoingRequestFromEndpoint"`
+							ObservedPIITypes struct {
+								CompliantPIIs []PIIType `json:"CompliantPIIs"`
+								ViolatingPIIs []PIIType `json:"ViolatingPIIs"`
+							} `json:"ObservedPIITypes"`
+						} `json:"ProcessingInfo"`
+						ExternalDomain string `json:"ExternalDomain"`
+					} `json:"Shared"`
+				} `json:"Outgoing"`
+			} `json:"EndpointProfile"`
+		} `json:"Endpoint"`
+	} `json:"Endpoints"`
 }
 
-type purposeBasedProcessing struct {
-    ProcessingEntries map[string]dataItemAndThirdParties `json:"ProcessingEntries"`
-}
-
-type dataItemAndThirdParties struct {
-    Entry map[string]ThirdParties `json:"Entry"`
-}
-
-type ThirdParties struct {
-    ThirdParty string `json:"ThirdParty"`
-}
-
-type endpoints struct {
-    Endpoint []endpoint `json:"Endpoint"`
-}
-
-type endpoint struct {
-    EndpointName string `json:"EndpointName"`
-    EndpointHash string `json:"EndpointHash"`
-    EndpointProfile endpointProfile `json:"EndpointProfile"`
-}
-
-type endpointProfile struct {
-    Incoming []incomingRequest `json:"Incoming"`
-    Outgoing outgoingRequests `json:"Outgoing"`
-}
-
-
-type incomingRequest struct {
-    TraceID string `json:"TraceID"`
-    SpanIDOfIncomingRequestToEndpoint string `json:"SpanIDOfIncomingRequestToEndpoint"`
-    ObservedPIITypes observedPIITypes `json:"ObservedPIITypes"`
-}
-
-type outgoingRequests struct {
-    Indirect []OutgoingRequestToInternalEndpoint  `json:"Indirect"`
-    Shared []OutgoingRequestToExternalEndpoint  `json:"Shared"`
-}
-
-type OutgoingRequestToExternalEndpoint struct {
-    ProcessingInfo processingInfo  `json:"ProcessingInfo"`
-    ExternalDomain string  `json:"ExternalDomain"`
-}
- 
-type OutgoingRequestToInternalEndpoint struct {
-    ProcessingInfo processingInfo `json:"ProcessingInfo"`
-    CalleePath string `json:"CalleePath"`
-    CalleeHost string  `json:"CalleeHost"`
-}
-
-type processingInfo struct {
-    TraceID string `json:"TraceID"`
-    SpanIDOfIncomingRequestToEndpoint string `json:"SpanIDOfIncomingRequestToEndpoint"`
-    SpanIDOfOutgoingRequestFromEndpoint string `json:"SpanIDOfOutgoingRequestFromEndpoint"`
-    ObservedPIITypes observedPIITypes `json:"ObservedPIITypes"`
-}
-
-type observedPIITypes struct { 
-    CompliantPIIs []PIIType `json:CompliantPIIs`
-    ViolatingPIIs []PIIType `json:ViolatingPIIs`
-}
 
 type PIIType int
 
