@@ -349,6 +349,12 @@ graphs_to_plot: Dict[str, List[Tuple[str, Averaging_Method, List[str], List[str]
                 "2025-03-13T10:28:49-04:00/*/prose-filter/*",
             ],
         ),
+        (
+            "",
+            "all-raw-data",
+            ["2025-05-29T23:59:18-04:00"],
+            [],
+        ),
     ],
 }
 
@@ -374,6 +380,8 @@ def main(*args, **kwargs):
 
     for hostname, hostname_data in graphs_to_plot.items():
         for i, (title, avg_method, include, exclude) in enumerate(hostname_data):
+            if i + 1 != 24:
+                continue
 
             def load_data():
                 gen = find_matching_files(
