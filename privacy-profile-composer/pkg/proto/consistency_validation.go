@@ -6,17 +6,44 @@ import (
 )
 // This function is used to check whether there are matching elements in 2 given slices 
 // (which, if true, means that there is a consistency violation related to the data flow described by the provided slices)
-func checkMatchingElementsInSlices (slice1, slice2 []int) (violating []int, isViolating bool) {
+func checkForInconsistencies (slice1, slice2 []int, err string) (isViolating bool) {
+    isViolating = false
     var violatingElements = []int{}
-    var isViolationDetected = false
     for _, element1 := range slice1 {
         if slices.Contains(slice2, element1) {
-            isViolationDetected = true
+            isViolating = true
             violatingElements = append (violatingElements, int(element1))
         }
     }
-    return violatingElements, isViolationDetected
+    if isViolating {
+        fmt.Println(err, violatingElements)
+    }
+    return isViolating
 }
+
+func allInconsistencyChecks(profile1IncomingCompliant []int, profile1IndirectCompliant []int, profile1SharedCompliant []int, profile1IncomingViolating []int, profile1IndirectViolating []int, 
+    profile1SharedViolating []int, profile2IncomingCompliant []int, profile2IndirectCompliant []int, profile2SharedCompliant []int, profile2IncomingViolating []int, 
+    profile2IndirectViolating []int, profile2SharedViolating []int) (noViolations bool){
+    //checking that there are no violations within the same profile's dataflow
+    res1 := checkForInconsistencies(profile1IncomingCompliant, profile1IncomingViolating, "Violation detected at profile1, Incoming dataflow\nInconsistent PIIs: ")
+    res2 := noViolations && checkForInconsistencies(profile1IndirectCompliant, profile1IndirectViolating, "Violation detected at profile1, Indirect dataflow\nInconsistent PIIs: ")
+    res3 := checkForInconsistencies(profile1SharedCompliant, profile1SharedViolating, "Violation detected at profile1, Shared dataflow\nInconsistent PIIs: ")
+    //profile2
+    res4 := checkForInconsistencies(profile2IncomingCompliant, profile2IncomingViolating, "Violation detected at profile2, Incoming dataflow\nInconsistent PIIs: ")
+    res5 := checkForInconsistencies(profile2IndirectCompliant, profile2IndirectViolating, "Violation detected at profile2, Indirect dataflow\nInconsistent PIIs: ")
+    res6 := checkForInconsistencies(profile2SharedCompliant, profile2SharedViolating, "Violation detected at profile2, Shared dataflow\nInconsistent PIIs: ")
+    //Checking that the two profiles do not have violations between each other
+    //Here we need to compare compliant1 and violating2, as well as vice versa (compliant2 and violating1)
+    res7 := checkForInconsistencies(profile1IncomingCompliant, profile2IncomingViolating, "Violation detected between profile1 compliant and profile2 violating, Incoming dataflow\n Inconsistent PIIs: ")
+    res8 := checkForInconsistencies(profile2IncomingCompliant, profile1IncomingViolating, "Violation detected between profile1 violating and profile2 compliant, Incoming dataflow\n Inconsistent PIIs: ")
+    res9 := checkForInconsistencies(profile1IndirectCompliant, profile2IndirectViolating, "Violation detected between profile1 compliant and profile2 violating, Indirect dataflow\n Inconsistent PIIs: ")
+    res10 := checkForInconsistencies(profile2IndirectCompliant, profile1IndirectViolating, "Violation detected between profile1 violating and profile2 compliant, Indirect dataflow\n Inconsistent PIIs: ")
+    res11 := checkForInconsistencies(profile1SharedCompliant, profile1SharedViolating, "Violation detected between profile1 compliant and profile2 violating, Shared dataflow\n Inconsistent PIIs: ")
+    res12 := checkForInconsistencies(profile2SharedCompliant, profile2SharedViolating, "Violation detected between profile1 violating and profile2 compliant, Shared dataflow\n Inconsistent PIIs: ")
+
+    return res1||res2||res3||res4||res5||res6||res7||res8||res9||res10||res11||res12
+}
+
 func checkCompliance(complianceType []PIIType, complianceSlice *[]int) {
     for _, compliance := range complianceType {
         if !(slices.Contains(*complianceSlice, int(compliance))) {
@@ -50,7 +77,6 @@ func checkConsistency(json1 []byte, json2 []byte) {
     //4) No single request may have the same PII in both, although this will be caught with the current implementation anyway
     //5) All 4 above must also be consistent between different endpoints of the same service
     //6) The two provided profiles must also be consistent with each other in Incoming, Outgoing.Indirect, and Outgoing.Shared parts.
-    violationsDetected := false
     var obj1 SvcObservedProfile
     var obj2 SvcObservedProfile
     json.Unmarshal(json1, &obj1)
@@ -78,88 +104,9 @@ func checkConsistency(json1 []byte, json2 []byte) {
     //scanning each of the service's endpoints in profile 2
     checkEndpoints(obj2, &profile2IncomingCompliant,&profile2IndirectCompliant,&profile2SharedCompliant,&profile2IncomingViolating,&profile2IndirectViolating,&profile2SharedViolating)
 
-    var violatingElements = []int{}
-    var isViolating = false
-    //checking that there are no violations within the same profile's dataflow
-    //profile1
-    violatingElements, isViolating = checkMatchingElementsInSlices(profile1IncomingCompliant, profile1IncomingViolating)
-    if isViolating {
-        violationsDetected = true
-        fmt.Println("Violation detected at profile1, Incoming dataflow")
-        fmt.Println("Inconsistent PIIs: ",violatingElements)
-    }
-    violatingElements, isViolating = checkMatchingElementsInSlices(profile1IndirectCompliant, profile1IndirectViolating)
-    if isViolating {
-        violationsDetected = true
-        fmt.Println("Violation detected at profile1, Indirect dataflow")
-        fmt.Println("Inconsistent PIIs: ",violatingElements)
-    }
-    violatingElements, isViolating = checkMatchingElementsInSlices(profile1SharedCompliant, profile1SharedViolating)
-    if isViolating {
-        violationsDetected = true
-        fmt.Println("Violation detected at profile1, Shared dataflow")
-        fmt.Println("Inconsistent PIIs: ",violatingElements)
-    }
-    //profile2
-    violatingElements, isViolating = checkMatchingElementsInSlices(profile2IncomingCompliant, profile2IncomingViolating)
-    if isViolating {
-        violationsDetected = true
-        fmt.Println("Violation detected at profile2, Incoming dataflow")
-        fmt.Println("Inconsistent PIIs: ",violatingElements)
-    }
-    violatingElements, isViolating = checkMatchingElementsInSlices(profile2IndirectCompliant, profile2IndirectViolating)
-    if isViolating {
-        violationsDetected = true
-        fmt.Println("Violation detected at profile2, Indirect dataflow")
-        fmt.Println("Inconsistent PIIs: ",violatingElements)
-    }
-    violatingElements, isViolating = checkMatchingElementsInSlices(profile2SharedCompliant, profile2SharedViolating)
-    if isViolating {
-        violationsDetected = true
-        fmt.Println("Violation detected at profile2, Shared dataflow")
-        fmt.Println("Inconsistent PIIs: ",violatingElements)
-    }
+    //performing all described checks for any inconsistencies
+    fmt.Println("violations detected: ", allInconsistencyChecks(profile1IncomingCompliant, profile1IndirectCompliant, profile1SharedCompliant, profile1IncomingViolating, profile1IndirectViolating, profile1SharedViolating, 
+    profile2IncomingCompliant, profile2IndirectCompliant, profile2SharedCompliant, profile2IncomingViolating, profile2IndirectViolating, profile2SharedViolating))
 
-    //Checking that the two profiles do not have violations between each other
-    //Here we need to compare compliant1 and violating2, as well as vice versa (compliant2 and violating1)
-    violatingElements, isViolating = checkMatchingElementsInSlices(profile1IncomingCompliant, profile2IncomingViolating)
-    if isViolating {
-        violationsDetected = true
-        fmt.Println("Violation detected between profile1 compliant and profile2 violating, Incoming dataflow")
-        fmt.Println("Inconsistent PIIs: ",violatingElements)
-    }
-    violatingElements, isViolating = checkMatchingElementsInSlices(profile2IncomingCompliant, profile1IncomingViolating)
-    if isViolating {
-        violationsDetected = true
-        fmt.Println("Violation detected between profile1 violating and profile2 compliant, Incoming dataflow")
-        fmt.Println("Inconsistent PIIs: ",violatingElements)
-    }
-    violatingElements, isViolating = checkMatchingElementsInSlices(profile1IndirectCompliant, profile2IndirectViolating)
-    if isViolating {
-        violationsDetected = true
-        fmt.Println("Violation detected between profile1 compliant and profile2 violating, Indirect dataflow")
-        fmt.Println("Inconsistent PIIs: ",violatingElements)
-    }
-    violatingElements, isViolating = checkMatchingElementsInSlices(profile2IndirectCompliant, profile1IndirectViolating)
-    if isViolating {
-        violationsDetected = true
-        fmt.Println("Violation detected between profile1 violating and profile2 compliant, Indirect dataflow")
-        fmt.Println("Inconsistent PIIs: ",violatingElements)
-    }
-    violatingElements, isViolating = checkMatchingElementsInSlices(profile1SharedCompliant, profile1SharedViolating)
-    if isViolating {
-        violationsDetected = true
-        fmt.Println("Violation detected between profile1 compliant and profile2 violating, Shared dataflow")
-        fmt.Println("Inconsistent PIIs: ",violatingElements)
-    }
-    violatingElements, isViolating = checkMatchingElementsInSlices(profile2SharedCompliant, profile2SharedViolating)
-    if isViolating {
-        violationsDetected = true
-        fmt.Println("Violation detected between profile1 violating and profile2 compliant, Shared dataflow")
-        fmt.Println("Inconsistent PIIs: ",violatingElements)
-    }
 
-    if !violationsDetected {
-        fmt.Println("No consistency violations detected!")
-    }
 }
