@@ -17,8 +17,32 @@ func checkMatchingElementsInSlices (slice1, slice2 []int) (violating []int, isVi
     }
     return violatingElements, isViolationDetected
 }
+func checkCompliance(complianceType []PIIType, complianceSlice *[]int) {
+    for _, compliance := range complianceType {
+        if !(slices.Contains(*complianceSlice, int(compliance))) {
+            *complianceSlice = append (*complianceSlice, int(compliance))
+        }
+}}
 
-func checkConsistency(json1 []byte, json2 []byte){
+func checkEndpoints(profile SvcObservedProfile, incomingCompliant *[]int, indirectCompliant *[]int, sharedCompliant *[]int, incomingViolating *[]int, indirectViolating *[]int, sharedViolating *[]int) {
+    for _, endpoint := range profile.Endpoints.Endpoint {
+        //scanning Incoming, Indirect, and Shared requests
+        for _, eachType := range endpoint.EndpointProfile.Incoming {
+                checkCompliance(eachType.ObservedPIITypes.CompliantPIIs, incomingCompliant)
+                checkCompliance(eachType.ObservedPIITypes.ViolatingPIIs, incomingViolating)
+        }
+        for _, eachType := range endpoint.EndpointProfile.Outgoing.Indirect {
+                checkCompliance(eachType.ProcessingInfo.ObservedPIITypes.CompliantPIIs, indirectCompliant)
+                checkCompliance(eachType.ProcessingInfo.ObservedPIITypes.ViolatingPIIs, indirectViolating)
+        }
+        for _, eachType := range endpoint.EndpointProfile.Outgoing.Shared {
+                checkCompliance(eachType.ProcessingInfo.ObservedPIITypes.CompliantPIIs, sharedCompliant)
+                checkCompliance(eachType.ProcessingInfo.ObservedPIITypes.ViolatingPIIs, sharedViolating)
+        }
+    }
+}
+
+func checkConsistency(json1 []byte, json2 []byte) {
     //necessary checks: 
     //1) Each Incoming request must be consistent with other incoming requests to the same endpoint (CC1)
     //2) Each Outgoing.Indirect request must be consistent with other Outgoing.Indirect requests to the same endpoint (CC2)
@@ -41,50 +65,8 @@ func checkConsistency(json1 []byte, json2 []byte){
     var profile1SharedViolating = []int{}
     
     //scanning each of the service's endpoints in profile 1
-    for _, iEndpoint := range obj1.Endpoints.Endpoint {
-        //scanning Incoming requests
-        for _, jIncoming := range iEndpoint.EndpointProfile.Incoming {
-            for _, kCompliant := range jIncoming.ObservedPIITypes.CompliantPIIs {
-                if !(slices.Contains(profile1IncomingCompliant, int(kCompliant))) {
-                    profile1IncomingCompliant = append (profile1IncomingCompliant, int(kCompliant))
-                }
-            }
-            for _, kViolating := range jIncoming.ObservedPIITypes.ViolatingPIIs {
-                if !(slices.Contains(profile1IncomingViolating, int(kViolating))) {
-                    profile1IncomingViolating = append (profile1IncomingViolating, int(kViolating))
-                }
-            }
-        }
-        //scanning Indirect requests
-        for _, jIndirect := range iEndpoint.EndpointProfile.Outgoing.Indirect {
-            for _, kCompliant := range jIndirect.ProcessingInfo.ObservedPIITypes.CompliantPIIs {
-                if !(slices.Contains(profile1IndirectCompliant, int(kCompliant))) {
-                    profile1IndirectCompliant = append (profile1IndirectCompliant, int(kCompliant))
-                }
-            }
-            for _, kViolating := range jIndirect.ProcessingInfo.ObservedPIITypes.ViolatingPIIs {
-                if !(slices.Contains(profile1IndirectViolating, int(kViolating))) {
-                    profile1IndirectViolating = append (profile1IndirectViolating, int(kViolating))
-                }
-            }
-        }
-
-        //scanning Shared requests
-        for _, jShared := range iEndpoint.EndpointProfile.Outgoing.Shared {
-            for _, kCompliant := range jShared.ProcessingInfo.ObservedPIITypes.CompliantPIIs {
-                if !(slices.Contains(profile1SharedCompliant, int(kCompliant))) {
-                    profile1SharedCompliant = append (profile1SharedCompliant, int(kCompliant))
-                }
-            }
-            for _, kViolating := range jShared.ProcessingInfo.ObservedPIITypes.ViolatingPIIs {
-                if !(slices.Contains(profile1SharedViolating, int(kViolating))) {
-                    profile1SharedViolating = append (profile1SharedViolating, int(kViolating))
-                }
-            }
-        }
-
-    }
-
+    checkEndpoints(obj1, &profile1IncomingCompliant,&profile1IndirectCompliant,&profile1SharedCompliant,&profile1IncomingViolating,&profile1IndirectViolating,&profile1SharedViolating)
+    
 
     var profile2IncomingCompliant = []int{}
     var profile2IndirectCompliant = []int{}
@@ -94,47 +76,8 @@ func checkConsistency(json1 []byte, json2 []byte){
     var profile2SharedViolating = []int{}
     
     //scanning each of the service's endpoints in profile 2
-    for _, iEndpoint := range obj2.Endpoints.Endpoint {
-        //scanning Incoming requests
-        for _, jIncoming := range iEndpoint.EndpointProfile.Incoming {
-            for _, kCompliant := range jIncoming.ObservedPIITypes.CompliantPIIs {
-                if !(slices.Contains(profile2IncomingCompliant, int(kCompliant))) {
-                    profile2IncomingCompliant = append (profile2IncomingCompliant, int(kCompliant))
-                }
-            }
-            for _, kViolating := range jIncoming.ObservedPIITypes.ViolatingPIIs {
-                if !(slices.Contains(profile2IncomingViolating, int(kViolating))) {
-                    profile2IncomingViolating = append (profile2IncomingViolating, int(kViolating))
-                }
-            }
-        }
-        //scanning Indirect requests
-        for _, jIndirect := range iEndpoint.EndpointProfile.Outgoing.Indirect {
-            for _, kCompliant := range jIndirect.ProcessingInfo.ObservedPIITypes.CompliantPIIs {
-                if !(slices.Contains(profile2IndirectCompliant, int(kCompliant))) {
-                    profile2IndirectCompliant = append (profile2IndirectCompliant, int(kCompliant))
-                }
-            }
-            for _, kViolating := range jIndirect.ProcessingInfo.ObservedPIITypes.ViolatingPIIs {
-                if !(slices.Contains(profile2IndirectViolating, int(kViolating))) {
-                    profile2IndirectViolating = append (profile2IndirectViolating, int(kViolating))
-                }
-            }
-        }
-        //scanning Shared requests
-        for _, jShared := range iEndpoint.EndpointProfile.Outgoing.Shared {
-            for _, kCompliant := range jShared.ProcessingInfo.ObservedPIITypes.CompliantPIIs {
-                if !(slices.Contains(profile2SharedCompliant, int(kCompliant))) {
-                    profile2SharedCompliant = append (profile2SharedCompliant, int(kCompliant))
-                }
-            }
-            for _, kViolating := range jShared.ProcessingInfo.ObservedPIITypes.ViolatingPIIs {
-                if !(slices.Contains(profile2SharedViolating, int(kViolating))) {
-                    profile2SharedViolating = append (profile2SharedViolating, int(kViolating))
-                }
-            }
-        }
-    }
+    checkEndpoints(obj2, &profile2IncomingCompliant,&profile2IndirectCompliant,&profile2SharedCompliant,&profile2IncomingViolating,&profile2IndirectViolating,&profile2SharedViolating)
+
     var violatingElements = []int{}
     var isViolating = false
     //checking that there are no violations within the same profile's dataflow
