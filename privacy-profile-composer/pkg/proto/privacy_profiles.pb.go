@@ -7,11 +7,12 @@
 package proto
 
 import (
+	reflect "reflect"
+	sync "sync"
+
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	emptypb "google.golang.org/protobuf/types/known/emptypb"
-	reflect "reflect"
-	sync "sync"
 )
 
 const (
@@ -531,20 +532,22 @@ func file_privacy_profiles_proto_rawDescGZIP() []byte {
 	return file_privacy_profiles_proto_rawDescData
 }
 
-var file_privacy_profiles_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_privacy_profiles_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
-var file_privacy_profiles_proto_goTypes = []interface{}{
-	(PIIType)(0),                      // 0: privacy_profiles.PII_type
-	(PurposeOfUse)(0),                 // 1: privacy_profiles.PurposeOfUse
-	(*SystemwideObservedProfile)(nil), // 2: privacy_profiles.SystemwideObservedProfile
-	(*SvcObservedProfile)(nil),        // 3: privacy_profiles.SvcObservedProfile
-	(*PurposeBasedProcessing)(nil),    // 4: privacy_profiles.purposeBasedProcessing
-	(*DataItemAndThirdParties)(nil),   // 5: privacy_profiles.dataItemAndThirdParties
-	(*ThirdParties)(nil),              // 6: privacy_profiles.thirdParties
-	nil,                               // 7: privacy_profiles.purposeBasedProcessing.ProcessingEntriesEntry
-	nil,                               // 8: privacy_profiles.dataItemAndThirdParties.EntryEntry
-	(*emptypb.Empty)(nil),             // 9: google.protobuf.Empty
-}
+var (
+	file_privacy_profiles_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
+	file_privacy_profiles_proto_msgTypes  = make([]protoimpl.MessageInfo, 7)
+	file_privacy_profiles_proto_goTypes   = []interface{}{
+		PIIType(0),                        // 0: privacy_profiles.PII_type
+		PurposeOfUse(0),                   // 1: privacy_profiles.PurposeOfUse
+		(*SystemwideObservedProfile)(nil), // 2: privacy_profiles.SystemwideObservedProfile
+		(*SvcObservedProfile)(nil),        // 3: privacy_profiles.SvcObservedProfile
+		(*PurposeBasedProcessing)(nil),    // 4: privacy_profiles.purposeBasedProcessing
+		(*DataItemAndThirdParties)(nil),   // 5: privacy_profiles.dataItemAndThirdParties
+		(*ThirdParties)(nil),              // 6: privacy_profiles.thirdParties
+		nil,                               // 7: privacy_profiles.purposeBasedProcessing.ProcessingEntriesEntry
+		nil,                               // 8: privacy_profiles.dataItemAndThirdParties.EntryEntry
+		(*emptypb.Empty)(nil),             // 9: google.protobuf.Empty
+	}
+)
 var file_privacy_profiles_proto_depIdxs = []int32{
 	4, // 0: privacy_profiles.SystemwideObservedProfile.systemwideProcessingEntries:type_name -> privacy_profiles.purposeBasedProcessing
 	4, // 1: privacy_profiles.SvcObservedProfile.observedProcessingEntries:type_name -> privacy_profiles.purposeBasedProcessing

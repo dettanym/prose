@@ -13,7 +13,6 @@ import (
 	"github.com/open-policy-agent/opa/topdown"
 	"github.com/openzipkin/zipkin-go"
 	"github.com/openzipkin/zipkin-go/model"
-
 	"privacy-profile-composer/pkg/envoyfilter/internal/common"
 )
 
@@ -41,7 +40,7 @@ type Filter struct {
 	encodeDataBuffer  string
 }
 
-// Callbacks which are called in request path
+// Callbacks which are called in request path.
 func (f *Filter) DecodeHeaders(header api.RequestHeaderMap, endStream bool) api.StatusType {
 	// log.Println(">>> DECODE HEADERS")
 
@@ -74,12 +73,14 @@ func (f *Filter) DecodeHeaders(header api.RequestHeaderMap, endStream bool) api.
 		destinationAddress, err := f.callbacks.GetProperty("destination.address")
 		if err != nil {
 			log.Println(err)
+
 			return api.Continue
 		}
 
 		isInternalDestination, err := f.checkInternalAddress(destinationAddress)
 		if err != nil {
 			log.Println(err)
+
 			return api.Continue
 		}
 
@@ -94,6 +95,7 @@ func (f *Filter) DecodeHeaders(header api.RequestHeaderMap, endStream bool) api.
 
 	default:
 		log.Printf("unexpected filter direction: %s\n", f.config.direction)
+
 		return api.Continue
 	}
 
@@ -146,6 +148,7 @@ func (f *Filter) DecodeData(buffer api.BufferInstance, endStream bool) api.Statu
 		if sendLocalReply && f.config.opaEnforce {
 			body := "OPA target policy rejected the input data"
 			f.callbacks.SendLocalReply(403, body, nil, 0, "")
+
 			return api.LocalReply
 		}
 	}
@@ -192,13 +195,14 @@ func (f *Filter) EncodeHeaders(header api.ResponseHeaderMap, endStream bool) api
 
 	default:
 		log.Printf("unexpected filter direction: %s\n", f.config.direction)
+
 		return api.Continue
 	}
 
 	return api.StopAndBuffer
 }
 
-// Callbacks which are called in response path
+// Callbacks which are called in response path.
 func (f *Filter) EncodeData(buffer api.BufferInstance, endStream bool) api.StatusType {
 	// TODO: we might need to be careful about collecting the data from all
 	//  of these buffers. Maybe go has some builtin methods to work with it,
@@ -241,6 +245,7 @@ func (f *Filter) EncodeData(buffer api.BufferInstance, endStream bool) api.Statu
 		if sendLocalReply && f.config.opaEnforce {
 			body := "OPA target policy rejected the input data"
 			f.callbacks.SendLocalReply(403, body, nil, 0, "")
+
 			return api.LocalReply
 		}
 	}
@@ -275,6 +280,7 @@ func (f *Filter) processBody(ctx context.Context, body string, isDecode bool) (s
 	jsonBody, err := common.GetJSONBody(ctx, contentType, body)
 	if err != nil {
 		proseTags[PROSE_JSON_BODY_ERROR] = fmt.Sprintf("%s", err)
+
 		return false, err, proseTags
 	}
 
@@ -289,6 +295,7 @@ func (f *Filter) processBody(ctx context.Context, body string, isDecode bool) (s
 	)
 	if err != nil {
 		proseTags[PROSE_PRESIDIO_ERROR] = fmt.Sprintf("%s", err)
+
 		return false, err, proseTags
 	}
 	proseTags[PROSE_PII_TYPES] = strings.Join(piiTypes, ",")
@@ -330,10 +337,10 @@ func (f *Filter) runOPA(ctx context.Context, isDecode bool, dataItems []string) 
 			Tracer: topdown.NewBufferTracer(),
 		},
 	)
-
 	if err != nil {
 		errStr := fmt.Sprintf("had an error evaluating the policy: %s", err)
 		proseTags[PROSE_OPA_ERROR] = errStr
+
 		return false, fmt.Errorf("%s\n", errStr), proseTags
 	}
 
@@ -341,6 +348,7 @@ func (f *Filter) runOPA(ctx context.Context, isDecode bool, dataItems []string) 
 	if !ok {
 		errStr := fmt.Sprintf("result: Result type: %v", decision)
 		proseTags[PROSE_OPA_ERROR] = errStr
+
 		return false, fmt.Errorf("%s\n", errStr), proseTags
 	}
 
@@ -378,7 +386,6 @@ func (f *Filter) runOPA(ctx context.Context, isDecode bool, dataItems []string) 
 }
 
 func (f *Filter) checkInternalAddress(destinationAddress string) (bool, error) {
-
 	hostIpStr, _, err := net.SplitHostPort(destinationAddress)
 	if err != nil {
 		return false, err

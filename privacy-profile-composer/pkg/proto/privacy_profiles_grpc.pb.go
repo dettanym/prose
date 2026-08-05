@@ -8,6 +8,7 @@ package proto
 
 import (
 	context "context"
+
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -72,15 +73,16 @@ type PrivacyProfileComposerServer interface {
 }
 
 // UnimplementedPrivacyProfileComposerServer must be embedded to have forward compatible implementations.
-type UnimplementedPrivacyProfileComposerServer struct {
-}
+type UnimplementedPrivacyProfileComposerServer struct{}
 
 func (UnimplementedPrivacyProfileComposerServer) PostObservedProfile(context.Context, *SvcObservedProfile) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method PostObservedProfile not implemented")
 }
+
 func (UnimplementedPrivacyProfileComposerServer) GetSystemWideProfile(context.Context, *emptypb.Empty) (*SystemwideObservedProfile, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetSystemWideProfile not implemented")
 }
+
 func (UnimplementedPrivacyProfileComposerServer) mustEmbedUnimplementedPrivacyProfileComposerServer() {
 }
 

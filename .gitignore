@@ -1,5 +1,6 @@
 .vscode/
 /.pre-commit-config.yaml
+/.direnv/
 
 /minikube/
 

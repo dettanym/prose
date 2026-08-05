@@ -85,5 +85,6 @@
       </list>
     </option>
     <option name="linterSelected" value="true" />
+    <option name="useCustomConfigFile" value="true" />
   </component>
 </project>

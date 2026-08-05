@@ -32,6 +32,7 @@ func UpdateTracer(url string) (*ZipkinTracer, error) {
 		err = GlobalTracer.Close()
 		if err != nil {
 			_ = tracer.Close()
+
 			return nil, err
 		}
 
@@ -66,6 +67,7 @@ func NewZipkinTracer(url string) (*ZipkinTracer, error) {
 	endpoint, err := zipkin.NewEndpoint("golang-filter", "")
 	if err != nil {
 		_ = rep.Close()
+
 		return nil, fmt.Errorf("unable to create local endpoint: %w", err)
 	}
 
@@ -74,6 +76,7 @@ func NewZipkinTracer(url string) (*ZipkinTracer, error) {
 	tracer, err := zipkin.NewTracer(rep, tracerOptions...)
 	if err != nil {
 		_ = rep.Close()
+
 		return nil, fmt.Errorf("unable to create tracer: %w", err)
 	}
 
@@ -124,5 +127,4 @@ func (t ZipkinTracer) Extract(h envoyapi.HeaderMap) model.SpanContext {
 
 		return sc, mErr
 	})
-
 }

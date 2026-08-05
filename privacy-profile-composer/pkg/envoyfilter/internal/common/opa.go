@@ -13,7 +13,6 @@ func init() {
 	opaObj, err := sdk.New(context.Background(), sdk.Options{
 		ID: "golang-filter-opa",
 	})
-
 	if err != nil {
 		panic(err)
 	}
