@@ -145,3 +145,202 @@ func Composer(
 
 	return composedProfile
 }
+// SummarisedCall is the result of flattening one EndpointCall's direct +
+// indirect buckets into a single pii_compliant / pii_violation pair.
+// This is the intermediate form used by Steps 1-3 before the final
+// proto.PurposeBasedProcessing is assembled for Step 4.
+type SummarisedCall struct {
+	PiiCompliant []string // union of direct.pii_compliant + all indirect[*].pii_compliant
+	PiiViolation []string // union of direct.pii_violation + all indirect[*].pii_violation
+	ThirdParties []string // external domains from shared outgoing entries
+}
+
+// Step 1:
+// "Summarise an endpoint profile by unioning the pii_compliant and pii_violation
+// sets across the direct and indirect buckets."
+//
+// Input:  one EndpointCall (direct + outgoing[] from main.go's profile builder)
+// Output: one SummarisedCall with flat compliant/violation sets
+//
+// The policy doesn't distinguish between direct and indirect processing —
+// it only cares what PII a service touched, not how it arrived.
+// So we union direct + indirect into one flat set here.
+func summariseEndpointCall(call EndpointCall) SummarisedCall {
+	var compliant []string
+	var violation []string
+	var thirdParties []string
+ 
+	// Direct processing bucket
+	compliant = combineStringLists(compliant, call.EndpointProfile.Direct.PiiCompliant)
+	violation = combineStringLists(violation, call.EndpointProfile.Direct.PiiViolation)
+ 
+	// Indirect + shared outgoing entries
+	for _, outgoing := range call.EndpointProfile.Outgoing {
+		switch outgoing.Type {
+		case "indirect":
+			// Indirect: PII received in a response from another service
+			compliant = combineStringLists(compliant, outgoing.PiiCompliant)
+			violation = combineStringLists(violation, outgoing.PiiViolation)
+		case "shared":
+			// Shared: PII sent to an external domain
+			// For sharing violations, PiiViolation = what was shared against policy
+			violation = combineStringLists(violation, outgoing.PiiViolation)
+			if outgoing.ExternalDomain != "" {
+				thirdParties = combineStringLists(thirdParties, []string{outgoing.ExternalDomain})
+			}
+		}
+	}
+ 
+	return SummarisedCall{
+		PiiCompliant: compliant,
+		PiiViolation: violation,
+		ThirdParties: thirdParties,
+	}
+}
+
+// Step 2:
+// "Compose two endpoint profiles for the same endpoint by unioning their
+// summarised compliant and violation sets."
+//
+// Input:  map[hash]EndpointCall — all observed calls to one endpoint
+// Output: one SummarisedCall representing all observed behaviour at that endpoint
+//
+// Why: an endpoint may be called many times across many traces with different
+// request/response bodies each time. Each call may expose different PII types.
+// We union them all so the endpoint's profile reflects everything ever observed.
+func composeEndpointCalls(calls map[string]EndpointCall) SummarisedCall {
+	result := SummarisedCall{}
+	for _, call := range calls {
+		summarised := summariseEndpointCall(call)
+		result.PiiCompliant = combineStringLists(result.PiiCompliant, summarised.PiiCompliant)
+		result.PiiViolation = combineStringLists(result.PiiViolation, summarised.PiiViolation)
+		result.ThirdParties = combineStringLists(result.ThirdParties, summarised.ThirdParties)
+	}
+	return result
+}
+
+// Step 3:
+// "Compose across all endpoints of the same microservice."
+//
+// Input:  ServiceObservedProfile (from main.go's profile builder) with
+//         map[endpoint]map[hash]EndpointCall
+// Output: proto.PurposeBasedProcessing ready for Step 4's Composer()
+//
+// Why: the privacy policy applies per purpose-of-use, not per endpoint.
+// A policy says "the authentication service can process EMAIL_ADDRESS" —
+// it doesn't say "only the Login endpoint can, not SetPasswd".
+// So we union across all endpoints into one entry keyed by purpose.
+//
+// The purpose key in the proto map comes from ServiceObservedProfile.PurposeOfUse
+// which is set from the service's FQDN (its Kubernetes service name).
+func composeSvcProfile(svcProfile ServiceObservedProfile) *proto.PurposeBasedProcessing {
+	// Compose across all endpoints of this service into one SummarisedCall
+	serviceSummary := SummarisedCall{}
+	for _, endpointCalls := range svcProfile.Endpoints {
+		// Step 2: compose all calls to this endpoint
+		endpointSummary := composeEndpointCalls(endpointCalls)
+		// Step 3: union this endpoint's summary into the service summary
+		serviceSummary.PiiCompliant = combineStringLists(
+			serviceSummary.PiiCompliant,
+			endpointSummary.PiiCompliant,
+		)
+		serviceSummary.PiiViolation = combineStringLists(
+			serviceSummary.PiiViolation,
+			endpointSummary.PiiViolation,
+		)
+		serviceSummary.ThirdParties = combineStringLists(
+			serviceSummary.ThirdParties,
+			endpointSummary.ThirdParties,
+		)
+	}
+ 
+	// Convert SummarisedCall → proto.PurposeBasedProcessing
+	// The outer map key is the purpose of use (e.g. "authentication")
+	// The inner map key is the PII type (e.g. "EMAIL_ADDRESS")
+	// The value is the list of third parties (empty string = no external domain)
+	processingEntries := make(map[string]*proto.DataItemAndThirdParties)
+ 
+	// Build the DataItemAndThirdParties entry for this purpose
+	piiEntry := make(map[string]*proto.ThirdParties)
+ 
+	for _, piiType := range serviceSummary.PiiCompliant {
+		piiEntry[piiType] = &proto.ThirdParties{
+			ThirdParty: []string{""}, // internal only — no external domain
+		}
+	}
+ 
+	for _, piiType := range serviceSummary.PiiViolation {
+		// If it's a violation, record the third parties involved
+		// (empty string for purpose-of-use violations, actual domain for sharing)
+		existing, exists := piiEntry[piiType]
+		if exists {
+			// Already in compliant — seen in both compliant and violation contexts
+			// Add third parties from violation context
+			existing.ThirdParty = combineStringLists(
+				existing.ThirdParty,
+				serviceSummary.ThirdParties,
+			)
+		} else {
+			piiEntry[piiType] = &proto.ThirdParties{
+				ThirdParty: serviceSummary.ThirdParties,
+			}
+		}
+	}
+ 
+	processingEntries[svcProfile.PurposeOfUse] = &proto.DataItemAndThirdParties{
+		Entry: piiEntry,
+	}
+ 
+	return &proto.PurposeBasedProcessing{
+		ProcessingEntries: processingEntries,
+	}
+}
+
+// Step 4:
+// "Compose across all microservices into the system-wide observed profile."
+//
+// This function now accepts a ServiceObservedProfile (from main.go's profile
+// builder) instead of a proto.SvcObservedProfile, runs Steps 1-3 first,
+// then does the cross-service union with the existing system-wide profile.
+//
+// The original Composer() that takes proto.SvcObservedProfile is kept below
+// for backward compatibility with grpc_server.go's PostObservedProfile.
+func ComposeWithSvcProfile(
+	systemProfile *proto.SystemwideObservedProfile,
+	svcProfile ServiceObservedProfile,
+) *proto.SystemwideObservedProfile {
+	// Steps 1-3: summarise and flatten the per-service observed profile
+	purposeBasedProcessing := composeSvcProfile(svcProfile)
+ 
+	// Step 4: union with the existing system-wide profile (same as before)
+	return &proto.SystemwideObservedProfile{
+		SystemwideProcessingEntries: combinerMiddle(
+			systemProfile.SystemwideProcessingEntries,
+			purposeBasedProcessing,
+		),
+		ComposedServicesInternalFQDNs: combineSvcInternalFQDNs(
+			systemProfile.ComposedServicesInternalFQDNs,
+			svcProfile.SvcFQDN,
+		),
+	}
+}
+ 
+// Composer is kept unchanged for grpc_server.go backward compatibility.
+// It accepts the flat proto.SvcObservedProfile directly (skips Steps 1-3).
+// Use ComposeWithSvcProfile() when calling from main.go's pipeline.
+func Composer(
+	systemProfile *proto.SystemwideObservedProfile,
+	svcProfile *proto.SvcObservedProfile,
+) *proto.SystemwideObservedProfile {
+	return &proto.SystemwideObservedProfile{
+		SystemwideProcessingEntries: combinerMiddle(
+			systemProfile.SystemwideProcessingEntries,
+			svcProfile.ObservedProcessingEntries,
+		),
+		ComposedServicesInternalFQDNs: combineSvcInternalFQDNs(
+			systemProfile.ComposedServicesInternalFQDNs,
+			svcProfile.SvcInternalFQDN,
+		),
+	}
+}
+ 
