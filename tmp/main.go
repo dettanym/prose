@@ -12,79 +12,68 @@ import (
 	"github.com/jaegertracing/jaeger/proto-gen/api_v2"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+
+	"privacy-profile-composer/pkg/composer"
+	proto "privacy-profile-composer/pkg/proto"
 )
 
-// ─── Observed profile data structures (matching Listing 3 in paper) ──────────
+// ─── Profile types imported from composer package ─────────────────────────────
+// All rich profile struct types are defined in composer.go so they can be
+// used by both main.go and composer.go without circular imports.
+// We alias them here for brevity.
 
-// DirectProcessing holds PII types seen directly in a request to this endpoint.
-// Maps to "direct" key in Listing 3 line 10.
-type DirectProcessing struct {
-	PiiCompliant []string `json:"pii_compliant,omitempty"`
-	PiiViolation []string `json:"pii_violation,omitempty"`
+type PIIType = proto.PIIType
+type ObservedPIITypes = composer.ObservedPIITypes
+type IncomingEntry = composer.IncomingEntry
+type IndirectProcessingInfo = composer.IndirectProcessingInfo
+type IndirectEntry = composer.IndirectEntry
+type SharedProcessingInfo = composer.SharedProcessingInfo
+type SharedEntry = composer.SharedEntry
+type OutgoingEntries = composer.OutgoingEntries
+type EndpointProfileData = composer.EndpointProfileData
+type EndpointEntry = composer.EndpointEntry
+type EndpointsList = composer.EndpointsList
+type SvcObservedProfileLocal = composer.SvcObservedProfileLocal
+
+// piiStringToEnum converts a Presidio string like "PERSON" to proto.PIIType.
+func piiStringToEnum(piiStr string) proto.PIIType {
+	if val, ok := proto.PIIType_value[piiStr]; ok {
+		return proto.PIIType(val)
+	}
+	return -1
 }
 
-// OutgoingEntry represents one outgoing call from an endpoint — either an
-// indirect purpose-of-use (call to another service) or a data-sharing entry
-// (call to an external domain). Maps to Listing 3 lines 13-29.
-type OutgoingEntry struct {
-	Type             string   `json:"type"`                        // "indirect" or "shared"
-	SpanID           string   `json:"spanID"`                      // evidence
-	CalleeHost       string   `json:"callee_host,omitempty"`       // for indirect
-	CalleePath       string   `json:"callee_path,omitempty"`       // for indirect
-	PiiCompliant     []string `json:"pii_compliant,omitempty"`     // for indirect
-	PiiViolation     []string `json:"pii_violation,omitempty"`     // both types
-	ViolationReason  string   `json:"violation_reason,omitempty"`  // both types
-	ExternalDomain   string   `json:"external_domain,omitempty"`   // for shared
+// piiStringsToEnums converts a slice of PII strings to []proto.PIIType.
+func piiStringsToEnums(strs []string) []proto.PIIType {
+	var result []proto.PIIType
+	for _, s := range strs {
+		t := piiStringToEnum(s)
+		if t >= 0 {
+			result = append(result, t)
+		}
+	}
+	return result
 }
 
-// EndpointProfile holds the full privacy profile for one call to an endpoint.
-// Maps to Listing 3 lines 9-29 (the "endpoint_profile" object).
-type EndpointProfile struct {
-	Direct   DirectProcessing `json:"direct,omitempty"`
-	Outgoing []OutgoingEntry  `json:"outgoing,omitempty"`
-}
+// profileStore accumulates SvcObservedProfileLocal per service FQDN.
+var profileStore = map[string]*SvcObservedProfileLocal{}
 
-// EndpointCall holds one observed call to an endpoint, indexed by a hash of the
-// profile (to deduplicate identical calls). Maps to Listing 3 lines 6-29.
-type EndpointCall struct {
-	TraceID         string          `json:"traceID"`
-	SpanIDOfCall    string          `json:"spanID_of_call"`
-	EndpointProfile EndpointProfile `json:"endpoint_profile"`
-}
-
-// ServiceObservedProfile is the top-level observed profile for one service.
-// Maps to Listing 3 lines 1-36.
-// Endpoints maps endpoint name → (profile hash → EndpointCall).
-type ServiceObservedProfile struct {
-	TargetPolicyHash string                               `json:"target_policy_hash"`
-	ServiceHash      string                               `json:"service_hash"`
-	PurposeOfUse     string                               `json:"purpose_of_use"`
-	Endpoints        map[string]map[string]EndpointCall   `json:"endpoints"`
-}
-
-// profileStore accumulates profiles keyed by service FQDN during a pipeline run.
-// In a real system this would be persisted-- here it lives in memory per run.
-var profileStore = map[string]*ServiceObservedProfile{}
-
-// getOrCreateProfile returns the existing profile for a service or creates a new one.
-func getOrCreateProfile(serviceFQDN, purposeOfUse string) *ServiceObservedProfile {
+// getOrCreateProfile returns or creates a SvcObservedProfileLocal for a service.
+func getOrCreateProfile(serviceFQDN, purposeOfUse string) *SvcObservedProfileLocal {
 	if p, ok := profileStore[serviceFQDN]; ok {
 		return p
 	}
-	p := &ServiceObservedProfile{
-		TargetPolicyHash: "%POLICY_FILE_HASH%",  // TODO: read from OPA bundle hash
-		ServiceHash:      "%SERVICE_IMAGE_HASH%", // TODO: read from x-envoy-peer-metadata
-		PurposeOfUse:     purposeOfUse,
-		Endpoints:        map[string]map[string]EndpointCall{},
+	p := &SvcObservedProfileLocal{
+		SvcInternalFQDN:  serviceFQDN,
+		TargetPolicyHash: "%POLICY_FILE_HASH%",
+		ServiceHash:      "%SERVICE_IMAGE_HASH%",
 	}
 	profileStore[serviceFQDN] = p
 	return p
 }
 
 // endpointNameFromOperationName extracts the endpoint name from an Envoy SP
-// operationName. Istio formats these as "<service> <endpoint>" for inbound spans
-// (e.g. "authentication Login") or just the endpoint name for app spans.
-// We take the last whitespace-separated token.
+// operationName e.g. "authentication Login" → "Login"
 func endpointNameFromOperationName(operationName string) string {
 	parts := strings.Fields(operationName)
 	if len(parts) == 0 {
@@ -93,255 +82,188 @@ func endpointNameFromOperationName(operationName string) string {
 	return parts[len(parts)-1]
 }
 
-// profileHashKey produces a simple deduplication key for an EndpointProfile.
-// The paper uses a cryptographic hash; here we use a string concatenation of
-// the PII types for simplicity. Replace with sha256 in production.
-func profileHashKey(profile EndpointProfile) string {
-	key := strings.Join(profile.Direct.PiiCompliant, ",") +
-		"|" + strings.Join(profile.Direct.PiiViolation, ",")
-	for _, o := range profile.Outgoing {
-		key += "|" + o.Type + ":" + strings.Join(o.PiiViolation, ",")
+// findOrCreateEndpoint returns or appends an endpoint entry by name.
+func findOrCreateEndpoint(profile *SvcObservedProfileLocal, endpointName string) *EndpointEntry {
+	for i := range profile.Endpoints.Endpoint {
+		if profile.Endpoints.Endpoint[i].EndpointName == endpointName {
+			return &profile.Endpoints.Endpoint[i]
+		}
 	}
-	if key == "|" {
-		key = "empty"
-	}
-	return key
+	profile.Endpoints.Endpoint = append(profile.Endpoints.Endpoint,
+		EndpointEntry{
+			EndpointName: endpointName,
+			EndpointHash: "%OBJECT_HASH%",
+		},
+	)
+	return &profile.Endpoints.Endpoint[len(profile.Endpoints.Endpoint)-1]
 }
 
-// addToProfile inserts or updates an EndpointCall in the profile for a given
-// service and endpoint name. If an identical profile already exists (same hash),
-// only the traceID/spanID evidence is updated to the most recent call.
-func addToProfile(profile *ServiceObservedProfile, endpointName string, call EndpointCall) {
-	if _, ok := profile.Endpoints[endpointName]; !ok {
-		profile.Endpoints[endpointName] = map[string]EndpointCall{}
-	}
-	hashKey := profileHashKey(call.EndpointProfile)
-	profile.Endpoints[endpointName][hashKey] = call
-}
-
-// populateServiceProfile is the core function that maps one parsed PROSE span
-// into the correct bucket of the correct service's observed profile.
-//
-// The three cases mirror paper Section 6.1 / Figure 4:
-//   INBOUND  + DECODE_DATA → callee's direct processing bucket
-//   OUTBOUND + ENCODE_DATA → caller's indirect processing bucket
-//   OUTBOUND + DECODE_DATA → caller's data sharing bucket
+// populateServiceProfile maps one PROSE span into the correct bucket of the
+// correct service's SvcObservedProfileLocal using local named struct types.
 func populateServiceProfile(
 	span model.Span,
 	spanStore map[model.SpanID]model.Span,
 ) error {
 	tags := model.KeyValues(span.GetTags())
 
-	// Read the direction tag — must be present
 	directionTag, hasDir := tags.FindByKey("prose_sidecar_direction")
 	if !hasDir {
-		return nil // not a prose span
+		return nil
 	}
 
-	// Read the data flow tag — may be absent if running the old filter
-	// without the PROSE_DATA_FLOW tag. Fall back to inferring from operation name.
 	dataFlowTag, hasFlow := tags.FindByKey("prose_data_flow")
 	var dataFlow string
 	if hasFlow {
 		dataFlow = dataFlowTag.VStr
 	} else {
-		// Infer from operation name — old filter uses "encodedata" / "decodedata"
 		opName := strings.ToLower(span.OperationName)
 		switch {
-		case strings.Contains(opName, "encodedata") || opName == "encodedata":
+		case strings.Contains(opName, "encodedata"):
 			dataFlow = "ENCODE_DATA"
-		case strings.Contains(opName, "decodedata") || opName == "decodedata":
+		case strings.Contains(opName, "decodedata"):
 			dataFlow = "DECODE_DATA"
 		default:
-			return nil // not a data span
+			return nil
 		}
 	}
-
 	if dataFlow != "DECODE_DATA" && dataFlow != "ENCODE_DATA" {
-		return nil // header-only spans carry no PII results
+		return nil
 	}
 
-	// Also require prose_pii_types or prose_opa_decision to confirm
-	// this span actually ran processBody (not just a header span)
 	_, hasPii := tags.FindByKey("prose_pii_types")
+	_, hasPiiCompliant := tags.FindByKey("prose_pii_compliant")
+	_, hasPiiViolation := tags.FindByKey("prose_pii_violation")
 	_, hasOpa := tags.FindByKey("prose_opa_decision")
-	if !hasPii && !hasOpa {
-		return nil // span didn't run processBody, nothing to profile
+	if !hasPii && !hasPiiCompliant && !hasPiiViolation && !hasOpa {
+		return nil
 	}
 
 	isInbound := strings.Contains(directionTag.VStr, "INBOUND")
 	isDecode := dataFlow == "DECODE_DATA"
 
-	// Read PII result tags
-	piiTypesTag, _ := tags.FindByKey("prose_pii_types")
-	opaDecisionTag, _ := tags.FindByKey("prose_opa_decision")
-	violationTypeTag, _ := tags.FindByKey("prose_violation_type")
+	piiCompliantTag, hasCompliant := tags.FindByKey("prose_pii_compliant")
+	piiViolationTag, hasViolation := tags.FindByKey("prose_pii_violation")
 
-	var piiTypes []string
-	if piiTypesTag.VStr != "" {
-		piiTypes = strings.Split(piiTypesTag.VStr, ",")
-	}
-	isViolation := opaDecisionTag.VStr == "deny"
-
-	// Split PII types into compliant and violation lists
-	var piiCompliant, piiViolation []string
-	if isViolation {
-		piiViolation = piiTypes
+	var compliantStrings, violatingStrings []string
+	if hasCompliant || hasViolation {
+		if hasCompliant && piiCompliantTag.VStr != "" {
+			compliantStrings = strings.Split(piiCompliantTag.VStr, ",")
+		}
+		if hasViolation && piiViolationTag.VStr != "" {
+			violatingStrings = strings.Split(piiViolationTag.VStr, ",")
+		}
 	} else {
-		piiCompliant = piiTypes
+		piiTypesTag, _ := tags.FindByKey("prose_pii_types")
+		opaDecisionTag, _ := tags.FindByKey("prose_opa_decision")
+		var allTypes []string
+		if piiTypesTag.VStr != "" {
+			allTypes = strings.Split(piiTypesTag.VStr, ",")
+		}
+		if opaDecisionTag.VStr == "deny" {
+			violatingStrings = allTypes
+		} else {
+			compliantStrings = allTypes
+		}
 	}
 
-	// Navigate to the parent Envoy SP span
-	parentSpanID := span.ParentSpanID()
-	parentSpan, ok := spanStore[parentSpanID]
+	compliantPIIs := piiStringsToEnums(compliantStrings)
+	violatingPIIs := piiStringsToEnums(violatingStrings)
+
+	parentSpan, ok := spanStore[span.ParentSpanID()]
 	if !ok {
-		return fmt.Errorf("could not find parent span %s\n", parentSpanID)
+		return fmt.Errorf("could not find parent span %s\n", span.ParentSpanID())
 	}
 
 	traceID := fmt.Sprintf("0x%s", span.TraceID)
-	spanID := fmt.Sprintf("0x%s", span.SpanID)
+	spanIDStr := fmt.Sprintf("0x%s", span.SpanID)
 
-	// ── Case 1: INBOUND + DECODE_DATA ─────────────────────────────────────────
-	// The PROSE span's parent is the callee's inbound Envoy SP.
-	// The parent's operationName is "<service> <endpoint>" e.g. "authentication Login".
-	// This gives us both the service name and the endpoint name.
-	// Profile update: callee's direct processing bucket.
+	// ── Case 1: INBOUND + DECODE_DATA → callee's Incoming[] ──────────────────
 	if isInbound && isDecode {
 		calleeFQDN := parentSpan.GetProcess().GetServiceName()
 		endpointName := endpointNameFromOperationName(parentSpan.GetOperationName())
 
-		// purposeOfUse comes from the service name (same as the pod label)
-		// In production this would come from x-envoy-peer-metadata
-		purposeOfUse := calleeFQDN
+		profile := getOrCreateProfile(calleeFQDN, calleeFQDN)
+		ep := findOrCreateEndpoint(profile, endpointName)
 
-		profile := getOrCreateProfile(calleeFQDN, purposeOfUse)
-
-		call := EndpointCall{
-			TraceID:      traceID,
-			SpanIDOfCall: spanID,
-			EndpointProfile: EndpointProfile{
-				Direct: DirectProcessing{
-					PiiCompliant: piiCompliant,
-					PiiViolation: piiViolation,
+		ep.EndpointProfile.Incoming = append(ep.EndpointProfile.Incoming,
+			IncomingEntry{
+				TraceID:                           traceID,
+				SpanIDOfIncomingRequestToEndpoint: spanIDStr,
+				ObservedPIITypes: ObservedPIITypes{
+					CompliantPIIs: compliantPIIs,
+					ViolatingPIIs: violatingPIIs,
 				},
 			},
-		}
-		addToProfile(profile, endpointName, call)
-
-		fmt.Printf("[PROFILE] %s.%s → direct: compliant=%v violation=%v\n",
-			calleeFQDN, endpointName, piiCompliant, piiViolation)
+		)
+		fmt.Printf("[PROFILE] %s.%s → incoming: compliant=%v violation=%v\n",
+			calleeFQDN, endpointName, compliantStrings, violatingStrings)
 		return nil
 	}
 
-	// ── Case 2: OUTBOUND + ENCODE_DATA ────────────────────────────────────────
-	// The PROSE span's parent is the caller's outbound Envoy SP.
-	// We need the caller's app span (grandparent, skipping the Envoy SP).
-	// The caller's app span operationName is the endpoint name e.g. "Login".
-	// Profile update: caller's indirect processing bucket (outgoing entry).
+	// ── Case 2: OUTBOUND + ENCODE_DATA → caller's Outgoing.Indirect[] ────────
 	if !isInbound && !isDecode {
-		// Service name: from parent (outbound Envoy SP) process name = caller service
 		callerFQDN := parentSpan.GetProcess().GetServiceName()
-
-		// Walk up past the outbound Envoy SP to the caller's app span
-		// to get the endpoint name (the operation the caller was executing)
 		callerAppSpan, err := findAnAncestorCaller(parentSpan.ParentSpanID(), spanStore)
 		if err != nil {
 			return fmt.Errorf("could not find caller app span: %v\n", err)
 		}
-		// Endpoint name: last path segment of the caller app span's operation name
-		// e.g. "/productpage" from "productpage.svc.cluster.local:9080/productpage"
-		// or just use the HTTP path from the url tag on the parent Envoy SP
 		endpointName := endpointNameFromOperationName(callerAppSpan.GetOperationName())
-		purposeOfUse := callerFQDN
 
-		// Callee host: upstream_cluster tag on the parent Envoy SP is the most
-		// reliable source — Istio sets it to the full FQDN in format:
-		// "outbound|9080||reviews.bookinfo-with-prose-filter.svc.cluster.local"
-		// Extract the FQDN from the last segment after "||"
 		calleeHost := ""
 		calleePath := ""
 		calleeTags := model.KeyValues(parentSpan.GetTags())
 		if upstreamCluster, ok := calleeTags.FindByKey("upstream_cluster"); ok {
 			parts := strings.Split(upstreamCluster.VStr, "||")
 			if len(parts) >= 2 && parts[len(parts)-1] != "" {
-				calleeHost = parts[len(parts)-1] // e.g. "reviews.bookinfo-with-prose-filter.svc.cluster.local"
+				calleeHost = parts[len(parts)-1]
 			}
 		}
-		// fallback: peer.address (IP only, less useful)
 		if calleeHost == "" {
 			if peerAddr, ok := calleeTags.FindByKey("peer.address"); ok {
 				calleeHost = peerAddr.VStr
 			}
 		}
-		// Also extract the HTTP path as callee_path from the url tag
 		if urlTag, ok := calleeTags.FindByKey("http.url"); ok {
-			// e.g. "http://reviews:9080/reviews/0" → "/reviews/0"
 			parts := strings.SplitN(urlTag.VStr, ":9080", 2)
 			if len(parts) == 2 {
 				calleePath = parts[1]
 			}
 		}
-		_ = calleePath
 
-		profile := getOrCreateProfile(callerFQDN, purposeOfUse)
+		profile := getOrCreateProfile(callerFQDN, callerFQDN)
+		ep := findOrCreateEndpoint(profile, endpointName)
 
-		outgoingEntry := OutgoingEntry{
-			Type:            "indirect",
-			SpanID:          spanID,
-			CalleeHost:      calleeHost,
-			CalleePath:      calleePath,
-			PiiCompliant:    piiCompliant,
-			PiiViolation:    piiViolation,
-			ViolationReason: violationTypeTag.VStr,
-		}
-
-		// Find or create the EndpointCall for this endpoint and append outgoing entry
-		if _, ok := profile.Endpoints[endpointName]; !ok {
-			profile.Endpoints[endpointName] = map[string]EndpointCall{}
-		}
-		// Deduplication: use pii types + callee as the hash key.
-		// Spans with identical PII behaviour collapse into one entry;
-		// only the evidence (traceID/spanID) is updated to the most recent call.
-		hashKey := profileHashKey(EndpointProfile{Outgoing: []OutgoingEntry{outgoingEntry}}) + calleeHost
-		existingCall, exists := profile.Endpoints[endpointName][hashKey]
-		if exists {
-			// Same behaviour seen before — update evidence to most recent span
-			existingCall.TraceID = traceID
-			existingCall.SpanIDOfCall = spanID
-			profile.Endpoints[endpointName][hashKey] = existingCall
-		} else {
-			profile.Endpoints[endpointName][hashKey] = EndpointCall{
-				TraceID:      traceID,
-				SpanIDOfCall: spanID,
-				EndpointProfile: EndpointProfile{
-					Outgoing: []OutgoingEntry{outgoingEntry},
+		ep.EndpointProfile.Outgoing.Indirect = append(ep.EndpointProfile.Outgoing.Indirect,
+			IndirectEntry{
+				ProcessingInfo: IndirectProcessingInfo{
+					TraceID:                             traceID,
+					SpanIDOfIncomingRequestToEndpoint:   spanIDStr,
+					SpanIDOfOutgoingRequestFromEndpoint: spanIDStr,
+					ObservedPIITypes: ObservedPIITypes{
+						CompliantPIIs: compliantPIIs,
+						ViolatingPIIs: violatingPIIs,
+					},
 				},
-			}
-		}
-
+				CalleeHost: calleeHost,
+				CalleePath: calleePath,
+			},
+		)
 		fmt.Printf("[PROFILE] %s.%s → indirect via %s: compliant=%v violation=%v\n",
-			callerFQDN, endpointName, calleeHost, piiCompliant, piiViolation)
+			callerFQDN, endpointName, calleeHost, compliantStrings, violatingStrings)
 		return nil
 	}
 
-	// ── Case 3: OUTBOUND + DECODE_DATA ────────────────────────────────────────
-	// The PROSE span's parent is the caller's outbound Envoy SP.
-	// Caller is sending PII to a third-party external domain.
-	// Profile update: caller's data sharing (shared) outgoing entry.
+	// ── Case 3: OUTBOUND + DECODE_DATA → caller's Outgoing.Shared[] ──────────
 	if !isInbound && isDecode {
 		callerFQDN := parentSpan.GetProcess().GetServiceName()
-
 		callerAppSpan, err := findAnAncestorCaller(parentSpan.ParentSpanID(), spanStore)
 		if err != nil {
 			return fmt.Errorf("could not find caller app span: %v\n", err)
 		}
 		endpointName := endpointNameFromOperationName(callerAppSpan.GetOperationName())
-		purposeOfUse := callerFQDN
 
 		externalDomainTag, _ := tags.FindByKey("prose_external_domain")
 		externalDomain := externalDomainTag.VStr
-		// Only fall back to Envoy tags if PROSE_EXTERNAL_DOMAIN is empty
-		// (old filter without the tag)
 		if externalDomain == "" {
 			parentTags := model.KeyValues(parentSpan.GetTags())
 			if urlTag, ok := parentTags.FindByKey("http.url"); ok {
@@ -354,31 +276,25 @@ func populateServiceProfile(
 			}
 		}
 
-		profile := getOrCreateProfile(callerFQDN, purposeOfUse)
+		profile := getOrCreateProfile(callerFQDN, callerFQDN)
+		ep := findOrCreateEndpoint(profile, endpointName)
 
-		outgoingEntry := OutgoingEntry{
-			Type:            "shared",
-			SpanID:          spanID,
-			ExternalDomain:  externalDomain,
-			PiiViolation:    piiViolation,
-			PiiCompliant:    piiCompliant,
-			ViolationReason: violationTypeTag.VStr,
-		}
-
-		if _, ok := profile.Endpoints[endpointName]; !ok {
-			profile.Endpoints[endpointName] = map[string]EndpointCall{}
-		}
-		hashKey := "shared:" + externalDomain + ":" + strings.Join(piiViolation, ",")
-		profile.Endpoints[endpointName][hashKey] = EndpointCall{
-			TraceID:      traceID,
-			SpanIDOfCall: spanID,
-			EndpointProfile: EndpointProfile{
-				Outgoing: []OutgoingEntry{outgoingEntry},
+		ep.EndpointProfile.Outgoing.Shared = append(ep.EndpointProfile.Outgoing.Shared,
+			SharedEntry{
+				ProcessingInfo: SharedProcessingInfo{
+					TraceID:                             traceID,
+					SpanIDOfIncomingRequestToEndpoint:   spanIDStr,
+					SpanIDOfOutgoingRequestFromEndpoint: spanIDStr,
+					ObservedPIITypes: ObservedPIITypes{
+						CompliantPIIs: compliantPIIs,
+						ViolatingPIIs: violatingPIIs,
+					},
+				},
+				ExternalDomain: externalDomain,
 			},
-		}
-
+		)
 		fmt.Printf("[PROFILE] %s.%s → shared with %s: compliant=%v violation=%v\n",
-			callerFQDN, endpointName, externalDomain, piiCompliant, piiViolation)
+			callerFQDN, endpointName, externalDomain, compliantStrings, violatingStrings)
 		return nil
 	}
 
@@ -516,7 +432,6 @@ func main() {
 	}
 
 	fmt.Printf("\nProcessed %d PROSE spans, %d errors\n", totalProseSpansProcessed, totalErrors)
-
 	// Print all populated service profiles as JSON
 	fmt.Printf("\n═══ OBSERVED SERVICE PROFILES ═══\n")
 	if len(profileStore) == 0 {
@@ -526,6 +441,16 @@ func main() {
 		profileJSON, _ := json.MarshalIndent(profile, "", "  ")
 		fmt.Printf("\nService: %s\n%s\n", fqdn, string(profileJSON))
 	}
+
+	// ── Composition operator (paper Section 7.2) ──────────────────────────────
+	systemWideProfile := proto.SystemwideObservedProfile{}
+	for _, svcProfile := range profileStore {
+		systemWideProfile = *composer.ComposeWithSvcProfile(&systemWideProfile, svcProfile)
+	}
+
+	fmt.Printf("\n═══ SYSTEM-WIDE OBSERVED PROFILE ═══\n")
+	systemProfileJSON, _ := json.MarshalIndent(&systemWideProfile, "", "  ")
+	fmt.Printf("%s\n", string(systemProfileJSON))
 }
 
 func queryHotrod() {
