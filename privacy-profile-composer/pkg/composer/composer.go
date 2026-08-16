@@ -5,21 +5,85 @@ import (
 	"slices"
 )
 
-// Adapted from fp-ts
-// https://github.com/gcanti/fp-ts/blob/01b8661f2fa594d6f2010573f010d358e6808d13/src/ReadonlyRecord.ts#L1232
-func union[V any](
-	first map[string]V,
-	second map[string]V,
-	combine func(firstVal V, secondVal V) V,
-) map[string]V {
-	// Performance optimizations
+// ─── Input types for the composition pipeline ─────────────────────────────────
+// These types are defined here in the composer package so main.go can import
+// and use them directly. They mirror the anonymous struct types in
+// privacy_profiles.go but are named and importable.
+
+type ObservedPIITypes struct {
+	CompliantPIIs []proto.PIIType
+	ViolatingPIIs []proto.PIIType
+}
+
+type IncomingEntry struct {
+	TraceID                           string
+	SpanIDOfIncomingRequestToEndpoint string
+	ObservedPIITypes                  ObservedPIITypes
+}
+
+type IndirectProcessingInfo struct {
+	TraceID                             string
+	SpanIDOfIncomingRequestToEndpoint   string
+	SpanIDOfOutgoingRequestFromEndpoint string
+	ObservedPIITypes                    ObservedPIITypes
+}
+
+type IndirectEntry struct {
+	ProcessingInfo IndirectProcessingInfo
+	CalleeHost     string
+	CalleePath     string
+}
+
+type SharedProcessingInfo struct {
+	TraceID                             string
+	SpanIDOfIncomingRequestToEndpoint   string
+	SpanIDOfOutgoingRequestFromEndpoint string
+	ObservedPIITypes                    ObservedPIITypes
+}
+
+type SharedEntry struct {
+	ProcessingInfo SharedProcessingInfo
+	ExternalDomain string
+}
+
+type OutgoingEntries struct {
+	Indirect []IndirectEntry
+	Shared   []SharedEntry
+}
+
+type EndpointProfileData struct {
+	Incoming []IncomingEntry
+	Outgoing OutgoingEntries
+}
+
+type EndpointEntry struct {
+	EndpointName    string
+	EndpointHash    string
+	EndpointProfile EndpointProfileData
+}
+
+type EndpointsList struct {
+	Endpoint []EndpointEntry
+}
+
+// SvcObservedProfileLocal is the rich in-memory profile type used by main.go.
+// It mirrors the SvcObservedProfile struct from privacy_profiles.go.
+type SvcObservedProfileLocal struct {
+	TargetPolicyHash string
+	ServiceHash      string
+	SvcInternalFQDN  string
+	Endpoints        EndpointsList
+}
+
+// ─── Existing primitives (unchanged) ─────────────────────────────────────────
+
+func union[V any](first, second map[string]V, combine func(V, V) V) map[string]V {
 	if len(first) == 0 {
 		return second
 	}
 	if len(second) == 0 {
 		return first
 	}
-
 	out := make(map[string]V)
 	for k, v1 := range first {
 		if v2, ok := second[k]; ok {
@@ -36,25 +100,13 @@ func union[V any](
 	return out
 }
 
-func combineStringLists(
-	strList1 []string,
-	strList2 []string,
-) []string {
-	var strListWithDuplicates []string
-	if len(strList1) == 0 {
-		strListWithDuplicates = strList2
-	} else if len(strList2) == 0 {
-		strListWithDuplicates = strList1
-	} else {
-		strListWithDuplicates = append(strList1, strList2...)
-	}
-	strListUnique := uniqueNonEmptyElementsOf(strListWithDuplicates)
-	return strListUnique
+func combineStringLists(strList1 []string, strList2 []string) []string {
+	return uniqueNonEmptyElementsOf(append(strList1, strList2...))
 }
 
 func uniqueNonEmptyElementsOf(s []string) []string {
 	unique := make(map[string]bool, len(s))
-	us := make([]string, len(s))
+	us := make([]string, 0, len(s))
 	for _, elem := range s {
 		if len(elem) != 0 && !unique[elem] {
 			us = append(us, elem)
@@ -64,255 +116,157 @@ func uniqueNonEmptyElementsOf(s []string) []string {
 	return us
 }
 
-func combinerInnerMost(
-	party1 *proto.DataItemAndThirdParties,
-	party2 *proto.DataItemAndThirdParties,
-) *proto.DataItemAndThirdParties {
+func combinerInnerMost(party1, party2 *proto.DataItemAndThirdParties) *proto.DataItemAndThirdParties {
 	if party1 == nil {
 		return party2
 	}
 	if party2 == nil {
 		return party1
 	}
-
-	f := func(
-		thirdParties1 *proto.ThirdParties,
-		thirdParties2 *proto.ThirdParties,
-	) *proto.ThirdParties {
-		if thirdParties1 == nil {
-			return thirdParties2
+	f := func(t1, t2 *proto.ThirdParties) *proto.ThirdParties {
+		if t1 == nil {
+			return t2
 		}
-		if thirdParties2 == nil {
-			return thirdParties1
+		if t2 == nil {
+			return t1
 		}
-		out := combineStringLists(thirdParties1.ThirdParty, thirdParties2.ThirdParty)
 		return &proto.ThirdParties{
-			ThirdParty: out,
+			ThirdParty: combineStringLists(t1.ThirdParty, t2.ThirdParty),
 		}
 	}
-
-	var partyOut = proto.DataItemAndThirdParties{
-		Entry: union(party1.Entry, party2.Entry, f),
-	}
-
-	return &partyOut
+	return &proto.DataItemAndThirdParties{Entry: union(party1.Entry, party2.Entry, f)}
 }
 
-func combinerMiddle(
-	processing1 *proto.PurposeBasedProcessing,
-	processing2 *proto.PurposeBasedProcessing,
-) *proto.PurposeBasedProcessing {
-	if processing1 == nil {
-		return processing2
+func combinerMiddle(p1, p2 *proto.PurposeBasedProcessing) *proto.PurposeBasedProcessing {
+	if p1 == nil {
+		return p2
 	}
-	if processing2 == nil {
-		return processing1
+	if p2 == nil {
+		return p1
 	}
-	var processingOut = proto.PurposeBasedProcessing{
-		ProcessingEntries: union(
-			processing1.ProcessingEntries,
-			processing2.ProcessingEntries,
-			combinerInnerMost,
-		),
+	return &proto.PurposeBasedProcessing{
+		ProcessingEntries: union(p1.ProcessingEntries, p2.ProcessingEntries, combinerInnerMost),
 	}
-
-	return &processingOut
 }
 
-func combineSvcInternalFQDNs(systemWideFQDNs []string, svcFQDN string) []string {
-	indexOfSvcFQDN := slices.IndexFunc(systemWideFQDNs, func(givenSvcFQDN string) bool {
-		return givenSvcFQDN == svcFQDN
-	})
-	if indexOfSvcFQDN == -1 {
-		systemWideFQDNs = append(systemWideFQDNs, svcFQDN)
+func combineSvcInternalFQDNs(fqdns []string, fqdn string) []string {
+	idx := slices.IndexFunc(fqdns, func(s string) bool { return s == fqdn })
+	if idx == -1 {
+		fqdns = append(fqdns, fqdn)
 	}
-	return systemWideFQDNs
+	return fqdns
 }
 
-func Composer(
-	systemProfile *proto.SystemwideObservedProfile,
-	svcProfile *proto.SvcObservedProfile,
-) *proto.SystemwideObservedProfile {
-	composedProfile := &proto.SystemwideObservedProfile{
-		SystemwideProcessingEntries: combinerMiddle(
-			systemProfile.SystemwideProcessingEntries,
-			svcProfile.ObservedProcessingEntries,
-		),
-		ComposedServicesInternalFQDNs: combineSvcInternalFQDNs(
-			systemProfile.ComposedServicesInternalFQDNs,
-			svcProfile.SvcInternalFQDN),
-	}
+// ─── PIIType helpers ──────────────────────────────────────────────────────────
 
-	return composedProfile
+func uniquePIITypes(s []proto.PIIType) []proto.PIIType {
+	seen := make(map[proto.PIIType]bool)
+	var out []proto.PIIType
+	for _, v := range s {
+		if !seen[v] {
+			seen[v] = true
+			out = append(out, v)
+		}
+	}
+	return out
 }
-// SummarisedCall is the result of flattening one EndpointCall's direct +
-// indirect buckets into a single pii_compliant / pii_violation pair.
-// This is the intermediate form used by Steps 1-3 before the final
-// proto.PurposeBasedProcessing is assembled for Step 4.
+
+func unionPIITypes(a, b []proto.PIIType) []proto.PIIType {
+	return uniquePIITypes(append(a, b...))
+}
+
+// ─── Intermediate composition type ───────────────────────────────────────────
+
 type SummarisedCall struct {
-	PiiCompliant []string // union of direct.pii_compliant + all indirect[*].pii_compliant
-	PiiViolation []string // union of direct.pii_violation + all indirect[*].pii_violation
-	ThirdParties []string // external domains from shared outgoing entries
+	PiiCompliant []proto.PIIType
+	PiiViolation []proto.PIIType
+	ThirdParties []string
 }
 
-// Step 1:
-// "Summarise an endpoint profile by unioning the pii_compliant and pii_violation
-// sets across the direct and indirect buckets."
-//
-// Input:  one EndpointCall (direct + outgoing[] from main.go's profile builder)
-// Output: one SummarisedCall with flat compliant/violation sets
-//
-// The policy doesn't distinguish between direct and indirect processing —
-// it only cares what PII a service touched, not how it arrived.
-// So we union direct + indirect into one flat set here.
-func summariseEndpointCall(call EndpointCall) SummarisedCall {
-	var compliant []string
-	var violation []string
-	var thirdParties []string
- 
-	// Direct processing bucket
-	compliant = combineStringLists(compliant, call.EndpointProfile.Direct.PiiCompliant)
-	violation = combineStringLists(violation, call.EndpointProfile.Direct.PiiViolation)
- 
-	// Indirect + shared outgoing entries
-	for _, outgoing := range call.EndpointProfile.Outgoing {
-		switch outgoing.Type {
-		case "indirect":
-			// Indirect: PII received in a response from another service
-			compliant = combineStringLists(compliant, outgoing.PiiCompliant)
-			violation = combineStringLists(violation, outgoing.PiiViolation)
-		case "shared":
-			// Shared: PII sent to an external domain
-			// For sharing violations, PiiViolation = what was shared against policy
-			violation = combineStringLists(violation, outgoing.PiiViolation)
-			if outgoing.ExternalDomain != "" {
-				thirdParties = combineStringLists(thirdParties, []string{outgoing.ExternalDomain})
-			}
-		}
-	}
- 
-	return SummarisedCall{
-		PiiCompliant: compliant,
-		PiiViolation: violation,
-		ThirdParties: thirdParties,
-	}
-}
-
-// Step 2:
-// "Compose two endpoint profiles for the same endpoint by unioning their
-// summarised compliant and violation sets."
-//
-// Input:  map[hash]EndpointCall — all observed calls to one endpoint
-// Output: one SummarisedCall representing all observed behaviour at that endpoint
-//
-// Why: an endpoint may be called many times across many traces with different
-// request/response bodies each time. Each call may expose different PII types.
-// We union them all so the endpoint's profile reflects everything ever observed.
-func composeEndpointCalls(calls map[string]EndpointCall) SummarisedCall {
+// ─── Step 1: summariseEndpointProfile ────────────────────────────────────────
+// Union Incoming + Outgoing.Indirect + Outgoing.Shared into one flat set.
+func summariseEndpointProfile(ep EndpointEntry) SummarisedCall {
 	result := SummarisedCall{}
-	for _, call := range calls {
-		summarised := summariseEndpointCall(call)
-		result.PiiCompliant = combineStringLists(result.PiiCompliant, summarised.PiiCompliant)
-		result.PiiViolation = combineStringLists(result.PiiViolation, summarised.PiiViolation)
-		result.ThirdParties = combineStringLists(result.ThirdParties, summarised.ThirdParties)
+	for _, inc := range ep.EndpointProfile.Incoming {
+		result.PiiCompliant = unionPIITypes(result.PiiCompliant, inc.ObservedPIITypes.CompliantPIIs)
+		result.PiiViolation = unionPIITypes(result.PiiViolation, inc.ObservedPIITypes.ViolatingPIIs)
+	}
+	for _, ind := range ep.EndpointProfile.Outgoing.Indirect {
+		result.PiiCompliant = unionPIITypes(result.PiiCompliant, ind.ProcessingInfo.ObservedPIITypes.CompliantPIIs)
+		result.PiiViolation = unionPIITypes(result.PiiViolation, ind.ProcessingInfo.ObservedPIITypes.ViolatingPIIs)
+	}
+	for _, sh := range ep.EndpointProfile.Outgoing.Shared {
+		result.PiiViolation = unionPIITypes(result.PiiViolation, sh.ProcessingInfo.ObservedPIITypes.ViolatingPIIs)
+		if sh.ExternalDomain != "" {
+			result.ThirdParties = combineStringLists(result.ThirdParties, []string{sh.ExternalDomain})
+		}
 	}
 	return result
 }
 
-// Step 3:
-// "Compose across all endpoints of the same microservice."
-//
-// Input:  ServiceObservedProfile (from main.go's profile builder) with
-//         map[endpoint]map[hash]EndpointCall
-// Output: proto.PurposeBasedProcessing ready for Step 4's Composer()
-//
-// Why: the privacy policy applies per purpose-of-use, not per endpoint.
-// A policy says "the authentication service can process EMAIL_ADDRESS" —
-// it doesn't say "only the Login endpoint can, not SetPasswd".
-// So we union across all endpoints into one entry keyed by purpose.
-//
-// The purpose key in the proto map comes from ServiceObservedProfile.PurposeOfUse
-// which is set from the service's FQDN (its Kubernetes service name).
-func composeSvcProfile(svcProfile ServiceObservedProfile) *proto.PurposeBasedProcessing {
-	// Compose across all endpoints of this service into one SummarisedCall
+// ─── Step 2: composeEndpoints ─────────────────────────────────────────────────
+// Union across all observed entries for the same endpoint.
+func composeEndpoints(endpoints []EndpointEntry) SummarisedCall {
+	result := SummarisedCall{}
+	for _, ep := range endpoints {
+		s := summariseEndpointProfile(ep)
+		result.PiiCompliant = unionPIITypes(result.PiiCompliant, s.PiiCompliant)
+		result.PiiViolation = unionPIITypes(result.PiiViolation, s.PiiViolation)
+		result.ThirdParties = combineStringLists(result.ThirdParties, s.ThirdParties)
+	}
+	return result
+}
+
+// ─── Step 3: composeSvcProfile ────────────────────────────────────────────────
+// Union across all endpoints of the same service → proto.PurposeBasedProcessing.
+func composeSvcProfile(svcProfile *SvcObservedProfileLocal) *proto.PurposeBasedProcessing {
+	// Group by endpoint name then compose each group (Step 2)
+	byName := make(map[string][]EndpointEntry)
+	for _, ep := range svcProfile.Endpoints.Endpoint {
+		byName[ep.EndpointName] = append(byName[ep.EndpointName], ep)
+	}
+
 	serviceSummary := SummarisedCall{}
-	for _, endpointCalls := range svcProfile.Endpoints {
-		// Step 2: compose all calls to this endpoint
-		endpointSummary := composeEndpointCalls(endpointCalls)
-		// Step 3: union this endpoint's summary into the service summary
-		serviceSummary.PiiCompliant = combineStringLists(
-			serviceSummary.PiiCompliant,
-			endpointSummary.PiiCompliant,
-		)
-		serviceSummary.PiiViolation = combineStringLists(
-			serviceSummary.PiiViolation,
-			endpointSummary.PiiViolation,
-		)
-		serviceSummary.ThirdParties = combineStringLists(
-			serviceSummary.ThirdParties,
-			endpointSummary.ThirdParties,
-		)
+	for _, eps := range byName {
+		s := composeEndpoints(eps)
+		serviceSummary.PiiCompliant = unionPIITypes(serviceSummary.PiiCompliant, s.PiiCompliant)
+		serviceSummary.PiiViolation = unionPIITypes(serviceSummary.PiiViolation, s.PiiViolation)
+		serviceSummary.ThirdParties = combineStringLists(serviceSummary.ThirdParties, s.ThirdParties)
 	}
- 
-	// Convert SummarisedCall → proto.PurposeBasedProcessing
-	// The outer map key is the purpose of use (e.g. "authentication")
-	// The inner map key is the PII type (e.g. "EMAIL_ADDRESS")
-	// The value is the list of third parties (empty string = no external domain)
-	processingEntries := make(map[string]*proto.DataItemAndThirdParties)
- 
-	// Build the DataItemAndThirdParties entry for this purpose
+
+	// Convert to proto.PurposeBasedProcessing
+	purposeKey := svcProfile.SvcInternalFQDN
 	piiEntry := make(map[string]*proto.ThirdParties)
- 
-	for _, piiType := range serviceSummary.PiiCompliant {
-		piiEntry[piiType] = &proto.ThirdParties{
-			ThirdParty: []string{""}, // internal only — no external domain
-		}
+
+	for _, t := range serviceSummary.PiiCompliant {
+		key := proto.PIIType_name[int32(t)]
+		piiEntry[key] = &proto.ThirdParties{ThirdParty: []string{""}}
 	}
- 
-	for _, piiType := range serviceSummary.PiiViolation {
-		// If it's a violation, record the third parties involved
-		// (empty string for purpose-of-use violations, actual domain for sharing)
-		existing, exists := piiEntry[piiType]
-		if exists {
-			// Already in compliant — seen in both compliant and violation contexts
-			// Add third parties from violation context
-			existing.ThirdParty = combineStringLists(
-				existing.ThirdParty,
-				serviceSummary.ThirdParties,
-			)
-		} else {
-			piiEntry[piiType] = &proto.ThirdParties{
-				ThirdParty: serviceSummary.ThirdParties,
+	for _, t := range serviceSummary.PiiViolation {
+		key := proto.PIIType_name[int32(t)]
+		if _, exists := piiEntry[key]; !exists {
+			domains := serviceSummary.ThirdParties
+			if len(domains) == 0 {
+				domains = []string{""}
 			}
+			piiEntry[key] = &proto.ThirdParties{ThirdParty: domains}
 		}
 	}
- 
-	processingEntries[svcProfile.PurposeOfUse] = &proto.DataItemAndThirdParties{
-		Entry: piiEntry,
-	}
- 
+
 	return &proto.PurposeBasedProcessing{
-		ProcessingEntries: processingEntries,
+		ProcessingEntries: map[string]*proto.DataItemAndThirdParties{
+			purposeKey: {Entry: piiEntry},
+		},
 	}
 }
 
-// Step 4:
-// "Compose across all microservices into the system-wide observed profile."
-//
-// This function now accepts a ServiceObservedProfile (from main.go's profile
-// builder) instead of a proto.SvcObservedProfile, runs Steps 1-3 first,
-// then does the cross-service union with the existing system-wide profile.
-//
-// The original Composer() that takes proto.SvcObservedProfile is kept below
-// for backward compatibility with grpc_server.go's PostObservedProfile.
+// ─── Step 4: ComposeWithSvcProfile ────────────────────────────────────────────
+// Runs Steps 1-3 then unions into system-wide profile.
 func ComposeWithSvcProfile(
 	systemProfile *proto.SystemwideObservedProfile,
-	svcProfile ServiceObservedProfile,
+	svcProfile *SvcObservedProfileLocal,
 ) *proto.SystemwideObservedProfile {
-	// Steps 1-3: summarise and flatten the per-service observed profile
 	purposeBasedProcessing := composeSvcProfile(svcProfile)
- 
-	// Step 4: union with the existing system-wide profile (same as before)
 	return &proto.SystemwideObservedProfile{
 		SystemwideProcessingEntries: combinerMiddle(
 			systemProfile.SystemwideProcessingEntries,
@@ -320,14 +274,12 @@ func ComposeWithSvcProfile(
 		),
 		ComposedServicesInternalFQDNs: combineSvcInternalFQDNs(
 			systemProfile.ComposedServicesInternalFQDNs,
-			svcProfile.SvcFQDN,
+			svcProfile.SvcInternalFQDN,
 		),
 	}
 }
- 
-// Composer is kept unchanged for grpc_server.go backward compatibility.
-// It accepts the flat proto.SvcObservedProfile directly (skips Steps 1-3).
-// Use ComposeWithSvcProfile() when calling from main.go's pipeline.
+
+// Composer is kept for grpc_server.go backward compatibility.
 func Composer(
 	systemProfile *proto.SystemwideObservedProfile,
 	svcProfile *proto.SvcObservedProfile,
@@ -343,4 +295,3 @@ func Composer(
 		),
 	}
 }
- 
